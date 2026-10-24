@@ -1,5 +1,5 @@
 import { keyframes } from '@emotion/react';
-import { styled } from '@mui/joy/styles';
+import { styled } from '@mui/joy';
 import type { CSSProperties } from 'react';
 
 const fadeIn = keyframes({ from: { opacity: 0 }, to: { opacity: 1 } });

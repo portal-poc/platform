@@ -1,4 +1,4 @@
-import { styled } from '@mui/joy/styles';
+import { styled } from '@mui/joy';
 import type { ReactNode } from 'react';
 import { useSpinDelay } from 'spin-delay';
 import { Spinner } from './Spinner';

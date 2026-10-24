@@ -1,4 +1,4 @@
-import { extendTheme } from '@mui/joy/styles';
+import { extendTheme } from '@mui/joy';
 
 /** Joy theme on CSS variables: visual consistency rests on tokens (`--joy-*`), not only on a shared DS major. */
 export const portalTheme = extendTheme({

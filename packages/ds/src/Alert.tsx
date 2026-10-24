@@ -1,6 +1,6 @@
-import JoyAlert from '@mui/joy/Alert';
-import type { AlertProps as JoyAlertProps } from '@mui/joy/Alert';
-import Typography from '@mui/joy/Typography';
+import { Alert as JoyAlert } from '@mui/joy';
+import type { AlertProps as JoyAlertProps } from '@mui/joy';
+import { Typography } from '@mui/joy';
 import type { ReactNode } from 'react';
 
 type AlertProps = Omit<JoyAlertProps, 'title'> & { title: ReactNode };

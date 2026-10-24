@@ -1,6 +1,6 @@
 {
   "name": "@portal-poc/ds",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Portal design system: MUI Joy wrapper, tokens and loading primitives. Module Federation singleton.",
   "type": "module",
   "sideEffects": false,

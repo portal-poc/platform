@@ -1,4 +1,4 @@
-import Button from '@mui/joy/Button';
+import { Button } from '@mui/joy';
 import { Suspense } from 'react';
 import type { ReactNode } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';

@@ -1,5 +1,5 @@
-import Button from '@mui/joy/Button';
-import type { ButtonProps } from '@mui/joy/Button';
+import { Button } from '@mui/joy';
+import type { ButtonProps } from '@mui/joy';
 import { Spinner } from './Spinner';
 
 type AsyncButtonProps = ButtonProps & { isPending: boolean };

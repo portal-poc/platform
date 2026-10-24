@@ -1,5 +1,31 @@
 {
   "extends": [
     "./node_modules/@portal-poc/presets/oxlint/react.json"
-  ]
+  ],
+  "rules": {
+    "no-restricted-imports": [
+      "error",
+      {
+        "paths": [
+          {
+            "name": "react",
+            "importNames": [
+              "useMemo",
+              "useCallback",
+              "memo"
+            ],
+            "message": "React Compiler memoizes automatically. Do not use useMemo/useCallback/memo."
+          }
+        ],
+        "patterns": [
+          {
+            "group": [
+              "@mui/joy/*"
+            ],
+            "message": "Import Joy from '@mui/joy' only: deep imports are not covered by the @mui/joy MF singleton and are not pre-bundled by Vite in consuming apps (raw CJS prop-types in dev)."
+          }
+        ]
+      }
+    ]
+  }
 }

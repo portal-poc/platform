@@ -1,5 +1,5 @@
-import CssBaseline from '@mui/joy/CssBaseline';
-import { CssVarsProvider } from '@mui/joy/styles';
+import { CssBaseline } from '@mui/joy';
+import { CssVarsProvider } from '@mui/joy';
 import type { ReactNode } from 'react';
 import { portalTheme } from './theme';
 
