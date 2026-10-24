@@ -14,11 +14,11 @@ discovered while building this reference repo. Code that depends on an open deci
   values by the host.
 - **(from requirements)** Do we need `portal-cli doctor` / codemods for contract changes?
 
-## Realtime / infrastructure
+## Realtime
 
-- **(from requirements)** Realtime transport through the bank proxy: HTTP/2? WS upgrade? SSE buffering?
-- **(from requirements)** Where each BFF's realtime gateway lives (inside the BFF or a separate per-cluster service) —
-  backend decision.
+- **(found)** Realtime is out of scope for this PoC (existing WebSocket pub/sub in the real project). When adapting:
+  decide how the existing pub/sub maps to "one connection per application" and "thin events → each app invalidates its
+  own keys" (section 12 of the requirements), and whether the local bus fast path stays.
 
 ## Build / Module Federation
 

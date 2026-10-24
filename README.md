@@ -9,7 +9,7 @@ Overview: [`docs/architecture.md`](./docs/architecture.md). Demo scenarios: [`do
 volta install node@24.19.0 pnpm@12.15.0   # or use .nvmrc + corepack where Volta is unavailable
 pnpm install
 pnpm build          # remotes must be built once for `preview`; `dev` works without it
-pnpm dev            # broker, BFFs, tasks-remote, legacy-remote, host
+pnpm dev            # BFFs, tasks-remote, legacy-remote, host
 open http://localhost:5173
 ```
 

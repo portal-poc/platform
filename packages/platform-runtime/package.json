@@ -1,0 +1,61 @@
+{
+  "name": "@portal/platform-runtime",
+  "version": "1.0.0",
+  "description": "Portal platform runtime: providers, auth adapters, http client, QueryClient factory, realtime, devtools, standalone harness, compat checks. Bundled into every application (not an MF singleton).",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./msal": "./src/msal/index.ts"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./msal": {
+        "types": "./dist/msal/index.d.ts",
+        "import": "./dist/msal/index.js"
+      }
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json",
+    "lint": "oxlint -c ../presets/oxlint/react.json src",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@portal/platform-contract": "workspace:*",
+    "@tanstack/react-query-devtools": "^5.104.5"
+  },
+  "peerDependencies": {
+    "@azure/msal-browser": "^5.0.0",
+    "@tanstack/react-query": "^5.104.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "zod": "^4.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@azure/msal-browser": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@azure/msal-browser": "^5.26.0",
+    "@portal/presets": "workspace:*",
+    "@tanstack/react-query": "^5.104.5",
+    "@testing-library/react": "^16.3.3",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "jsdom": "^30.1.3",
+    "oxlint": "^1.89.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5",
+    "zod": "^4.6.7"
+  }
+}
