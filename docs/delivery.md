@@ -38,8 +38,12 @@ pnpm registry:status           # versions dashboard
 | Mode | How | Result |
 |---|---|---|
 | Standalone remote | `pnpm --filter tasks-remote dev:standalone` | Remote alone with its mock platform — the default loop |
-| Local host + local remote(s) | `apps/host/.env.development.local`: `PORTAL_STAND=uat` + `PORTAL_REMOTE_TASKS=http://localhost:5174/mf-manifest.json`; run `pnpm infra`, the remote's `pnpm dev` and the host's `pnpm dev` | Host + your remote locally with Fast Refresh; every other remote at the version registered on uat |
-| Everything local (monorepo) | `pnpm dev` | `PORTAL_STAND=local`: all remotes on dev servers |
+| Local host + local remote(s) | `host/.env.development.local`: `PORTAL_STAND=uat` + `PORTAL_REMOTE_TASKS=http://localhost:5174/mf-manifest.json`; run `pnpm infra`, the remote's `pnpm dev` and the host's `pnpm dev` | Host + your remote locally with Fast Refresh; every other remote at the version registered on uat |
+| Only local remotes | `PORTAL_STAND=none` + one `PORTAL_REMOTE_*` per remote you run | No infra; the host shows just your remotes |
+| New remote, not released yet | `PORTAL_REMOTE_REPORTS=http://localhost:5176/mf-manifest.json` | Works before any registration: route `/reports`, scopes from its own `config.json` |
+
+`local` is not a stand: the registry describes deployed stands only, a developer machine is described by its own
+`.env.development.local`.
 
 Deployed stands never load local code. The host toolbar / demo panel shows `name@version · registry|local ·
 integrated|bridge|error` for every remote.

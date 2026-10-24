@@ -14,8 +14,13 @@ Two modes only:
 2. **Local host + the remotes you work on** — run the host repo locally and your remote's dev server. The host dev
    server builds `/config.json` itself: the registry config of `PORTAL_STAND` (what is actually deployed there) with
    the remotes listed as `PORTAL_REMOTE_<NAME>=<dev manifest URL>` in `.env.development.local` replaced by the local
-   dev servers. Anything not overridden runs the version currently registered on that stand.
-   `pnpm dev` (monorepo) = `PORTAL_STAND=local`, where every remote is a dev server.
+   dev servers. Anything not overridden runs the version currently registered on that stand. A remote not registered
+   on the stand (a new one, before its first release) is added from the env alone: route `/<name>`, scopes from its
+   own `config.json`. `PORTAL_STAND=none` = only the local remotes.
+
+**Local is not a stand.** The registry describes deployed stands only; nothing about developer machines (dev server
+URLs, which remotes someone runs) is committed there. Onboarding a remote therefore needs no registry change until its
+first real release.
 
 Local remotes get **real Fast Refresh inside the host**: the host dev server injects a recording React DevTools hook
 before React DOM loads, and attaches to each local remote's React Refresh runtime and Vite client.

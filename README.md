@@ -51,14 +51,14 @@ Each `@portal-poc` package grants Read access to the app repositories (package s
    ```sh
    cd platform && pnpm infra
    ```
-4. **Local development** (host + remotes on dev servers):
+4. **Local development** (host + the remotes you work on, everything else as deployed on uat). Local setup lives
+   only in `host/.env.development.local` (copy the `.example`), never in the registry:
    ```sh
-   cd registry && pnpm deploy:local
-   cd ../tasks-remote && pnpm dev      # :5174
-   cd ../legacy-remote && pnpm dev     # :5175
+   cd tasks-remote && pnpm dev         # :5174, listed as PORTAL_REMOTE_TASKS
    cd ../host && pnpm dev              # :5173 → http://localhost:5173
    ```
-   Or a remote standalone: `cd tasks-remote && pnpm dev:standalone`.
+   `PORTAL_STAND=none` = only your local remotes, no infra needed. Or a remote standalone:
+   `cd tasks-remote && pnpm dev:standalone`.
 5. **Release flow on the uat stand** (production builds, immutable artifacts, gates, registry PR):
    ```sh
    cd host && pnpm build && cd ../platform && pnpm deploy:host uat

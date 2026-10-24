@@ -92,9 +92,6 @@ createServer(handleNexus).listen(NEXUS_PORT, () => {
 });
 
 for (const [name, stand] of Object.entries(readStands())) {
-  if (!stand.nexusUrl) {
-    continue; // `local` is served by the dev servers themselves
-  }
   const port = Number(new URL(stand.url).port);
   createServer(createStandHandler(name)).listen(port, () => {
     console.log(`[infra] stand ${name.padEnd(5)} ${stand.url}`);

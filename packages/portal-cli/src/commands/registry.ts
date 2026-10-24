@@ -85,7 +85,7 @@ export const runRegistryValidate = (options: { registry: string }): void => {
     for (const [name, entry] of Object.entries(readEntries(registryDir, stand))) {
       entries += 1;
       const where = `${stand}/${name}.json`;
-      if (!entry.devServer && !/^\d+\.\d+\.\d+/.test(entry.version)) {
+      if (!/^\d+\.\d+\.\d+/.test(entry.version)) {
         problems.push(`${where}: version "${entry.version}" is not semver`);
       }
       if (definition.nexusUrl && !entry.manifest.startsWith(`${definition.nexusUrl}/${name}/${entry.version}/`)) {

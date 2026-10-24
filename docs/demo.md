@@ -1,6 +1,6 @@
 # Demo scenarios (acceptance criteria)
 
-Start everything: `pnpm install && pnpm dev`, open http://localhost:5173 (local stand: dev servers). Release and
+Start everything: `pnpm install && pnpm dev`, open http://localhost:5173 (remotes from `host/.env.development.local`, see delivery.md). Release and
 stand scenarios (new version, rollback, gates, bridge fallback, local host + local remote) are in
 [`delivery.md`](./delivery.md). The **Demo panel** (bottom-left) switches
 account, fake-BFF delay, token TTL, forced bridge mode and an incompatible contract. The **Devtools** button
