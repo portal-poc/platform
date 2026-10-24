@@ -1,15 +1,22 @@
 {
   "name": "@portal/presets",
   "version": "0.1.0",
-  "description": "Optional shared presets (tsconfig, oxlint, vitest, steiger). Teams may inherit or inline them.",
+  "description": "Optional shared presets (tsconfig, oxlint incl. React Compiler rules, fallow, vitest, steiger). Teams may inherit or inline them.",
   "type": "module",
   "exports": {
     "./tsconfig/*.json": "./tsconfig/*.json",
     "./oxlint/*.json": "./oxlint/*.json",
     "./vitest": "./vitest/index.ts",
-    "./steiger": "./steiger/index.ts"
+    "./steiger": "./steiger/index.ts",
+    "./fallow/*.json": "./fallow/*.json"
   },
-  "files": ["tsconfig", "oxlint", "vitest", "steiger"],
+  "files": [
+    "tsconfig",
+    "oxlint",
+    "vitest",
+    "steiger",
+    "fallow"
+  ],
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
     "lint": "oxlint -c oxlint/base.json .",
@@ -19,12 +26,22 @@
   "peerDependencies": {
     "vitest": "^5.0.0",
     "steiger": "^0.8.0",
-    "@feature-sliced/steiger-plugin": "^0.8.0"
+    "@feature-sliced/steiger-plugin": "^0.8.0",
+    "fallow": "^3.35.0"
   },
   "peerDependenciesMeta": {
-    "vitest": { "optional": true },
-    "steiger": { "optional": true },
-    "@feature-sliced/steiger-plugin": { "optional": true }
+    "vitest": {
+      "optional": true
+    },
+    "steiger": {
+      "optional": true
+    },
+    "@feature-sliced/steiger-plugin": {
+      "optional": true
+    },
+    "fallow": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@feature-sliced/steiger-plugin": "^0.8.0",
@@ -32,6 +49,7 @@
     "oxlint": "^1.89.0",
     "steiger": "^0.8.0",
     "typescript": "^7.0.2",
-    "vitest": "^5.0.5"
+    "vitest": "^5.0.5",
+    "fallow": "^3.35.0"
   }
 }

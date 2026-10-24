@@ -15,7 +15,7 @@ meant to be split into separate repositories (polyrepo) later.
 | `packages/platform-runtime` | `@portal/platform-runtime` — providers, auth adapters, http client, QueryClient factory, devtools, standalone, compat | platform repo |
 | `packages/ds` | `@portal/ds` — Joy UI wrapper + loading primitives (MF singleton) | DS repo |
 | `packages/mf-shared` | `@portal/mf-shared` — integration-contract constants (exposes, singletons, ranges) + shared config helper | platform repo |
-| `packages/presets` | `@portal/presets` — optional tsconfig / oxlint / vitest / steiger presets | platform repo |
+| `packages/presets` | `@portal/presets` — optional tsconfig / oxlint (incl. React Compiler rules) / fallow / vitest / steiger presets | platform repo |
 | `packages/portal-cli` | `portal-cli` — `create remote`, `add <layer>`, `verify` | platform repo |
 
 ## Ports (local)
@@ -48,5 +48,8 @@ Decided with the project owner before implementation:
 - **CLI asks which optional FSD layers to create** (`entities` / `features` / `widgets`) in addition to `app`, `pages`,
   `shared` — overrides "CLI does not create empty layers" from section 16.1.
 - Keep the code minimal: this is a PoC, not production code.
+- **Linting** = oxlint (code style + React Compiler rules, native port of eslint-plugin-react-hooks v7) + Steiger (FSD)
+  + **fallow** (unused files/exports/dependencies, duplication, FSD boundaries). All presets live in `@portal/presets`;
+  apps extend them (`.oxlintrc.json`, `.fallowrc.json` with `extends: "npm:@portal/presets/fallow/<kind>.json"`).
 - Optional parts implemented: `@portal/presets`, bridge demo (`legacy-remote`). Not implemented: preload hover demo
   (the architecture is ready — section 13), Playwright e2e.

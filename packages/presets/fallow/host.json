@@ -1,0 +1,23 @@
+{
+  "boundaries": {
+    "preset": "feature-sliced"
+  },
+  "entry": [
+    "src/app/main.tsx",
+    "steiger.config.ts"
+  ],
+  "ignorePatterns": [
+    "dist/**",
+    ".__mf__temp/**"
+  ],
+  "rules": {
+    "unused-files": "error",
+    "unused-exports": "warn",
+    "unused-types": "warn",
+    "unused-dependencies": "error"
+  },
+  "duplicates": {
+    "mode": "mild",
+    "minTokens": 50
+  }
+}

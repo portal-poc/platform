@@ -1,7 +1,16 @@
 {
   "$schema": "../../../node_modules/oxlint/configuration_schema.json",
-  "extends": ["./base.json"],
-  "plugins": ["typescript", "unicorn", "oxc", "import", "react", "jsx-a11y"],
+  "extends": [
+    "./base.json"
+  ],
+  "plugins": [
+    "typescript",
+    "unicorn",
+    "oxc",
+    "import",
+    "react",
+    "jsx-a11y"
+  ],
   "rules": {
     "no-restricted-imports": [
       "error",
@@ -9,7 +18,11 @@
         "paths": [
           {
             "name": "react",
-            "importNames": ["useMemo", "useCallback", "memo"],
+            "importNames": [
+              "useMemo",
+              "useCallback",
+              "memo"
+            ],
             "message": "React Compiler memoizes automatically. Do not use useMemo/useCallback/memo."
           }
         ]
@@ -18,6 +31,19 @@
     "react/rules-of-hooks": "error",
     "react/exhaustive-deps": "error",
     "react/jsx-key": "error",
-    "react/react-in-jsx-scope": "off"
+    "react/react-in-jsx-scope": "off",
+    "react/purity": "error",
+    "react/refs": "error",
+    "react/immutability": "error",
+    "react/globals": "error",
+    "react/static-components": "error",
+    "react/set-state-in-render": "error",
+    "react/set-state-in-effect": "error",
+    "react/no-deriving-state-in-effects": "error",
+    "react/use-memo": "error",
+    "react/preserve-manual-memoization": "error",
+    "react/incompatible-library": "error",
+    "react/error-boundaries": "error",
+    "react/unsupported-syntax": "error"
   }
 }

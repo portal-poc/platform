@@ -1,0 +1,9 @@
+{
+  "ignorePatterns": ["dist/**"],
+  "rules": {
+    "unused-files": "error",
+    "unused-exports": "off",
+    "unused-dependencies": "error"
+  },
+  "duplicates": { "mode": "mild", "minTokens": 50 }
+}
