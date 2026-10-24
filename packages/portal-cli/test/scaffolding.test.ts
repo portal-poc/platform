@@ -12,7 +12,7 @@ describe('create remote', () => {
     const dir = join(tempDir(), 'reports-remote');
     await runCreateRemote('reports', { dir, layers: 'features', presets: true, bridge: true, port: '5180' });
 
-    expect(readFileSync(join(dir, 'vite.config.ts'), 'utf8')).toContain("name: 'reports'");
+    expect(readFileSync(join(dir, 'vite.config.ts'), 'utf8')).toContain("const REMOTE_NAME = 'reports';");
     expect(readFileSync(join(dir, 'package.json'), 'utf8')).toContain('"@portal/platform-runtime": "^1.0.0"');
     expect(existsSync(join(dir, 'src/features/README.md'))).toBe(true);
     expect(existsSync(join(dir, 'src/entities'))).toBe(false);
