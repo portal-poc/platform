@@ -1,4 +1,6 @@
-# portal-cli
+# @portal/cli (command: `portal-cli`)
+
+Scoped on purpose: an unrelated public package named `portal-cli` exists on npmjs (dependency confusion).
 
 Built on **commander** (commands, flags, `--help`) + **@inquirer/prompts** (questions), the same kind of base
 create-react-app / create-vite use.

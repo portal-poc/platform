@@ -1,0 +1,4 @@
+{
+  "extends": "@portal/presets/tsconfig/node.json",
+  "include": ["src"]
+}

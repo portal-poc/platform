@@ -1,6 +1,6 @@
 {
   "name": "@portal/presets",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Optional shared presets (tsconfig, oxlint incl. React Compiler rules, fallow, vitest, steiger). Teams may inherit or inline them.",
   "type": "module",
   "exports": {
@@ -13,15 +13,14 @@
   "files": [
     "tsconfig",
     "oxlint",
-    "vitest",
-    "steiger",
-    "fallow"
+    "fallow",
+    "dist"
   ],
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
     "lint": "oxlint -c oxlint/base.json .",
     "test": "echo \"no tests in @portal/presets\"",
-    "build": "echo \"@portal/presets ships sources\""
+    "build": "tsc -p tsconfig.build.json"
   },
   "peerDependencies": {
     "vitest": "^5.0.0",
@@ -51,5 +50,20 @@
     "typescript": "^7.0.2",
     "vitest": "^5.0.5",
     "fallow": "^3.35.0"
+  },
+  "publishConfig": {
+    "exports": {
+      "./tsconfig/*.json": "./tsconfig/*.json",
+      "./oxlint/*.json": "./oxlint/*.json",
+      "./fallow/*.json": "./fallow/*.json",
+      "./vitest": {
+        "types": "./dist/vitest/index.d.ts",
+        "import": "./dist/vitest/index.js"
+      },
+      "./steiger": {
+        "types": "./dist/steiger/index.d.ts",
+        "import": "./dist/steiger/index.js"
+      }
+    }
   }
 }

@@ -17,8 +17,9 @@ meant to be split into separate repositories (polyrepo) later.
 | `packages/mf-shared` | `@portal/mf-shared` — integration-contract constants (exposes, singletons, ranges) + shared config helper | platform repo |
 | `packages/vite-config` | `@portal/vite-config` — build preset: pinned Vite + MF plugin, MF section of the contract, React Compiler | platform repo |
 | `packages/presets` | `@portal/presets` — optional tsconfig / oxlint (incl. React Compiler rules) / fallow / vitest / steiger presets | platform repo |
-| `packages/portal-cli` | `portal-cli` — `create remote`, `add <layer>`, `verify`, `publish`, `release`, `registry check|build|status` | platform repo |
+| `packages/portal-cli` | `@portal/cli` (command `portal-cli`) — `create remote`, `add <layer>`, `verify`, `publish`, `release`, `registry check|build|status` | platform repo |
 | `registry/` | Which version of which remote runs on which stand (`<stand>/<remote>.json`, `stands.json`) | registry repo |
+| `tools/polyrepo` | Polyrepo dry run: Verdaccio (Nexus stand-in) + split every app into its own repo and check it ([`polyrepo.md`](./polyrepo.md)) | — |
 | `tools/infra` | PoC stand-ins: Nexus (immutable artifacts) and stands (host + `/config.json` + `compat.json`) | — (infra) |
 
 ## Ports (local)
@@ -30,6 +31,7 @@ meant to be split into separate repositories (polyrepo) later.
 | legacy-remote | 5175 |
 | generated remotes (default) | 5176 |
 | PoC Nexus | 4400 |
+| Verdaccio (polyrepo dry run) | 4873 |
 | stand uat / prod | 4501 / 4502 |
 
 ## Delivery

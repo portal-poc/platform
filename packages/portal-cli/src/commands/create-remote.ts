@@ -106,11 +106,14 @@ export const runCreateRemote = async (name: string, options: CreateRemoteOptions
     __TITLE__: toPascalCase(name),
     __PORT__: options.port ?? '5176',
     __PORTAL_VERSION__: inWorkspace ? 'workspace:^' : '^1.0.0',
+    __REGISTRY__: process.env['PORTAL_REGISTRY'] ?? '<NEXUS_PLACEHOLDER>',
   };
   const overrides: Record<string, string> = answers.usePresets ? {} : createInlineConfigs();
 
   for (const file of listFilesRecursive(TEMPLATE_DIR)) {
-    const relativePath = relative(TEMPLATE_DIR, file).replace(/(^|\/)_gitignore$/, '$1.gitignore');
+    // Dotfiles are stored as `_name`: npm drops .gitignore/.npmrc from tarballs, and linters would pick up live
+    // .oxlintrc.json/.fallowrc.json from node_modules/@portal/cli/templates of every app that installs the CLI.
+    const relativePath = relative(TEMPLATE_DIR, file).replace(/(^|\/)_(gitignore|npmrc|oxlintrc\.json|fallowrc\.json)$/, '$1.$2');
     let content = overrides[relativePath] ?? readFileSync(file, 'utf8');
     if (relativePath === 'src/app/exposes/RemoteBridge.tsx' && !answers.withBridge) {
       content = BRIDGE_STUB;

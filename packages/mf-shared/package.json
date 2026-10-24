@@ -8,7 +8,7 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "build": "echo \"@portal/mf-shared is consumed as source in this repo\"",
+    "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json",
     "lint": "oxlint src && fallow dead-code",
     "test": "echo \"no tests\""
@@ -22,5 +22,16 @@
   },
   "dependencies": {
     "semver": "^7.8.5"
-  }
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      }
+    }
+  },
+  "files": [
+    "dist"
+  ]
 }

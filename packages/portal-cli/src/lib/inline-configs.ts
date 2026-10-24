@@ -44,7 +44,11 @@ export const createInlineConfigs = (): Record<string, string> => {
   return {
     'tsconfig.json': json({
       compilerOptions: { ...compilerOptions, paths: { '@/*': ['./src/*'] } },
-      include: ['src', 'vite.config.ts', 'vitest.config.ts', 'steiger.config.ts'],
+      include: ['src'],
+    }),
+    'tsconfig.node.json': json({
+      compilerOptions: { ...compilerOptions, types: ['node'] },
+      include: ['vite.config.ts', 'vitest.config.ts', 'steiger.config.ts'],
     }),
     '.oxlintrc.json': json({ ...oxlint, ignorePatterns: ['dist/**', 'node_modules/**', '.__mf__temp/**'] }),
     '.fallowrc.json': json({ $schema: './node_modules/fallow/schema.json', ...readPreset('fallow/remote.json') }),

@@ -26,10 +26,12 @@
     "lint": "pnpm -r lint",
     "test": "pnpm -r test",
     "verify": "pnpm -r --filter \"./apps/*\" verify",
-    "check": "pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm verify"
+    "check": "pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm verify",
+    "polyrepo:registry": "pnpm --filter @portal-tools/polyrepo registry",
+    "polyrepo:dry-run": "pnpm --filter @portal-tools/polyrepo dry-run"
   },
   "devDependencies": {
-    "concurrently": "^10.0.6",
-    "portal-cli": "workspace:*"
+    "@portal/cli": "workspace:*",
+    "concurrently": "^10.0.6"
   }
 }

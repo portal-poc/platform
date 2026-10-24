@@ -1,0 +1,22 @@
+{
+  "name": "@portal-tools/polyrepo",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Polyrepo dry run: publish platform packages to a local registry (Verdaccio = Nexus stand-in) and build every app as a separate repository.",
+  "scripts": {
+    "registry": "rm -rf ../../.polyrepo/verdaccio-storage && verdaccio --config verdaccio.yaml",
+    "dry-run": "node src/dry-run.ts",
+    "typecheck": "tsc -p tsconfig.json",
+    "lint": "oxlint src",
+    "test": "echo \"no tests\"",
+    "build": "echo \"nothing to build\""
+  },
+  "devDependencies": {
+    "@portal/presets": "workspace:^",
+    "@types/node": "^26.6.5",
+    "oxlint": "^1.89.0",
+    "typescript": "^7.0.2",
+    "verdaccio": "^6.10.7"
+  }
+}

@@ -1,6 +1,6 @@
 {
-  "name": "portal-cli",
-  "version": "0.1.0",
+  "name": "@portal/cli",
+  "version": "1.0.0",
   "description": "Portal CLI: create remotes from the reference template, add FSD slices, verify the integration contract.",
   "type": "module",
   "bin": {
@@ -8,11 +8,11 @@
   },
   "files": [
     "bin",
-    "src",
+    "dist",
     "templates"
   ],
   "scripts": {
-    "build": "echo \"portal-cli runs TypeScript sources via Node type stripping\"",
+    "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json",
     "lint": "oxlint src && fallow dead-code",
     "test": "vitest run"
@@ -31,5 +31,10 @@
     "oxlint": "^1.89.0",
     "typescript": "^7.0.2",
     "vitest": "^5.0.5"
+  },
+  "publishConfig": {
+    "bin": {
+      "portal-cli": "./dist/main.js"
+    }
   }
 }

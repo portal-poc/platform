@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+import { readFileSync } from 'node:fs';
 import { Argument, Command, Option } from 'commander';
 import { runAddSlice, SLICE_LAYERS } from './commands/add-slice.ts';
 import type { SliceLayer } from './commands/add-slice.ts';
@@ -7,7 +9,10 @@ import { runPublish, runRelease } from './commands/release.ts';
 import { runVerify } from './commands/verify.ts';
 
 // Positional options: `--version` of a subcommand (publish/release) is not the program's --version.
-const program = new Command('portal-cli').description('Portal micro-frontend tooling').version('0.1.0').enablePositionalOptions();
+// src/main.ts and dist/main.js are both one level below the package root.
+const { version }: { version: string } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+
+const program = new Command('portal-cli').description('Portal micro-frontend tooling').version(version).enablePositionalOptions();
 
 const create = program.command('create').description('Generate a new application from the reference template');
 

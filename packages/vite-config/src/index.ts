@@ -1,7 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
-import babel from '@rolldown/plugin-babel';
 import { federation } from '@module-federation/vite';
 import {
   createSharedConfig,
@@ -13,7 +12,7 @@ import type { SharedEntry } from '@portal/mf-shared';
 import react, { reactCompilerPreset } from '@vitejs/plugin-react';
 import semver from 'semver';
 import { defineConfig, mergeConfig } from 'vite';
-import type { PluginOption, UserConfig, UserConfigFnObject } from 'vite';
+import type { PluginOption, UserConfig, UserConfigFnPromise } from 'vite';
 
 type PackageJson = { version: string };
 
@@ -72,14 +71,23 @@ export type RemoteViteOptions = {
   extend?: UserConfig;
 };
 
-const reactPlugins = (compiler: boolean): PluginOption[] =>
-  compiler ? [react(), babel({ presets: [reactCompilerPreset()] })] : [react()];
+/**
+ * The Babel plugin is an OPTIONAL peer (only apps with React Compiler install it): import it lazily, otherwise every
+ * app — e.g. a React 18 bridge remote without the compiler — would need it just to load this preset.
+ */
+const reactPlugins = async (compiler: boolean): Promise<PluginOption[]> => {
+  if (!compiler) {
+    return [react()];
+  }
+  const { default: babel } = await import('@rolldown/plugin-babel');
+  return [react(), babel({ presets: [reactCompilerPreset()] })];
+};
 
 /**
  * Remote build preset. The MF section (name, exposes, shared, bridge variant) is the integration contract and lives
  * here; teams extend everything else. `--mode bridge` builds the isolated variant (no shared deps) into dist-bridge.
  */
-export const createRemoteViteConfig = (options: RemoteViteOptions): UserConfigFnObject => {
+export const createRemoteViteConfig = (options: RemoteViteOptions): UserConfigFnPromise => {
   const appRoot = fileURLToPath(new URL('.', options.configUrl)).replace(/\/$/, '');
   assertBuildTooling(appRoot);
   const appVersion = readJson(`${appRoot}/package.json`).version;
@@ -87,7 +95,7 @@ export const createRemoteViteConfig = (options: RemoteViteOptions): UserConfigFn
   const exposesDir = options.exposesDir ?? 'src/app/exposes';
   const sharedConfig = options.unsafeSharedOverride?.(createSharedConfig()) ?? createSharedConfig();
 
-  return defineConfig(({ mode }) => {
+  return defineConfig(async ({ mode }) => {
     const isBridgeVariant = mode === 'bridge';
     const base: UserConfig = {
       base: './',
@@ -97,7 +105,7 @@ export const createRemoteViteConfig = (options: RemoteViteOptions): UserConfigFn
       preview: { port: options.port, cors: true },
       build: { target: 'es2023', outDir: isBridgeVariant ? 'dist-bridge' : 'dist' },
       plugins: [
-        ...reactPlugins(options.compiler ?? true),
+        ...(await reactPlugins(options.compiler ?? true)),
         federation({
           name: isBridgeVariant ? toBridgeRemoteName(options.name) : options.name,
           filename: 'remoteEntry.js',
@@ -132,7 +140,7 @@ export type HostViteOptions = {
 };
 
 /** Host build preset: same pinned tooling and React Compiler; remotes are registered at runtime (no static remotes). */
-export const createHostViteConfig = (options: HostViteOptions): UserConfig => {
+export const createHostViteConfig = async (options: HostViteOptions): Promise<UserConfig> => {
   const appRoot = fileURLToPath(new URL('.', options.configUrl)).replace(/\/$/, '');
   assertBuildTooling(appRoot);
   const base: UserConfig = {
@@ -141,7 +149,7 @@ export const createHostViteConfig = (options: HostViteOptions): UserConfig => {
     preview: { port: options.port },
     build: { target: 'es2023' },
     plugins: [
-      ...reactPlugins(true),
+      ...(await reactPlugins(true)),
       ...(options.plugins ?? []),
       federation({ name: 'host', remotes: {}, dts: false, shared: createSharedConfig() }),
     ],

@@ -7,7 +7,7 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "build": "echo \"@portal/vite-config is consumed as source in this repo\"",
+    "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json",
     "lint": "oxlint src && fallow dead-code",
     "test": "echo \"no tests\""
@@ -24,8 +24,12 @@
     "vite": "~8.3.5"
   },
   "peerDependenciesMeta": {
-    "@rolldown/plugin-babel": { "optional": true },
-    "babel-plugin-react-compiler": { "optional": true }
+    "@rolldown/plugin-babel": {
+      "optional": true
+    },
+    "babel-plugin-react-compiler": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@babel/core": "^8.0.9",
@@ -40,5 +44,16 @@
     "oxlint": "^1.89.0",
     "typescript": "^7.0.2",
     "vite": "^8.3.5"
-  }
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      }
+    }
+  },
+  "files": [
+    "dist"
+  ]
 }
