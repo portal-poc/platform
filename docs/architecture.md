@@ -25,11 +25,13 @@ meant to be split into separate repositories (polyrepo) later.
 | host | 5173 |
 | tasks-remote | 5174 |
 | legacy-remote | 5175 |
+| generated remotes (default) | 5176 |
 
 ## Key decisions (ADRs)
 
 See [`docs/adr`](./adr). Open questions live in [`open-questions.md`](./open-questions.md); differences from the real
-project in [`differences.md`](./differences.md); manual demo scenarios in [`demo.md`](./demo.md).
+project in [`differences.md`](./differences.md); manual demo scenarios in [`demo.md`](./demo.md); React Router v8 notes
+in [`router-v8.md`](./router-v8.md).
 
 ## Deviations from the requirements document
 
