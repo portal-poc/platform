@@ -137,6 +137,7 @@ export const runRelease = async (options: ReleaseOptions): Promise<void> => {
     ...(withBridge ? { bridgeManifest: bridgeManifestUrl } : {}),
     basePath,
     scopes,
+    ...(previous?.title ? { title: previous.title } : {}),
   });
   console.log(`\n✔ ${options.stand}: ${name} ${previous?.version ?? '(new)'} → ${version}`);
   if (options.pr) {

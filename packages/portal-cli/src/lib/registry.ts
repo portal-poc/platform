@@ -10,6 +10,8 @@ export type RegistryEntry = {
   scopes: string[];
   /** Served by a Vite dev server (local stand): the host attaches to its HMR. */
   devServer?: boolean;
+  /** Navigation label in the host (host team owns it, like basePath). */
+  title?: string;
 };
 
 export type StandDefinition = { url: string; nexusUrl?: string };
@@ -46,6 +48,7 @@ const toEntry = (value: unknown, source: string): RegistryEntry => {
     basePath: String(value['basePath'] ?? ''),
     scopes: Array.isArray(value['scopes']) ? value['scopes'].map(String) : [],
     ...(value['devServer'] === true ? { devServer: true } : {}),
+    ...(typeof value['title'] === 'string' ? { title: value['title'] } : {}),
   };
 };
 

@@ -113,7 +113,7 @@ export const runCreateRemote = async (name: string, options: CreateRemoteOptions
   for (const file of listFilesRecursive(TEMPLATE_DIR)) {
     // Dotfiles are stored as `_name`: npm drops .gitignore/.npmrc from tarballs, and linters would pick up live
     // .oxlintrc.json/.fallowrc.json from node_modules/@portal-poc/cli/templates of every app that installs the CLI.
-    const relativePath = relative(TEMPLATE_DIR, file).replace(/(^|\/)_(gitignore|npmrc|oxlintrc\.json|fallowrc\.json)$/, '$1.$2');
+    const relativePath = relative(TEMPLATE_DIR, file).replace(/(^|\/)_(gitignore|npmrc|nvmrc|oxlintrc\.json|fallowrc\.json)$/, '$1.$2');
     let content = overrides[relativePath] ?? readFileSync(file, 'utf8');
     if (relativePath === 'src/app/exposes/RemoteBridge.tsx' && !answers.withBridge) {
       content = BRIDGE_STUB;
