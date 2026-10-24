@@ -35,6 +35,12 @@
   "publishConfig": {
     "bin": {
       "portal-cli": "./dist/main.js"
-    }
+    },
+    "registry": "https://npm.pkg.github.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/portal-poc/platform.git",
+    "directory": "packages/portal-cli"
   }
 }

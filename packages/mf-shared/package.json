@@ -29,9 +29,15 @@
         "types": "./dist/index.d.ts",
         "import": "./dist/index.js"
       }
-    }
+    },
+    "registry": "https://npm.pkg.github.com"
   },
   "files": [
     "dist"
-  ]
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/portal-poc/platform.git",
+    "directory": "packages/mf-shared"
+  }
 }

@@ -1,5 +1,6 @@
+import { execSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { join, relative, resolve } from 'node:path';
 import { describeConflict, findSingletonConflicts } from '@portal-poc/mf-shared';
 import { readHostCompat, readJsonSource } from '../lib/host-compat.ts';
 import { toManifest } from '../lib/manifest.ts';
@@ -50,6 +51,28 @@ type ReleaseOptions = {
   mode?: VerifyMode;
   basePath?: string;
   scopes?: string;
+  pr?: boolean;
+};
+
+const git = (registryDir: string, args: string) => execSync(`git ${args}`, { cwd: registryDir, stdio: 'pipe', encoding: 'utf8' });
+
+/**
+ * The release IS a pull request to the registry repository: branch, commit, push, `gh pr create`.
+ * Branch policies there require the gate (registry check) and the owner's approval; merge triggers the config deploy.
+ */
+const openRegistryPullRequest = (registryDir: string, entryFile: string, title: string): string => {
+  const branch = `release/${title.replace(/[^a-z0-9.@-]+/gi, '-')}`;
+  git(registryDir, `checkout -B ${branch}`);
+  git(registryDir, `add ${entryFile}`);
+  git(registryDir, `commit -m "${title}"`);
+  git(registryDir, `push -u origin ${branch} --force-with-lease`);
+  const url = execSync(`gh pr create --fill --head ${branch} --title "${title}"`, {
+    cwd: registryDir,
+    stdio: 'pipe',
+    encoding: 'utf8',
+  }).trim();
+  git(registryDir, 'checkout -');
+  return url;
 };
 
 const hasBridgeVariant = async (url: string): Promise<boolean> => {
@@ -116,5 +139,10 @@ export const runRelease = async (options: ReleaseOptions): Promise<void> => {
     scopes,
   });
   console.log(`\n✔ ${options.stand}: ${name} ${previous?.version ?? '(new)'} → ${version}`);
-  console.log(`  Updated ${path} — in CI this change is opened as a PR to the registry; merge deploys the stand config.`);
+  if (options.pr) {
+    const url = openRegistryPullRequest(registryDir, relative(registryDir, path), `${options.stand}: ${name}@${version}`);
+    console.log(`  Pull request: ${url} — merge deploys the stand config.`);
+  } else {
+    console.log(`  Updated ${path} — run with --pr to open the registry pull request.`);
+  }
 };

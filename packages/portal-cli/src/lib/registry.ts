@@ -28,6 +28,11 @@ export const readStand = (registryDir: string, stand: string): StandDefinition =
   };
 };
 
+export const readStandNames = (registryDir: string): string[] => {
+  const stands: unknown = JSON.parse(readFileSync(join(registryDir, 'stands.json'), 'utf8'));
+  return isRecord(stands) ? Object.keys(stands) : [];
+};
+
 const entryPath = (registryDir: string, stand: string, name: string) => join(registryDir, stand, `${name}.json`);
 
 const toEntry = (value: unknown, source: string): RegistryEntry => {

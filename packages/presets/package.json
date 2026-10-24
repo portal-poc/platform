@@ -64,6 +64,12 @@
         "types": "./dist/steiger/index.d.ts",
         "import": "./dist/steiger/index.js"
       }
-    }
+    },
+    "registry": "https://npm.pkg.github.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/portal-poc/platform.git",
+    "directory": "packages/presets"
   }
 }

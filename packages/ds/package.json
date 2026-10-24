@@ -13,7 +13,8 @@
         "types": "./dist/index.d.ts",
         "import": "./dist/index.js"
       }
-    }
+    },
+    "registry": "https://npm.pkg.github.com"
   },
   "files": [
     "dist"
@@ -51,5 +52,10 @@
     "typescript": "^7.0.2",
     "vitest": "^5.0.5",
     "fallow": "^3.35.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/portal-poc/platform.git",
+    "directory": "packages/ds"
   }
 }

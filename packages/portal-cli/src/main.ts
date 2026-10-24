@@ -4,7 +4,7 @@ import { Argument, Command, Option } from 'commander';
 import { runAddSlice, SLICE_LAYERS } from './commands/add-slice.ts';
 import type { SliceLayer } from './commands/add-slice.ts';
 import { OPTIONAL_LAYERS, runCreateRemote } from './commands/create-remote.ts';
-import { runRegistryBuild, runRegistryCheck, runRegistryStatus } from './commands/registry.ts';
+import { runRegistryBuild, runRegistryCheck, runRegistryStatus, runRegistryValidate } from './commands/registry.ts';
 import { runPublish, runRelease } from './commands/release.ts';
 import { runVerify } from './commands/verify.ts';
 
@@ -53,7 +53,11 @@ program
 program
   .command('publish')
   .description('Upload the build (and the bridge variant) as an immutable versioned artifact')
-  .requiredOption('--nexus-dir <path>', 'artifact repository (PoC: a folder; real: Nexus raw repository)')
+  .addOption(
+    new Option('--nexus-dir <path>', 'artifact repository (PoC: a folder; real: Nexus raw repository)')
+      .env('PORTAL_NEXUS_DIR')
+      .makeOptionMandatory(),
+  )
   .option('--dir <path>', 'remote root', '.')
   .option('--version <version>', 'artifact version (default: package.json version)')
   .action(runPublish);
@@ -62,12 +66,13 @@ program
   .command('release')
   .description('Point a stand at a published version through the compatibility gate (writes the registry entry = PR)')
   .requiredOption('--stand <stand>', 'target stand (uat, prod, ...)')
-  .requiredOption('--registry <path>', 'registry checkout')
+  .addOption(new Option('--registry <path>', 'local clone of the registry repository').env('PORTAL_REGISTRY_DIR').makeOptionMandatory())
   .option('--dir <path>', 'remote root', '.')
   .option('--version <version>', 'published version to release (default: package.json; older = rollback)')
   .option('--base-path <path>', 'route in the host (first release only)')
   .option('--scopes <list>', 'token scopes allowlist (first release only)')
   .addOption(new Option('--mode <mode>', 'integration mode').choices(['integrated', 'bridge']).default('integrated'))
+  .option('--pr', 'commit the entry on a release branch of the registry clone, push it and open a pull request (gh)')
   .action(runRelease);
 
 const registry = program.command('registry').description('Remote registry: which version runs on which stand');
@@ -76,22 +81,28 @@ registry
   .command('check')
   .description('Host deploy gate: verify every registered remote against a host compat.json')
   .requiredOption('--stand <stand>', 'stand')
-  .requiredOption('--registry <path>', 'registry checkout')
+  .addOption(new Option('--registry <path>', 'local clone of the registry repository').env('PORTAL_REGISTRY_DIR').makeOptionMandatory())
   .option('--against <compat>', "host compat.json (default: the stand's deployed host)")
   .action(runRegistryCheck);
+
+registry
+  .command('validate')
+  .description('Offline check of every entry (shape, stands, URLs) — CI of the registry repository')
+  .addOption(new Option('--registry <path>', 'registry checkout').env('PORTAL_REGISTRY_DIR').default('.'))
+  .action(runRegistryValidate);
 
 registry
   .command('build')
   .description("Config deploy job: aggregate the stand's entries into the host /config.json")
   .requiredOption('--stand <stand>', 'stand')
-  .requiredOption('--registry <path>', 'registry checkout')
+  .addOption(new Option('--registry <path>', 'local clone of the registry repository').env('PORTAL_REGISTRY_DIR').makeOptionMandatory())
   .requiredOption('--out <file>', 'output file')
   .action(runRegistryBuild);
 
 registry
   .command('status')
   .description('Versions dashboard: remote × stand × required singletons')
-  .requiredOption('--registry <path>', 'registry checkout')
+  .addOption(new Option('--registry <path>', 'local clone of the registry repository').env('PORTAL_REGISTRY_DIR').makeOptionMandatory())
   .option('--stands <list>', 'stands to show', 'local,uat,prod')
   .action(runRegistryStatus);
 

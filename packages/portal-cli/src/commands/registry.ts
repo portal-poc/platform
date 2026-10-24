@@ -3,7 +3,7 @@ import { dirname, resolve } from 'node:path';
 import { describeConflict, findSingletonConflicts, SINGLETONS } from '@portal-poc/mf-shared';
 import { readHostCompat, readJsonSource } from '../lib/host-compat.ts';
 import { toManifest } from '../lib/manifest.ts';
-import { readEntries, readStand } from '../lib/registry.ts';
+import { readEntries, readStand, readStandNames } from '../lib/registry.ts';
 
 type RegistryOptions = { stand: string; registry: string };
 
@@ -74,3 +74,33 @@ export const runRegistryStatus = async (options: { registry: string; stands?: st
   console.log(`\nHost singletons supported by this platform version: ${Object.keys(SINGLETONS).join(', ')}`);
 };
 
+
+/** Offline validation for the registry repository's CI: every stand folder is defined, every entry is well-formed. */
+export const runRegistryValidate = (options: { registry: string }): void => {
+  const registryDir = resolve(options.registry);
+  const problems: string[] = [];
+  let entries = 0;
+  for (const stand of readStandNames(registryDir)) {
+    const definition = readStand(registryDir, stand);
+    for (const [name, entry] of Object.entries(readEntries(registryDir, stand))) {
+      entries += 1;
+      const where = `${stand}/${name}.json`;
+      if (!entry.devServer && !/^\d+\.\d+\.\d+/.test(entry.version)) {
+        problems.push(`${where}: version "${entry.version}" is not semver`);
+      }
+      if (definition.nexusUrl && !entry.manifest.startsWith(`${definition.nexusUrl}/${name}/${entry.version}/`)) {
+        problems.push(`${where}: manifest must point into ${definition.nexusUrl}/${name}/${entry.version}/ (immutable artifact)`);
+      }
+      if (!entry.basePath.startsWith('/') || entry.scopes.length === 0) {
+        problems.push(`${where}: basePath and scopes are required`);
+      }
+    }
+  }
+  for (const problem of problems) {
+    console.log(`  ✗ ${problem}`);
+  }
+  console.log(problems.length === 0 ? `✔ Registry valid (${entries} entries)` : `\n✗ ${problems.length} problem(s)`);
+  if (problems.length > 0) {
+    process.exitCode = 1;
+  }
+};

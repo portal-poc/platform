@@ -18,7 +18,8 @@
         "types": "./dist/msal/index.d.ts",
         "import": "./dist/msal/index.js"
       }
-    }
+    },
+    "registry": "https://npm.pkg.github.com"
   },
   "files": [
     "dist"
@@ -60,5 +61,10 @@
     "vitest": "^5.0.5",
     "zod": "^4.6.7",
     "fallow": "^3.35.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/portal-poc/platform.git",
+    "directory": "packages/platform-runtime"
   }
 }
