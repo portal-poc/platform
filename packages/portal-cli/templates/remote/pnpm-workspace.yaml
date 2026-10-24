@@ -1,0 +1,3 @@
+# Our own packages are trusted and released continuously: exempt them from pnpm's minimum-release-age policy.
+minimumReleaseAgeExclude:
+  - '@portal-poc/*'

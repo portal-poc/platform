@@ -1,24 +1,65 @@
-# Portal reference monorepo
+# platform
 
-Reference implementation of the Portal micro-frontend platform. Requirements: [`PORTAL_MFE_CONTEXT.md`](./PORTAL_MFE_CONTEXT.md).
-Overview: [`docs/architecture.md`](./docs/architecture.md). Demo scenarios: [`docs/demo.md`](./docs/demo.md).
+Portal micro-frontend platform (PoC, organisation [`portal-poc`](https://github.com/portal-poc)). Requirements:
+[`PORTAL_MFE_CONTEXT.md`](./PORTAL_MFE_CONTEXT.md). Architecture and decisions: [`docs/`](./docs) (start with
+[`architecture.md`](./docs/architecture.md), [`delivery.md`](./docs/delivery.md),
+[`migration-plan.md`](./docs/migration-plan.md), [`adr/`](./docs/adr)).
 
-## Quick start
+## Repositories
 
-```sh
-volta install node@24.19.0 pnpm@12.15.0   # or use .nvmrc + corepack where Volta is unavailable
-pnpm install
-pnpm build          # remotes must be built once for `preview`; `dev` works without it
-pnpm dev            # infra + local stand: tasks-remote, legacy-remote, host (dev servers)
-open http://localhost:5173
-```
+| Repository | What | Owner in reality |
+|---|---|---|
+| **platform** (this) | `@portal-poc/*` packages, PoC infrastructure, docs | platform team |
+| [host](https://github.com/portal-poc/host) | Portal host | host team |
+| [tasks-remote](https://github.com/portal-poc/tasks-remote) | Remote "tasks" (FSD 2.1) | product team |
+| [legacy-remote](https://github.com/portal-poc/legacy-remote) | React 18 remote via MF Bridge | another team |
+| [registry](https://github.com/portal-poc/registry) | Which remote version runs on which stand (release = PR) | platform + teams (CODEOWNERS) |
 
-Work on one remote against a deployed stand: copy `apps/host/.env.development.local.example` to
-`.env.development.local`, run `pnpm infra`, the remote's `pnpm dev` and the host's `pnpm dev`.
+## Packages (GitHub Packages, `@portal-poc` scope)
 
-Polyrepo proof (every app as its own repo on published packages): [`docs/polyrepo.md`](./docs/polyrepo.md).
+| Package | Role |
+|---|---|
+| `@portal-poc/platform-contract` | Types only + `PLATFORM_CONTRACT_VERSION` |
+| `@portal-poc/platform-runtime` | Provider, auth adapters, http client, QueryClient factory, devtools, standalone, compat |
+| `@portal-poc/ds` | Design system (MF singleton) + loading primitives |
+| `@portal-poc/mf-shared` | Integration contract constants: exposes, singletons, supported ranges, compat checks |
+| `@portal-poc/vite-config` | Build preset: pinned Vite + MF plugin, MF section, React Compiler |
+| `@portal-poc/presets` | tsconfig, oxlint (incl. React Compiler rules), fallow, vitest, steiger |
+| `@portal-poc/cli` (`portal-cli`) | `create remote`, `add`, `verify`, `publish`, `release --pr`, `registry …` |
 
-Release flow on a production-like stand (Nexus, registry, gates): see [`docs/delivery.md`](./docs/delivery.md).
-Migration from the current project: [`docs/migration-plan.md`](./docs/migration-plan.md).
+Release: bump versions → run the **Release packages** workflow (or push a `v*` tag). Versions are immutable.
 
-Checks (run after every phase): `pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm verify`.
+## Run everything on one machine
+
+1. **Token for packages** (classic PAT or `gh auth refresh -s read:packages`), then in `~/.npmrc`:
+   ```sh
+   @portal-poc:registry=https://npm.pkg.github.com
+   //npm.pkg.github.com/:_authToken=<token>
+   ```
+2. **Clone side by side**:
+   ```sh
+   mkdir -p ~/projects/portal-poc && cd ~/projects/portal-poc
+   for repo in platform registry host tasks-remote legacy-remote; do gh repo clone portal-poc/$repo; done
+   for repo in platform registry host tasks-remote legacy-remote; do (cd $repo && pnpm install); done
+   ```
+3. **Infrastructure** (PoC Nexus :4400, stands uat :4501 / prod :4502) — keep running:
+   ```sh
+   cd platform && pnpm infra
+   ```
+4. **Local development** (host + remotes on dev servers):
+   ```sh
+   cd registry && pnpm deploy:local
+   cd ../tasks-remote && pnpm dev      # :5174
+   cd ../legacy-remote && pnpm dev     # :5175
+   cd ../host && pnpm dev              # :5173 → http://localhost:5173
+   ```
+   Or a remote standalone: `cd tasks-remote && pnpm dev:standalone`.
+5. **Release flow on the uat stand** (production builds, immutable artifacts, gates, registry PR):
+   ```sh
+   cd host && pnpm build && cd ../platform && pnpm deploy:host uat
+   export PORTAL_NEXUS_DIR=~/projects/portal-poc/platform/.infra/nexus PORTAL_REGISTRY_DIR=~/projects/portal-poc/registry
+   cd ../tasks-remote && pnpm release:uat        # opens a PR in portal-poc/registry
+   # merge the PR, then:
+   cd ../registry && git pull && pnpm deploy:uat
+   open http://localhost:4501
+   ```

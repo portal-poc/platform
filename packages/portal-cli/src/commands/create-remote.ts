@@ -106,7 +106,7 @@ export const runCreateRemote = async (name: string, options: CreateRemoteOptions
     __TITLE__: toPascalCase(name),
     __PORT__: options.port ?? '5176',
     __PORTAL_VERSION__: inWorkspace ? 'workspace:^' : '^1.0.0',
-    __REGISTRY__: process.env['PORTAL_REGISTRY'] ?? '<NEXUS_PLACEHOLDER>',
+    __REGISTRY__: process.env['PORTAL_REGISTRY'] ?? 'https://npm.pkg.github.com',
   };
   const overrides: Record<string, string> = answers.usePresets ? {} : createInlineConfigs();
 

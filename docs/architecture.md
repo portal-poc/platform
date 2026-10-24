@@ -1,6 +1,7 @@
 # Architecture overview
 
-This repository is the **reference monorepo** for the Portal micro-frontend platform. It demonstrates every architectural
+This PoC started as a **reference monorepo** and is now split into the repositories of the
+[`portal-poc`](https://github.com/portal-poc) organisation (paths like `apps/host` below = repository `host`). It demonstrates every architectural
 decision from [`PORTAL_MFE_CONTEXT.md`](../PORTAL_MFE_CONTEXT.md) (the full requirements document; read it first) and is
 meant to be split into separate repositories (polyrepo) later.
 
