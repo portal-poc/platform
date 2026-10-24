@@ -12,7 +12,7 @@ export type RegistryEntry = {
   devServer?: boolean;
 };
 
-export type StandDefinition = { url: string; nexusUrl?: string; allowOverrides: boolean };
+export type StandDefinition = { url: string; nexusUrl?: string };
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
 
@@ -25,7 +25,6 @@ export const readStand = (registryDir: string, stand: string): StandDefinition =
   return {
     url: definition['url'],
     ...(typeof definition['nexusUrl'] === 'string' ? { nexusUrl: definition['nexusUrl'] } : {}),
-    allowOverrides: definition['allowOverrides'] === true,
   };
 };
 

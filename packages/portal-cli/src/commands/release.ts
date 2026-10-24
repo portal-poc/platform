@@ -83,7 +83,7 @@ export const runRelease = async (options: ReleaseOptions): Promise<void> => {
   const hostCompat = await readHostCompat(`${stand.url}/compat.json`);
   const withBridge = mode === 'integrated' && (await hasBridgeVariant(bridgeManifestUrl));
 
-  const structural = verifyRemote({ manifest, mode, checkRanges: false }).errors;
+  const structural = verifyRemote({ manifest, mode, checkRanges: false, toolingRange: hostCompat.remoteTooling.mfPlugin }).errors;
   const conflicts = mode === 'integrated' ? findSingletonConflicts(manifest.shared, hostCompat.singletons) : [];
 
   console.log(`portal-cli release — ${name}@${version} → ${options.stand} (host ${hostCompat.hostVersion})`);

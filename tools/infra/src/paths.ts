@@ -9,7 +9,7 @@ export const NEXUS_PORT = 4400;
 
 export const standDir = (stand: string) => join(INFRA_DIR, 'stands', stand);
 
-export type StandDefinition = { url: string; nexusUrl?: string; allowOverrides: boolean };
+export type StandDefinition = { url: string; nexusUrl?: string };
 
 export const readStands = (): Record<string, StandDefinition> =>
   JSON.parse(readFileSync(join(REPO_ROOT, 'registry', 'stands.json'), 'utf8'));

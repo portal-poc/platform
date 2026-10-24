@@ -4,6 +4,7 @@ import type { RemoteManifest } from '../src/commands/verify-remote.ts';
 
 const validManifest: RemoteManifest = {
   name: 'tasks',
+  pluginVersion: '1.23.5',
   exposes: [{ path: './RemoteRoot' }, { path: './RemoteBridge' }, { path: './runtime' }, { path: './preload' }],
   shared: [
     { name: 'react', singleton: true, requiredVersion: '^19.3.0' },
@@ -46,11 +47,18 @@ describe('verifyRemote', () => {
   });
 
   it('checks exact host versions when the host compat.json is given', () => {
-    const hostCompat = { hostVersion: '2.0.0', contract: { min: 1, max: 1 }, singletons: { react: '19.3.1', 'react-dom': '19.3.1', 'react-router': '9.0.0' } };
+    const hostCompat = { hostVersion: '2.0.0', contract: { min: 1, max: 1 }, remoteTooling: { mfPlugin: '~1.23.0' }, singletons: { react: '19.3.1', 'react-dom': '19.3.1', 'react-router': '9.0.0' } };
     expect(run(validManifest, { hostCompat }).errors).toEqual([
       'incompatible with host 2.0.0: react-router: remote requires ^8.5.0, host provides 9.0.0.',
       'incompatible with host 2.0.0: @portal/ds: remote requires ^1.0.0, host provides nothing.',
     ]);
+  });
+
+  it('rejects manifests produced by unsupported build tooling', () => {
+    expect(run({ ...validManifest, pluginVersion: '2.0.0' }).errors).toEqual([
+      'build tooling: built with @module-federation/vite 2.0.0, supported ~1.23.0.',
+    ]);
+    expect(run({ ...validManifest, pluginVersion: undefined }).errors[0]).toMatch(/unknown build tooling/);
   });
 
   it('accepts the bridge variant name in bridge mode', () => {

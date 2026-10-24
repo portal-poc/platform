@@ -11,3 +11,4 @@ __mf__virtual/
 /tmp/
 dist-bridge/
 .infra/
+.env*.local

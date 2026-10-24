@@ -22,9 +22,11 @@ export const readHostCompat = async (source: string): Promise<HostCompat> => {
     throw new Error(`${source} is not a host compat.json`);
   }
   const contract = value['contract'];
+  const remoteTooling = isRecord(value['remoteTooling']) ? value['remoteTooling'] : {};
   return {
     hostVersion: value['hostVersion'],
     contract: { min: Number(contract['min']), max: Number(contract['max']) },
     singletons: Object.fromEntries(Object.entries(value['singletons']).map(([name, version]) => [name, String(version)])),
+    remoteTooling: { mfPlugin: String(remoteTooling['mfPlugin'] ?? '*') },
   };
 };

@@ -8,6 +8,11 @@ export type HttpClientOptions = {
   scopes: readonly string[];
   auth: PlatformAuth;
   telemetry?: PlatformTelemetry;
+  /**
+   * `name@version` of the calling app, sent as `X-Client-Version`. Lets the BFF log which frontend versions call it
+   * today and, later, refuse versions outside its compatibility window (426 → "reload the page").
+   */
+  clientVersion?: string;
   /** Injected for tests. */
   fetch?: typeof fetch;
 };
@@ -97,6 +102,9 @@ export const createHttpClient = (options: HttpClientOptions): HttpClient => {
     const headers = new Headers(requestOptions.headers);
     headers.set('Authorization', `Bearer ${token}`);
     headers.set('Accept', 'application/json');
+    if (options.clientVersion) {
+      headers.set('X-Client-Version', options.clientVersion);
+    }
     if (correlationId) {
       headers.set(CORRELATION_HEADER, correlationId);
     }

@@ -45,6 +45,15 @@ describe('createHttpClient', () => {
     expect(getHeader(initOf(fetchMock, 0), 'X-Correlation-Id')).toBeNull();
   });
 
+  it('sends X-Client-Version when configured', async () => {
+    const fetchMock = vi.fn<typeof fetch>(async () => jsonResponse({ id: '1', title: 'A' }));
+    const http = createHttpClient({ baseUrl: 'http://bff', scopes: ['s'], auth: createAuth(), clientVersion: 'tasks@1.4.2', fetch: fetchMock });
+
+    await http.get('/tasks/1', taskSchema);
+
+    expect(getHeader(initOf(fetchMock, 0), 'X-Client-Version')).toBe('tasks@1.4.2');
+  });
+
   it('generates X-Correlation-Id for mutations and keeps a provided one', async () => {
     const fetchMock = vi.fn<typeof fetch>(async () => jsonResponse({ id: '1', title: 'A' }, 201));
     const http = createHttpClient({ baseUrl: 'http://bff', scopes: ['s'], auth: createAuth(), fetch: fetchMock });

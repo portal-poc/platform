@@ -1,7 +1,7 @@
 import { createHttpClient, usePlatform } from '@portal/platform-runtime';
 import type { HttpClient } from '@portal/platform-runtime';
 import type { PlatformContract } from '@portal/platform-contract';
-import { useRemoteEnvConfig } from '../config';
+import { REMOTE_NAME, useRemoteEnvConfig } from '../config';
 import type { RemoteEnvConfig } from '../config';
 import { fakeBackendFetch } from './fake-backend';
 
@@ -17,6 +17,7 @@ const getRemoteHttp = (platform: PlatformContract, config: RemoteEnvConfig): Htt
         scopes: config.scopes,
         auth: platform.auth,
         telemetry: platform.telemetry,
+        clientVersion: `${REMOTE_NAME}@${PORTAL_APP_VERSION}`,
         fetch: fakeBackendFetch, // PoC: hard-coded backend
       }),
     };

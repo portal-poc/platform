@@ -1,0 +1,150 @@
+import { existsSync, readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
+import babel from '@rolldown/plugin-babel';
+import { federation } from '@module-federation/vite';
+import {
+  createSharedConfig,
+  REMOTE_EXPOSES,
+  SUPPORTED_BUILD_TOOLING,
+  toBridgeRemoteName,
+} from '@portal/mf-shared';
+import type { SharedEntry } from '@portal/mf-shared';
+import react, { reactCompilerPreset } from '@vitejs/plugin-react';
+import semver from 'semver';
+import { defineConfig, mergeConfig } from 'vite';
+import type { PluginOption, UserConfig, UserConfigFnObject } from 'vite';
+
+type PackageJson = { version: string };
+
+const readJson = (path: string): PackageJson => JSON.parse(readFileSync(path, 'utf8'));
+
+/** Resolves an installed package version from the app's point of view. */
+const installedVersion = (appRoot: string, name: string): string => {
+  const require = createRequire(`${appRoot}/package.json`);
+  return readJson(require.resolve(`${name}/package.json`)).version;
+};
+
+/**
+ * Build tooling is a build-time singleton: another Vite/MF plugin version can emit a manifest the host's MF runtime
+ * cannot load. Fail the build early with a clear message instead.
+ */
+const assertBuildTooling = (appRoot: string) => {
+  const checks = [
+    ['vite', SUPPORTED_BUILD_TOOLING.vite],
+    ['@module-federation/vite', SUPPORTED_BUILD_TOOLING.mfPlugin],
+  ] as const;
+  for (const [name, range] of checks) {
+    const version = installedVersion(appRoot, name);
+    if (!semver.satisfies(version, range)) {
+      throw new Error(
+        `${name}@${version} is outside the platform-supported range ${range}. ` +
+          'Build tooling is upgraded together with @portal/vite-config, not per app.',
+      );
+    }
+  }
+};
+
+const resolveExpose = (appRoot: string, exposesDir: string, file: string): string => {
+  const candidates = [`${exposesDir}/${file}.tsx`, `${exposesDir}/${file}.ts`];
+  const found = candidates.find((candidate) => existsSync(`${appRoot}/${candidate}`));
+  if (!found) {
+    throw new Error(`Expose "${file}" not found in ${exposesDir} (integration contract).`);
+  }
+  return `./${found}`;
+};
+
+export type RemoteViteOptions = {
+  /** MF name of the remote (integration contract). */
+  name: string;
+  port: number;
+  /** `import.meta.url` of the app's vite.config.ts. */
+  configUrl: string;
+  /** Directory with RemoteRoot / RemoteBridge / runtime / preload. */
+  exposesDir?: string;
+  /** Shares nothing (legacy app on another React): bridge-only remote, no bridge variant needed. */
+  isolated?: boolean;
+  /** React Compiler (on for every app on the React singleton). */
+  compiler?: boolean;
+  /** DEMO ONLY: tamper with the shared config to simulate an incompatible release. `portal-cli verify` rejects it. */
+  unsafeSharedOverride?: (shared: Record<string, SharedEntry>) => Record<string, SharedEntry>;
+  /** Internal, team-owned Vite settings (anything except the MF section). */
+  extend?: UserConfig;
+};
+
+const reactPlugins = (compiler: boolean): PluginOption[] =>
+  compiler ? [react(), babel({ presets: [reactCompilerPreset()] })] : [react()];
+
+/**
+ * Remote build preset. The MF section (name, exposes, shared, bridge variant) is the integration contract and lives
+ * here; teams extend everything else. `--mode bridge` builds the isolated variant (no shared deps) into dist-bridge.
+ */
+export const createRemoteViteConfig = (options: RemoteViteOptions): UserConfigFnObject => {
+  const appRoot = fileURLToPath(new URL('.', options.configUrl)).replace(/\/$/, '');
+  assertBuildTooling(appRoot);
+  const appVersion = readJson(`${appRoot}/package.json`).version;
+  const viteVersion = installedVersion(appRoot, 'vite');
+  const exposesDir = options.exposesDir ?? 'src/app/exposes';
+  const sharedConfig = options.unsafeSharedOverride?.(createSharedConfig()) ?? createSharedConfig();
+
+  return defineConfig(({ mode }) => {
+    const isBridgeVariant = mode === 'bridge';
+    const base: UserConfig = {
+      base: './',
+      define: { PORTAL_APP_VERSION: JSON.stringify(appVersion) },
+      resolve: { alias: { '@': `${appRoot}/src` } },
+      server: { port: options.port, origin: `http://localhost:${options.port}`, cors: true },
+      preview: { port: options.port, cors: true },
+      build: { target: 'es2023', outDir: isBridgeVariant ? 'dist-bridge' : 'dist' },
+      plugins: [
+        ...reactPlugins(options.compiler ?? true),
+        federation({
+          name: isBridgeVariant ? toBridgeRemoteName(options.name) : options.name,
+          filename: 'remoteEntry.js',
+          dts: false,
+          manifest: {
+            // Recorded for the gates and the host's runtime check (pluginVersion is added by the plugin itself).
+            // The plugin calls this for mf-manifest.json (passed as `stats`) and for mf-stats.json.
+            additionalData: ({ stats }) => {
+              const metaData = stats['metaData'];
+              if (metaData && typeof metaData === 'object') {
+                Object.assign(metaData, { portal: { appVersion, vite: viteVersion } });
+              }
+            },
+          },
+          exposes: Object.fromEntries(
+            Object.entries(REMOTE_EXPOSES).map(([file, expose]) => [expose, resolveExpose(appRoot, exposesDir, file)]),
+          ),
+          shared: options.isolated || isBridgeVariant ? {} : sharedConfig,
+        }),
+      ],
+    };
+    return mergeConfig(base, options.extend ?? {});
+  });
+};
+
+export type HostViteOptions = {
+  port: number;
+  configUrl: string;
+  /** Host-specific plugins (compat.json, dev config, ...). */
+  plugins?: PluginOption[];
+  extend?: UserConfig;
+};
+
+/** Host build preset: same pinned tooling and React Compiler; remotes are registered at runtime (no static remotes). */
+export const createHostViteConfig = (options: HostViteOptions): UserConfig => {
+  const appRoot = fileURLToPath(new URL('.', options.configUrl)).replace(/\/$/, '');
+  assertBuildTooling(appRoot);
+  const base: UserConfig = {
+    resolve: { alias: { '@': `${appRoot}/src` } },
+    server: { port: options.port },
+    preview: { port: options.port },
+    build: { target: 'es2023' },
+    plugins: [
+      ...reactPlugins(true),
+      ...(options.plugins ?? []),
+      federation({ name: 'host', remotes: {}, dts: false, shared: createSharedConfig() }),
+    ],
+  };
+  return mergeConfig(base, options.extend ?? {});
+};

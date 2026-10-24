@@ -14,7 +14,6 @@
   },
   "scripts": {
     "dev": "portal-cli registry build --registry registry --stand local --out .infra/stands/local/config.json && concurrently -k -n infra,tasks,legacy,host -c gray,green,yellow,cyan \"pnpm infra\" \"pnpm --filter tasks-remote dev\" \"pnpm --filter legacy-remote dev\" \"pnpm --filter host dev\"",
-    "dev:host:uat": "PORTAL_STAND=uat pnpm --filter host dev",
     "infra": "pnpm --filter @portal-tools/infra start",
     "infra:reset": "rm -rf .infra",
     "demo:uat": "pnpm --filter host build && node tools/infra/src/deploy-host.ts uat && pnpm release:tasks:uat && pnpm release:legacy:uat",

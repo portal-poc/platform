@@ -1,0 +1,44 @@
+{
+  "name": "@portal/vite-config",
+  "version": "1.0.0",
+  "description": "Platform build preset: pinned Vite + Module Federation plugin, the MF section of the integration contract, React Compiler.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "echo \"@portal/vite-config is consumed as source in this repo\"",
+    "typecheck": "tsc -p tsconfig.json",
+    "lint": "oxlint src && fallow dead-code",
+    "test": "echo \"no tests\""
+  },
+  "dependencies": {
+    "@portal/mf-shared": "workspace:^",
+    "semver": "^7.8.5"
+  },
+  "peerDependencies": {
+    "@module-federation/vite": "~1.23.5",
+    "@rolldown/plugin-babel": "^0.2.4",
+    "@vitejs/plugin-react": "^6.1.2",
+    "babel-plugin-react-compiler": "^1.0.0",
+    "vite": "~8.3.5"
+  },
+  "peerDependenciesMeta": {
+    "@rolldown/plugin-babel": { "optional": true },
+    "babel-plugin-react-compiler": { "optional": true }
+  },
+  "devDependencies": {
+    "@babel/core": "^8.0.9",
+    "@module-federation/vite": "^1.23.5",
+    "@portal/presets": "workspace:^",
+    "@rolldown/plugin-babel": "^0.2.4",
+    "@types/node": "^26.6.5",
+    "@types/semver": "^7.8.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "babel-plugin-react-compiler": "^1.0.0",
+    "fallow": "^3.35.0",
+    "oxlint": "^1.89.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5"
+  }
+}

@@ -4,6 +4,8 @@ import {
   BRIDGE_BUILD_SUFFIX,
   describeConflict,
   findSingletonConflicts,
+  findToolingProblem,
+  SUPPORTED_BUILD_TOOLING,
   NEVER_SINGLETONS,
   REMOTE_NAME_PATTERN,
   REQUIRED_EXPOSES,
@@ -17,6 +19,8 @@ export type ManifestShared = { name: string; singleton?: boolean; requiredVersio
 
 export type RemoteManifest = {
   name: string;
+  /** `metaData.pluginVersion`: the MF plugin that produced the manifest. */
+  pluginVersion?: string;
   exposes: ReadonlyArray<{ path: string }>;
   shared: readonly ManifestShared[];
 };
@@ -35,6 +39,8 @@ export type VerifyInput = {
   hostCompat?: HostCompat;
   /** Check singleton ranges against the platform-supported ranges (build-time CI). Release uses exact versions instead. */
   checkRanges?: boolean;
+  /** Supported MF plugin range (default: the host compat's, else the platform's). */
+  toolingRange?: string;
 };
 
 export type VerifyReport = { errors: string[]; warnings: string[] };
@@ -100,6 +106,11 @@ export const verifyRemote = (input: VerifyInput): VerifyReport => {
     }
   }
   checkSingletons(manifest.shared, input.mode, input.checkRanges ?? true, errors);
+  const toolingRange = input.toolingRange ?? input.hostCompat?.remoteTooling.mfPlugin ?? SUPPORTED_BUILD_TOOLING.mfPlugin;
+  const toolingProblem = findToolingProblem(manifest.pluginVersion, toolingRange);
+  if (toolingProblem) {
+    errors.push(`build tooling: ${toolingProblem}.`);
+  }
   if (input.hostCompat && input.mode === 'integrated') {
     for (const conflict of findSingletonConflicts(manifest.shared, input.hostCompat.singletons)) {
       errors.push(`incompatible with host ${input.hostCompat.hostVersion}: ${describeConflict(conflict)}.`);

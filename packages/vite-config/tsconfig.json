@@ -1,0 +1,5 @@
+{
+  "extends": "@portal/presets/tsconfig/base.json",
+  "compilerOptions": { "types": ["node"], "esModuleInterop": true },
+  "include": ["src"]
+}

@@ -35,8 +35,8 @@ export const runRegistryCheck = async (options: RegistryOptions & { against?: st
 /** Config deploy job: aggregates `registry/<stand>/*.json` into the stand's `/config.json` read by the host at startup. */
 export const runRegistryBuild = (options: RegistryOptions & { out: string }): void => {
   const registryDir = resolve(options.registry);
-  const stand = readStand(registryDir, options.stand);
-  const config = { env: options.stand, allowOverrides: stand.allowOverrides, remotes: readEntries(registryDir, options.stand) };
+  readStand(registryDir, options.stand);
+  const config = { env: options.stand, remotes: readEntries(registryDir, options.stand) };
   const out = resolve(options.out);
   mkdirSync(dirname(out), { recursive: true });
   writeFileSync(out, `${JSON.stringify(config, null, 2)}\n`);

@@ -3,7 +3,6 @@ import { createServer } from 'node:http';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { extname, join, normalize } from 'node:path';
 import { INFRA_DIR, NEXUS_DIR, NEXUS_PORT, readStands, standDir } from './paths.ts';
-import type { StandDefinition } from './paths.ts';
 
 const MIME: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -48,24 +47,23 @@ const handleNexus = (request: IncomingMessage, response: ServerResponse) => {
   });
 };
 
-const contentSecurityPolicy = (stand: StandDefinition) => {
+/** Remotes are served from ONE Nexus origin, so the stand CSP never changes when remotes are added or released. */
+const contentSecurityPolicy = () => {
   const nexusOrigin = `http://localhost:${NEXUS_PORT}`;
-  // Remotes are served from ONE Nexus origin, so the CSP stays static; dev overrides add localhost on non-prod stands.
-  const remoteSources = stand.allowOverrides ? `${nexusOrigin} http://localhost:*` : nexusOrigin;
   return [
     "default-src 'self'",
-    `script-src 'self' 'unsafe-inline' ${remoteSources}`,
-    `connect-src 'self' ${remoteSources} ws://localhost:*`,
+    `script-src 'self' 'unsafe-inline' ${nexusOrigin}`,
+    `connect-src 'self' ${nexusOrigin}`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data:",
   ].join('; ');
 };
 
 /** A stand: serves the deployed host build, its compat.json and the stand's /config.json (built from the registry). */
-const createStandHandler = (name: string, stand: StandDefinition) => (request: IncomingMessage, response: ServerResponse) => {
+const createStandHandler = (name: string) => (request: IncomingMessage, response: ServerResponse) => {
   const urlPath = new URL(request.url ?? '/', 'http://x').pathname;
   const hostDir = join(standDir(name), 'host');
-  const headers = { 'Content-Security-Policy': contentSecurityPolicy(stand) };
+  const headers = { 'Content-Security-Policy': contentSecurityPolicy() };
   if (urlPath === '/config.json') {
     const config = join(standDir(name), 'config.json');
     if (isFile(config)) {
@@ -98,7 +96,7 @@ for (const [name, stand] of Object.entries(readStands())) {
     continue; // `local` is served by the dev servers themselves
   }
   const port = Number(new URL(stand.url).port);
-  createServer(createStandHandler(name, stand)).listen(port, () => {
+  createServer(createStandHandler(name)).listen(port, () => {
     console.log(`[infra] stand ${name.padEnd(5)} ${stand.url}`);
   });
 }

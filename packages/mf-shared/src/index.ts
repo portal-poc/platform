@@ -79,6 +79,27 @@ export type HostCompat = {
   contract: { min: number; max: number };
   /** Exact versions of the singletons the host provides. */
   singletons: Record<string, string>;
+  /** Build tooling whose output (mf-manifest.json, remoteEntry.js) this host's MF runtime can load. */
+  remoteTooling: { mfPlugin: string };
+};
+
+/**
+ * Build tooling is a "build-time singleton": the manifest/remoteEntry format comes from the MF plugin, so every app
+ * builds with a platform-approved range. Enforced by @portal/vite-config (on config load), portal-cli verify/release
+ * (manifest `metaData.pluginVersion`) and the host at runtime.
+ */
+export const SUPPORTED_BUILD_TOOLING = {
+  vite: '~8.3.0',
+  mfPlugin: '~1.23.0',
+} as const;
+
+export const findToolingProblem = (pluginVersion: string | undefined, supportedRange: string): string | null => {
+  if (!pluginVersion) {
+    return 'manifest has no metaData.pluginVersion (unknown build tooling)';
+  }
+  return semver.satisfies(pluginVersion, supportedRange)
+    ? null
+    : `built with @module-federation/vite ${pluginVersion}, supported ${supportedRange}`;
 };
 
 export type ManifestSharedEntry = { name: string; singleton?: boolean; requiredVersion?: string };
