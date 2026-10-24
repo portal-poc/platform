@@ -23,8 +23,9 @@ export type RemoteManifest = {
 
 export type VerifyInput = {
   manifest: RemoteManifest;
-  /** Resolved version of @portal/platform-contract installed in the remote, or null if missing. */
-  contractPackageVersion: string | null;
+  /** Resolved version of @portal/platform-contract installed in the remote; null = missing; omitted = not checked
+   *  (release/rollback work on published artifacts, the build-time verify already checked it). */
+  contractPackageVersion?: string | null;
   mode: VerifyMode;
   /** Text of built files to scan for secrets: [path, content]. */
   builtFiles?: ReadonlyArray<readonly [string, string]>;
@@ -32,6 +33,8 @@ export type VerifyInput = {
   runtimeConfig?: unknown;
   /** What the target host deployment provides (its compat.json). Checks exact versions instead of ranges. */
   hostCompat?: HostCompat;
+  /** Check singleton ranges against the platform-supported ranges (build-time CI). Release uses exact versions instead. */
+  checkRanges?: boolean;
 };
 
 export type VerifyReport = { errors: string[]; warnings: string[] };
@@ -46,7 +49,7 @@ const SECRET_PATTERNS: ReadonlyArray<readonly [string, RegExp]> = [
   ['bearer literal', /Bearer [A-Za-z0-9._-]{20,}/],
 ];
 
-const checkSingletons = (shared: readonly ManifestShared[], mode: VerifyMode, errors: string[]) => {
+const checkSingletons = (shared: readonly ManifestShared[], mode: VerifyMode, checkRanges: boolean, errors: string[]) => {
   const byName = new Map(shared.map((entry) => [entry.name, entry]));
   for (const [name, hostRange] of Object.entries(SINGLETONS)) {
     const entry = byName.get(name);
@@ -59,7 +62,7 @@ const checkSingletons = (shared: readonly ManifestShared[], mode: VerifyMode, er
     if (mode === 'integrated' && entry.singleton !== true) {
       errors.push(`shared "${name}" must be declared with singleton: true.`);
     }
-    if (entry.requiredVersion && !semver.intersects(entry.requiredVersion, hostRange)) {
+    if (checkRanges && entry.requiredVersion && !semver.intersects(entry.requiredVersion, hostRange)) {
       errors.push(`shared "${name}" range ${entry.requiredVersion} does not intersect the host range ${hostRange}.`);
     }
   }
@@ -96,19 +99,18 @@ export const verifyRemote = (input: VerifyInput): VerifyReport => {
       errors.push(`expose "${expose}" is missing (part of the integration contract).`);
     }
   }
-  checkSingletons(manifest.shared, input.mode, errors);
+  checkSingletons(manifest.shared, input.mode, input.checkRanges ?? true, errors);
   if (input.hostCompat && input.mode === 'integrated') {
     for (const conflict of findSingletonConflicts(manifest.shared, input.hostCompat.singletons)) {
       errors.push(`incompatible with host ${input.hostCompat.hostVersion}: ${describeConflict(conflict)}.`);
     }
   }
 
-  if (!input.contractPackageVersion) {
+  const contractVersion = input.contractPackageVersion;
+  if (contractVersion === null) {
     errors.push('@portal/platform-contract is not installed.');
-  } else if (!semver.satisfies(input.contractPackageVersion, SUPPORTED_CONTRACT_PACKAGE_RANGE)) {
-    errors.push(
-      `@portal/platform-contract ${input.contractPackageVersion} is outside the supported range ${SUPPORTED_CONTRACT_PACKAGE_RANGE}.`,
-    );
+  } else if (contractVersion !== undefined && !semver.satisfies(contractVersion, SUPPORTED_CONTRACT_PACKAGE_RANGE)) {
+    errors.push(`@portal/platform-contract ${contractVersion} is outside the supported range ${SUPPORTED_CONTRACT_PACKAGE_RANGE}.`);
   }
 
   for (const [path, content] of input.builtFiles ?? []) {

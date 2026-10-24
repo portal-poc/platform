@@ -13,8 +13,15 @@
     "pnpm": "12.15.0"
   },
   "scripts": {
-    "dev": "concurrently -k -n tasks,legacy,host -c green,yellow,cyan \"pnpm --filter tasks-remote dev\" \"pnpm --filter legacy-remote dev\" \"pnpm --filter host dev\"",
-    "preview": "concurrently -k -n tasks,legacy,host -c green,yellow,cyan \"pnpm --filter tasks-remote preview\" \"pnpm --filter legacy-remote preview\" \"pnpm --filter host preview\"",
+    "dev": "portal-cli registry build --registry registry --stand local --out .infra/stands/local/config.json && concurrently -k -n infra,tasks,legacy,host -c gray,green,yellow,cyan \"pnpm infra\" \"pnpm --filter tasks-remote dev\" \"pnpm --filter legacy-remote dev\" \"pnpm --filter host dev\"",
+    "dev:host:uat": "PORTAL_STAND=uat pnpm --filter host dev",
+    "infra": "pnpm --filter @portal-tools/infra start",
+    "infra:reset": "rm -rf .infra",
+    "demo:uat": "pnpm --filter host build && node tools/infra/src/deploy-host.ts uat && pnpm release:tasks:uat && pnpm release:legacy:uat",
+    "deploy:host:uat": "pnpm --filter host build && portal-cli registry check --registry registry --stand uat --against apps/host/dist/compat.json && node tools/infra/src/deploy-host.ts uat && portal-cli registry build --registry registry --stand uat --out .infra/stands/uat/config.json",
+    "release:tasks:uat": "pnpm --filter tasks-remote release:uat",
+    "release:legacy:uat": "pnpm --filter legacy-remote release:uat",
+    "registry:status": "portal-cli registry status --registry registry",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
     "lint": "pnpm -r lint",
@@ -23,6 +30,7 @@
     "check": "pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm verify"
   },
   "devDependencies": {
-    "concurrently": "^10.0.6"
+    "concurrently": "^10.0.6",
+    "portal-cli": "workspace:*"
   }
 }

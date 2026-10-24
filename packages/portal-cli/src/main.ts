@@ -2,9 +2,12 @@ import { Argument, Command, Option } from 'commander';
 import { runAddSlice, SLICE_LAYERS } from './commands/add-slice.ts';
 import type { SliceLayer } from './commands/add-slice.ts';
 import { OPTIONAL_LAYERS, runCreateRemote } from './commands/create-remote.ts';
+import { runRegistryBuild, runRegistryCheck, runRegistryStatus } from './commands/registry.ts';
+import { runPublish, runRelease } from './commands/release.ts';
 import { runVerify } from './commands/verify.ts';
 
-const program = new Command('portal-cli').description('Portal micro-frontend tooling').version('0.1.0');
+// Positional options: `--version` of a subcommand (publish/release) is not the program's --version.
+const program = new Command('portal-cli').description('Portal micro-frontend tooling').version('0.1.0').enablePositionalOptions();
 
 const create = program.command('create').description('Generate a new application from the reference template');
 
@@ -41,6 +44,51 @@ program
   .option('--against <compat>', "target host deployment's compat.json (URL or path) — exact version check")
   .addOption(new Option('--mode <mode>', 'integration mode the remote targets').choices(['integrated', 'bridge']).default('integrated'))
   .action(runVerify);
+
+program
+  .command('publish')
+  .description('Upload the build (and the bridge variant) as an immutable versioned artifact')
+  .requiredOption('--nexus-dir <path>', 'artifact repository (PoC: a folder; real: Nexus raw repository)')
+  .option('--dir <path>', 'remote root', '.')
+  .option('--version <version>', 'artifact version (default: package.json version)')
+  .action(runPublish);
+
+program
+  .command('release')
+  .description('Point a stand at a published version through the compatibility gate (writes the registry entry = PR)')
+  .requiredOption('--stand <stand>', 'target stand (uat, prod, ...)')
+  .requiredOption('--registry <path>', 'registry checkout')
+  .option('--dir <path>', 'remote root', '.')
+  .option('--version <version>', 'published version to release (default: package.json; older = rollback)')
+  .option('--base-path <path>', 'route in the host (first release only)')
+  .option('--scopes <list>', 'token scopes allowlist (first release only)')
+  .addOption(new Option('--mode <mode>', 'integration mode').choices(['integrated', 'bridge']).default('integrated'))
+  .action(runRelease);
+
+const registry = program.command('registry').description('Remote registry: which version runs on which stand');
+
+registry
+  .command('check')
+  .description('Host deploy gate: verify every registered remote against a host compat.json')
+  .requiredOption('--stand <stand>', 'stand')
+  .requiredOption('--registry <path>', 'registry checkout')
+  .option('--against <compat>', "host compat.json (default: the stand's deployed host)")
+  .action(runRegistryCheck);
+
+registry
+  .command('build')
+  .description("Config deploy job: aggregate the stand's entries into the host /config.json")
+  .requiredOption('--stand <stand>', 'stand')
+  .requiredOption('--registry <path>', 'registry checkout')
+  .requiredOption('--out <file>', 'output file')
+  .action(runRegistryBuild);
+
+registry
+  .command('status')
+  .description('Versions dashboard: remote × stand × required singletons')
+  .requiredOption('--registry <path>', 'registry checkout')
+  .option('--stands <list>', 'stands to show', 'local,uat,prod')
+  .action(runRegistryStatus);
 
 try {
   await program.parseAsync();

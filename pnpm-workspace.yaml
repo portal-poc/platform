@@ -1,10 +1,10 @@
 packages:
   - apps/*
   - packages/*
+  - tools/*
 minimumReleaseAgeExclude:
   - '@babel/core@8.0.9'
   - '@babel/helper-string-parser@8.0.8'
   - '@babel/helpers@8.0.8'
   - '@babel/parser@8.0.8'
   - '@babel/types@8.0.8'
-  - react-hook-form@7.91.0

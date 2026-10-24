@@ -2,27 +2,13 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { listFilesRecursive } from '../lib/fs.ts';
 import { readHostCompat } from '../lib/host-compat.ts';
+import { toManifest } from '../lib/manifest.ts';
 import { verifyRemote } from './verify-remote.ts';
-import type { RemoteManifest, VerifyMode } from './verify-remote.ts';
+import type { VerifyMode } from './verify-remote.ts';
 
 type VerifyOptions = { dir?: string; dist?: string; mode?: VerifyMode; against?: string };
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
-
-const toManifest = (value: unknown): RemoteManifest => {
-  if (!isRecord(value) || typeof value['name'] !== 'string' || !Array.isArray(value['exposes']) || !Array.isArray(value['shared'])) {
-    throw new Error('dist/mf-manifest.json has an unexpected shape.');
-  }
-  return {
-    name: value['name'],
-    exposes: value['exposes'].filter(isRecord).map((expose) => ({ path: String(expose['path']) })),
-    shared: value['shared'].filter(isRecord).map((entry) => ({
-      name: String(entry['name']),
-      ...(typeof entry['singleton'] === 'boolean' ? { singleton: entry['singleton'] } : {}),
-      ...(typeof entry['requiredVersion'] === 'string' ? { requiredVersion: entry['requiredVersion'] } : {}),
-    })),
-  };
-};
 
 const readContractVersion = (appDir: string): string | null => {
   try {
