@@ -37,6 +37,10 @@ discovered while building this reference repo. Code that depends on an open deci
 
 ## Delivery
 
+- **(found)** Singleton provider: verified that MF keeps an already loaded singleton; the host now preloads all
+  contract singletons before remotes register (ADR 0001). If the host ever lazy-loads a large shared singleton, keep
+  it in that preload or accept that the first loader's copy wins.
+
 - **(found)** Registry as a folder vs. its own repository vs. a small service — start as a folder in the host repo,
   move out when PR volume grows.
 - **(found)** PR automation from remote pipelines (service account, ADO REST) is described but not implemented in the
