@@ -8,7 +8,7 @@ import { openRegistryPullRequest } from '../lib/registry-pr.ts';
 /**
  * Copies entries (the SAME immutable versions, nothing is rebuilt) from one stand to another through the singleton
  * gate of the target stand's host. Route, scopes and title stay the target's own when it already has them.
- * Returns the written files, or null when the gate blocked something (nothing is written then).
+ * Returns the written files (empty: already up to date), or null when the gate blocked something (nothing written).
  */
 const copyEntries = async (registryDir: string, from: string, to: string, only?: string): Promise<string[] | null> => {
   const hostCompat = await readHostCompat(`${readStand(registryDir, to).url}/compat.json`);
@@ -21,6 +21,10 @@ const copyEntries = async (registryDir: string, from: string, to: string, only?:
   console.log(`${from} → ${to} (host ${hostCompat.hostVersion})`);
   for (const [name, entry] of source) {
     const current = readEntry(registryDir, to, name);
+    if (current?.version === entry.version) {
+      console.log(`  · ${name} ${entry.version} (unchanged)`);
+      continue;
+    }
     const gate = await gateEntry(entry, hostCompat);
     const change = `${name} ${current?.version ?? '(new)'} → ${entry.version}`;
     if (gate.status === 'blocked') {
@@ -60,7 +64,9 @@ export const runPromote = async (options: PromoteOptions): Promise<void> => {
     throw new Error(`"${options.to}" accepts promotions only from "${target.promoteFrom ?? '(none: it tracks a branch)'}".`);
   }
   const files = await copyEntries(registryDir, options.from, options.to, options.remote);
-  if (files) {
+  if (files?.length === 0) {
+    console.log(`\n✔ "${options.to}" already runs these versions.`);
+  } else if (files) {
     finish(registryDir, files, `${options.to}: promote ${options.remote ?? 'all'} from ${options.from}`, options.pr);
   }
 };
