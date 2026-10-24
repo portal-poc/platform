@@ -13,9 +13,8 @@
     "pnpm": "12.15.0"
   },
   "scripts": {
-    "dev": "concurrently -k -n host-bff,tasks-bff,tasks,legacy,host -c blue,magenta,green,yellow,cyan \"pnpm --filter @portal-mock/host-bff dev\" \"pnpm --filter @portal-mock/tasks-bff dev\" \"pnpm --filter tasks-remote dev\" \"pnpm --filter legacy-remote dev\" \"pnpm --filter host dev\"",
-    "dev:backend": "concurrently -k -n host-bff,tasks-bff -c blue,magenta \"pnpm --filter @portal-mock/host-bff dev\" \"pnpm --filter @portal-mock/tasks-bff dev\"",
-    "preview": "concurrently -k -n host-bff,tasks-bff,tasks,legacy,host -c blue,magenta,green,yellow,cyan \"pnpm --filter @portal-mock/host-bff dev\" \"pnpm --filter @portal-mock/tasks-bff dev\" \"pnpm --filter tasks-remote preview\" \"pnpm --filter legacy-remote preview\" \"pnpm --filter host preview\"",
+    "dev": "concurrently -k -n tasks,legacy,host -c green,yellow,cyan \"pnpm --filter tasks-remote dev\" \"pnpm --filter legacy-remote dev\" \"pnpm --filter host dev\"",
+    "preview": "concurrently -k -n tasks,legacy,host -c green,yellow,cyan \"pnpm --filter tasks-remote preview\" \"pnpm --filter legacy-remote preview\" \"pnpm --filter host preview\"",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
     "lint": "pnpm -r lint",

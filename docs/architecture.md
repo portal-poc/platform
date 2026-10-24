@@ -17,8 +17,6 @@ meant to be split into separate repositories (polyrepo) later.
 | `packages/mf-shared` | `@portal/mf-shared` — integration-contract constants (exposes, singletons, ranges) + shared config helper | platform repo |
 | `packages/presets` | `@portal/presets` — optional tsconfig / oxlint / vitest / steiger presets | platform repo |
 | `packages/portal-cli` | `portal-cli` — `create remote`, `add <layer>`, `verify` | platform repo |
-| `mock-backend/host-bff` | Host BFF: bookmarks aggregate (reads tasks-bff with the user's token) | host backend |
-| `mock-backend/tasks-bff` | Tasks BFF: tasks, bookmarks | tasks backend |
 
 ## Ports (local)
 
@@ -27,8 +25,6 @@ meant to be split into separate repositories (polyrepo) later.
 | host | 5173 |
 | tasks-remote | 5174 |
 | legacy-remote | 5175 |
-| host-bff | 4100 |
-| tasks-bff | 4200 |
 
 ## Key decisions (ADRs)
 
@@ -46,5 +42,11 @@ Decided with the project owner before implementation:
   client, `RealtimeProvider` / `useInvalidateOnEvent`, mock broker, BFF realtime channels, scenarios 6–9.
   Cross-app bookmarks refresh uses the local event bus from the contract (`platform.events`, `bookmarks.changed`)
   plus `refetchOnWindowFocus` as a safety net.
+- **No mock backends**: each app's `shared/api` injects a fake `fetch` into the real `createHttpClient` (bearer + zod
+  still run) that answers with hard-coded data and a configurable delay. Bookmarks live in `localStorage` so the host
+  widget and the tasks remote see the same data.
+- **CLI asks which optional FSD layers to create** (`entities` / `features` / `widgets`) in addition to `app`, `pages`,
+  `shared` — overrides "CLI does not create empty layers" from section 16.1.
+- Keep the code minimal: this is a PoC, not production code.
 - Optional parts implemented: `@portal/presets`, bridge demo (`legacy-remote`). Not implemented: preload hover demo
   (the architecture is ready — section 13), Playwright e2e.
