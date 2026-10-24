@@ -1,4 +1,9 @@
 {
   "extends": "@portal/presets/tsconfig/base.json",
-  "include": ["src"]
+  "include": [
+    "src"
+  ],
+  "compilerOptions": {
+    "esModuleInterop": true
+  }
 }

@@ -37,6 +37,8 @@ program
   .command('verify')
   .description('Check the built remote against the integration contract (run in CI after build)')
   .option('--dir <path>', 'remote root', '.')
+  .option('--dist <dir>', 'build output to check (e.g. dist-bridge)', 'dist')
+  .option('--against <compat>', "target host deployment's compat.json (URL or path) — exact version check")
   .addOption(new Option('--mode <mode>', 'integration mode the remote targets').choices(['integrated', 'bridge']).default('integrated'))
   .action(runVerify);
 

@@ -9,3 +9,4 @@ __mf__virtual/
 *.log
 .env.local
 /tmp/
+dist-bridge/

@@ -2,11 +2,21 @@
   "environments": {
     "local": {
       "bffBaseUrl": "https://__NAME__-bff.local/api",
-      "scopes": ["api://__NAME__-bff/__TITLE__.ReadWrite"]
+      "scopes": [
+        "api://__NAME__-bff/__TITLE__.ReadWrite"
+      ]
     },
-    "dev": {
-      "bffBaseUrl": "https://__NAME__-bff.dev.bank.example/api",
-      "scopes": ["api://__NAME__-bff/__TITLE__.ReadWrite"]
+    "uat": {
+      "bffBaseUrl": "https://__NAME__-bff.uat.bank.example/api",
+      "scopes": [
+        "api://__NAME__-bff/__TITLE__.ReadWrite"
+      ]
+    },
+    "prod": {
+      "bffBaseUrl": "https://__NAME__-bff.bank.example/api",
+      "scopes": [
+        "api://__NAME__-bff/__TITLE__.ReadWrite"
+      ]
     }
   }
 }

@@ -1,3 +1,5 @@
+import semver from 'semver';
+
 /**
  * Integration contract (section 5): fixed expose names, the minimal list of MF singletons with supported ranges,
  * and the supported platform-contract range. Checked by `portal-cli verify` and by the host at load time.
@@ -48,6 +50,15 @@ export const SUPPORTED_CONTRACT_PACKAGE_RANGE = '^1.0.0';
 /** Remote names must be valid JS identifiers (MF global names) and lower-case. */
 export const REMOTE_NAME_PATTERN = /^[a-z][a-z0-9]*$/;
 
+/**
+ * Bridge build variant: the same remote built WITHOUT shared dependencies (own React, router, DS), published next to
+ * the main build. The host loads it when the main build is incompatible with the host's singletons.
+ * Different MF name, so both variants can coexist in one page's share scope.
+ */
+export const BRIDGE_BUILD_SUFFIX = '_bridge';
+
+export const toBridgeRemoteName = (name: string): string => `${name}${BRIDGE_BUILD_SUFFIX}`;
+
 export type SharedEntry = {
   singleton: true;
   requiredVersion: string;
@@ -58,3 +69,37 @@ export const createSharedConfig = (): Record<string, SharedEntry> =>
   Object.fromEntries(
     Object.entries(SINGLETONS).map(([name, requiredVersion]) => [name, { singleton: true, requiredVersion }]),
   );
+
+/**
+ * What a host deployment provides. Emitted by the host build as `compat.json` and published with every host deploy;
+ * remotes are checked against it (release gate) and the host checks remote manifests against it at runtime.
+ */
+export type HostCompat = {
+  hostVersion: string;
+  contract: { min: number; max: number };
+  /** Exact versions of the singletons the host provides. */
+  singletons: Record<string, string>;
+};
+
+export type ManifestSharedEntry = { name: string; singleton?: boolean; requiredVersion?: string };
+
+export type SingletonConflict = { name: string; required: string; provided: string | null };
+
+/**
+ * Singletons the remote requires that the host does not provide in a satisfying version.
+ * (MF with `singleton: true` would silently hand the remote the host's copy anyway.)
+ */
+export const findSingletonConflicts = (
+  shared: readonly ManifestSharedEntry[],
+  provided: Readonly<Record<string, string>>,
+): SingletonConflict[] =>
+  shared
+    .filter((entry) => entry.singleton && entry.requiredVersion && entry.name in SINGLETONS)
+    .flatMap((entry) => {
+      const required = entry.requiredVersion ?? '*';
+      const version = provided[entry.name] ?? null;
+      return version && semver.satisfies(version, required) ? [] : [{ name: entry.name, required, provided: version }];
+    });
+
+export const describeConflict = (conflict: SingletonConflict): string =>
+  `${conflict.name}: remote requires ${conflict.required}, host provides ${conflict.provided ?? 'nothing'}`;

@@ -45,6 +45,18 @@ describe('verifyRemote', () => {
     ]);
   });
 
+  it('checks exact host versions when the host compat.json is given', () => {
+    const hostCompat = { hostVersion: '2.0.0', contract: { min: 1, max: 1 }, singletons: { react: '19.3.1', 'react-dom': '19.3.1', 'react-router': '9.0.0' } };
+    expect(run(validManifest, { hostCompat }).errors).toEqual([
+      'incompatible with host 2.0.0: react-router: remote requires ^8.5.0, host provides 9.0.0.',
+      'incompatible with host 2.0.0: @portal/ds: remote requires ^1.0.0, host provides nothing.',
+    ]);
+  });
+
+  it('accepts the bridge variant name in bridge mode', () => {
+    expect(run({ ...validManifest, name: 'tasks_bridge', shared: [] }, { mode: 'bridge' }).errors).toEqual([]);
+  });
+
   it('relaxes singleton requirements in bridge mode', () => {
     expect(run({ ...validManifest, name: 'legacy', shared: [] }, { mode: 'bridge' }).errors).toEqual([]);
   });

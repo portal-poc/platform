@@ -475,10 +475,17 @@ importers:
         version: 5.0.5(@types/node@26.6.5)(jsdom@30.1.3)(vite@8.3.5(@types/node@26.6.5))
 
   packages/mf-shared:
+    dependencies:
+      semver:
+        specifier: ^7.8.5
+        version: 7.8.5
     devDependencies:
       '@portal/presets':
         specifier: workspace:*
         version: link:../presets
+      '@types/semver':
+        specifier: ^7.8.0
+        version: 7.8.0
       fallow:
         specifier: ^3.35.0
         version: 3.35.0

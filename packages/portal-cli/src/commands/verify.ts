@@ -1,10 +1,11 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { listFilesRecursive } from '../lib/fs.ts';
+import { readHostCompat } from '../lib/host-compat.ts';
 import { verifyRemote } from './verify-remote.ts';
 import type { RemoteManifest, VerifyMode } from './verify-remote.ts';
 
-type VerifyOptions = { dir?: string; mode?: VerifyMode };
+type VerifyOptions = { dir?: string; dist?: string; mode?: VerifyMode; against?: string };
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
 
@@ -34,9 +35,9 @@ const readContractVersion = (appDir: string): string | null => {
 };
 
 /** Reads the built manifest + installed packages, prints a report, fails the process on violations. */
-export const runVerify = (options: VerifyOptions): void => {
+export const runVerify = async (options: VerifyOptions): Promise<void> => {
   const appDir = resolve(options.dir ?? '.');
-  const distDir = join(appDir, 'dist');
+  const distDir = join(appDir, options.dist ?? 'dist');
   const manifestPath = join(distDir, 'mf-manifest.json');
   if (!existsSync(manifestPath)) {
     throw new Error(`${manifestPath} not found — run the build first.`);
@@ -50,9 +51,12 @@ export const runVerify = (options: VerifyOptions): void => {
       .filter((file) => /\.(js|json|html)$/.test(file))
       .map((file) => [relative(appDir, file), readFileSync(file, 'utf8')] as const),
     ...(existsSync(configPath) ? { runtimeConfig: JSON.parse(readFileSync(configPath, 'utf8')) } : {}),
+    ...(options.against ? { hostCompat: await readHostCompat(options.against) } : {}),
   });
 
-  console.log(`portal-cli verify — ${relative(process.cwd(), appDir) || '.'} (${options.mode ?? 'integrated'} mode)`);
+  console.log(
+    `portal-cli verify — ${relative(process.cwd(), distDir)} (${options.mode ?? 'integrated'} mode${options.against ? `, against ${options.against}` : ''})`,
+  );
   for (const warning of report.warnings) {
     console.log(`  ⚠ ${warning}`);
   }

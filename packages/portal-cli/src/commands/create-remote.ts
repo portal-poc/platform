@@ -77,9 +77,14 @@ const writeFile = (path: string, content: string) => {
   writeFileSync(path, content);
 };
 
-const dropBridgeDependency = (packageJson: string): string => {
-  const parsed: { dependencies?: Record<string, string> } = JSON.parse(packageJson);
+/** Without a bridge entry there is no isolated variant to build or verify. */
+const dropBridge = (packageJson: string): string => {
+  const parsed: { dependencies?: Record<string, string>; scripts?: Record<string, string> } = JSON.parse(packageJson);
   delete parsed.dependencies?.['@module-federation/bridge-react'];
+  if (parsed.scripts) {
+    parsed.scripts['build'] = 'vite build';
+    parsed.scripts['verify'] = 'portal-cli verify';
+  }
   return `${JSON.stringify(parsed, null, 2)}\n`;
 };
 
@@ -111,7 +116,7 @@ export const runCreateRemote = async (name: string, options: CreateRemoteOptions
       content = BRIDGE_STUB;
     }
     if (relativePath === 'package.json' && !answers.withBridge) {
-      content = dropBridgeDependency(content);
+      content = dropBridge(content);
     }
     writeFile(join(targetDir, relativePath), replaceTokens(content, tokens));
   }

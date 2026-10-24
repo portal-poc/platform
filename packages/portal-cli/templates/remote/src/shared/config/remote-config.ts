@@ -19,12 +19,15 @@ export type RemoteEnvConfig = z.output<typeof remoteConfigSchema>['environments'
 let configPromise: Promise<z.output<typeof remoteConfigSchema>> | null = null;
 
 /**
- * Runtime config: built once, deployed to any stand. `config.json` is served next to the remote's own assets
- * (absolute path on the remote's origin, so it works both standalone and inside the host).
+ * Runtime config: built once, deployed to any stand. `config.json` ships inside the remote's immutable version folder
+ * (`<nexus>/<name>/<version>/config.json`) and holds every environment keyed by `platform.env.name`.
+ * Built chunks live in `assets/`, hence `../`; the dev server serves it from the root.
  */
+const CONFIG_URL = import.meta.env.DEV ? '/config.json' : '../config.json';
+
 const loadRemoteConfig = () => {
   if (!configPromise) {
-    const url = new URL(/* @vite-ignore */ '/config.json', import.meta.url);
+    const url = new URL(/* @vite-ignore */ CONFIG_URL, import.meta.url);
     configPromise = fetch(url)
       .then((response) => response.json())
       .then((json: unknown) => remoteConfigSchema.parse(json));

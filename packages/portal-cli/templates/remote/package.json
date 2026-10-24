@@ -6,13 +6,13 @@
   "scripts": {
     "dev": "vite --port __PORT__ --strictPort",
     "dev:standalone": "vite --port __PORT__ --strictPort --open",
-    "build": "vite build",
+    "build": "vite build && vite build --mode bridge",
     "preview": "vite preview --port __PORT__ --strictPort",
     "typecheck": "tsc -p tsconfig.json",
     "lint": "oxlint . && steiger ./src && fallow dead-code",
     "analyze": "fallow",
     "test": "vitest run --passWithNoTests",
-    "verify": "portal-cli verify"
+    "verify": "portal-cli verify && portal-cli verify --dist dist-bridge --mode bridge"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

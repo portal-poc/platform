@@ -1,5 +1,9 @@
 import semver from 'semver';
+import type { HostCompat } from '@portal/mf-shared';
 import {
+  BRIDGE_BUILD_SUFFIX,
+  describeConflict,
+  findSingletonConflicts,
   NEVER_SINGLETONS,
   REMOTE_NAME_PATTERN,
   REQUIRED_EXPOSES,
@@ -26,6 +30,8 @@ export type VerifyInput = {
   builtFiles?: ReadonlyArray<readonly [string, string]>;
   /** Parsed dist/config.json, if any. */
   runtimeConfig?: unknown;
+  /** What the target host deployment provides (its compat.json). Checks exact versions instead of ranges. */
+  hostCompat?: HostCompat;
 };
 
 export type VerifyReport = { errors: string[]; warnings: string[] };
@@ -80,7 +86,8 @@ export const verifyRemote = (input: VerifyInput): VerifyReport => {
   const warnings: string[] = [];
   const { manifest } = input;
 
-  if (!REMOTE_NAME_PATTERN.test(manifest.name)) {
+  const baseName = input.mode === 'bridge' ? manifest.name.replace(new RegExp(`${BRIDGE_BUILD_SUFFIX}$`), '') : manifest.name;
+  if (!REMOTE_NAME_PATTERN.test(baseName)) {
     errors.push(`remote name "${manifest.name}" does not match ${REMOTE_NAME_PATTERN}.`);
   }
   const exposed = new Set(manifest.exposes.map((expose) => expose.path));
@@ -90,6 +97,11 @@ export const verifyRemote = (input: VerifyInput): VerifyReport => {
     }
   }
   checkSingletons(manifest.shared, input.mode, errors);
+  if (input.hostCompat && input.mode === 'integrated') {
+    for (const conflict of findSingletonConflicts(manifest.shared, input.hostCompat.singletons)) {
+      errors.push(`incompatible with host ${input.hostCompat.hostVersion}: ${describeConflict(conflict)}.`);
+    }
+  }
 
   if (!input.contractPackageVersion) {
     errors.push('@portal/platform-contract is not installed.');
