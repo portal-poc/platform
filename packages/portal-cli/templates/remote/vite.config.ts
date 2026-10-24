@@ -1,4 +1,4 @@
-import { createRemoteViteConfig } from '@portal/vite-config';
+import { createRemoteViteConfig } from '@portal-poc/vite-config';
 
 // The MF section (name, exposes, shared, bridge variant) and the build tooling come from the platform preset.
 // Internal Vite settings go into `extend`.

@@ -1,3 +1,3 @@
-import { createVitestConfig } from '@portal/presets/vitest';
+import { createVitestConfig } from '@portal-poc/presets/vitest';
 
 export default createVitestConfig({ environment: 'node' });

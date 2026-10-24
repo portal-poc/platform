@@ -1,5 +1,5 @@
 import type { z } from 'zod';
-import type { PlatformAuth, PlatformTelemetry } from '@portal/platform-contract';
+import type { PlatformAuth, PlatformTelemetry } from '@portal-poc/platform-contract';
 import { isInteractionRequiredError } from '../auth/errors';
 import { HttpError, ResponseValidationError } from './errors';
 

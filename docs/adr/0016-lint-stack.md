@@ -6,7 +6,7 @@ React Compiler is on everywhere; manual memoization is banned; dead code accumul
 
 ## Decision
 
-`@portal/presets` ships: oxlint (style rules from the requirements + native React Compiler rules: purity, refs, immutability, set-state-in-render/effect, static-components, ...), Steiger (FSD), fallow (unused files/exports/dependencies, duplication, FSD boundaries). Apps extend presets or inline them (CLI choice).
+`@portal-poc/presets` ships: oxlint (style rules from the requirements + native React Compiler rules: purity, refs, immutability, set-state-in-render/effect, static-components, ...), Steiger (FSD), fallow (unused files/exports/dependencies, duplication, FSD boundaries). Apps extend presets or inline them (CLI choice).
 
 ## Consequences
 

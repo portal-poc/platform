@@ -13,7 +13,7 @@ const isRecord = (value: unknown): value is Record<string, unknown> => typeof va
 const readContractVersion = (appDir: string): string | null => {
   try {
     // The installed (resolved) version, not the declared range.
-    const pkg: unknown = JSON.parse(readFileSync(join(appDir, 'node_modules/@portal/platform-contract/package.json'), 'utf8'));
+    const pkg: unknown = JSON.parse(readFileSync(join(appDir, 'node_modules/@portal-poc/platform-contract/package.json'), 'utf8'));
     return isRecord(pkg) && typeof pkg['version'] === 'string' ? pkg['version'] : null;
   } catch {
     return null;

@@ -1,5 +1,5 @@
 {
-  "name": "@portal/vite-config",
+  "name": "@portal-poc/vite-config",
   "version": "1.0.0",
   "description": "Platform build preset: pinned Vite + Module Federation plugin, the MF section of the integration contract, React Compiler.",
   "type": "module",
@@ -13,7 +13,7 @@
     "test": "echo \"no tests\""
   },
   "dependencies": {
-    "@portal/mf-shared": "workspace:^",
+    "@portal-poc/mf-shared": "workspace:^",
     "semver": "^7.8.5"
   },
   "peerDependencies": {
@@ -34,7 +34,7 @@
   "devDependencies": {
     "@babel/core": "^8.0.9",
     "@module-federation/vite": "^1.23.5",
-    "@portal/presets": "workspace:^",
+    "@portal-poc/presets": "workspace:^",
     "@rolldown/plugin-babel": "^0.2.4",
     "@types/node": "^26.6.5",
     "@types/semver": "^7.8.0",

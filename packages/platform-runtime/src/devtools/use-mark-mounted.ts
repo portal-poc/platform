@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import type { PlatformContract } from '@portal/platform-contract';
+import type { PlatformContract } from '@portal-poc/platform-contract';
 
 /** Marks the application's routes as mounted (drives devtools auto-selection). */
 export const useMarkMounted = (platform: PlatformContract, name: string): void => {

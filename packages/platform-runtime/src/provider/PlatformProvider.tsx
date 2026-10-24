@@ -6,7 +6,7 @@ import type {
   PlatformEnv,
   PlatformEventBus,
   PlatformTelemetry,
-} from '@portal/platform-contract';
+} from '@portal-poc/platform-contract';
 
 const PlatformContext = createContext<PlatformContract | null>(null);
 

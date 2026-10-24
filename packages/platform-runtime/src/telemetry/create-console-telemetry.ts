@@ -1,4 +1,4 @@
-import type { PlatformTelemetry } from '@portal/platform-contract';
+import type { PlatformTelemetry } from '@portal-poc/platform-contract';
 
 export type TelemetryRecord =
   | { kind: 'error'; app: string; error: unknown; context?: Readonly<Record<string, unknown>>; at: number }

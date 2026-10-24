@@ -1,5 +1,5 @@
 {
   "extends": [
-    "./node_modules/@portal/presets/oxlint/react.json"
+    "./node_modules/@portal-poc/presets/oxlint/react.json"
   ]
 }

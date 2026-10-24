@@ -116,7 +116,7 @@ const replaceWorkspaceRanges = (deps: Record<string, string> | undefined, versio
 
 const writeRepoFiles = (dir: string) => {
   // Same shape as a real repo: internal scope pinned to the internal registry, everything else via its proxy.
-  writeFileSync(join(dir, '.npmrc'), `registry=${REGISTRY}\n@portal:registry=${REGISTRY}\nauto-install-peers=true\n`);
+  writeFileSync(join(dir, '.npmrc'), `registry=${REGISTRY}\n@portal-poc:registry=${REGISTRY}\nauto-install-peers=true\n`);
   cpSync(join(REPO_ROOT, '.nvmrc'), join(dir, '.nvmrc'));
 };
 
@@ -159,12 +159,12 @@ const checkRepo = (dir: string): StepResult[] => {
 };
 
 const generateRemote = (): string => {
-  // A developer machine needs the internal scope pinned globally (~/.npmrc), or `pnpm dlx @portal/cli` asks npmjs.
+  // A developer machine needs the internal scope pinned globally (~/.npmrc), or `pnpm dlx @portal-poc/cli` asks npmjs.
   // Exact version: `dlx …@latest` is served from pnpm's dlx cache (up to a day old by default).
-  writeFileSync(join(TARGET, '.npmrc'), `@portal:registry=${REGISTRY}\n`);
+  writeFileSync(join(TARGET, '.npmrc'), `@portal-poc:registry=${REGISTRY}\n`);
   const dir = join(TARGET, 'reports-remote');
   rmSync(dir, { recursive: true, force: true });
-  const created = run(`pnpm ${PNPM_ISOLATION} dlx @portal/cli@${DRY_RUN_VERSION} create remote reports --dir ${dir} --yes --port 5180`, TARGET);
+  const created = run(`pnpm ${PNPM_ISOLATION} dlx @portal-poc/cli@${DRY_RUN_VERSION} create remote reports --dir ${dir} --yes --port 5180`, TARGET);
   if (!created.ok) {
     throw new Error(`portal-cli create failed:\n${created.output.slice(-2000)}`);
   }

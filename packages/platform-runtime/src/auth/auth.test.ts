@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { QueryClient } from '@tanstack/react-query';
-import type { PlatformAuthEvent } from '@portal/platform-contract';
+import type { PlatformAuthEvent } from '@portal-poc/platform-contract';
 import { createMockPlatformAuth } from './create-mock-platform-auth';
 import { createRemoteAuth } from './create-remote-auth';
 import { PlatformInteractionRequiredError, PlatformScopeNotAllowedError } from './errors';

@@ -1,6 +1,6 @@
 import { QueryClientProvider } from '@tanstack/react-query';
-import type { PlatformContract } from '@portal/platform-contract';
-import { PlatformProvider, useClearCacheOnAccountChange, useMarkMounted } from '@portal/platform-runtime';
+import type { PlatformContract } from '@portal-poc/platform-contract';
+import { PlatformProvider, useClearCacheOnAccountChange, useMarkMounted } from '@portal-poc/platform-runtime';
 import { getRemoteQueryClient } from '@/shared/api';
 import { REMOTE_NAME } from '@/shared/config';
 import { RemoteRoutes } from '../routes/RemoteRoutes';

@@ -1,5 +1,5 @@
 {
-  "name": "@portal/cli",
+  "name": "@portal-poc/cli",
   "version": "1.0.0",
   "description": "Portal CLI: create remotes from the reference template, add FSD slices, verify the integration contract.",
   "type": "module",
@@ -19,8 +19,8 @@
   },
   "dependencies": {
     "@inquirer/prompts": "^8.7.4",
-    "@portal/mf-shared": "workspace:^",
-    "@portal/presets": "workspace:^",
+    "@portal-poc/mf-shared": "workspace:^",
+    "@portal-poc/presets": "workspace:^",
     "commander": "^15.0.0",
     "semver": "^7.8.5"
   },

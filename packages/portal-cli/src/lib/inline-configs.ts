@@ -9,7 +9,7 @@ type JsonObject = Record<string, unknown>;
 const isObject = (value: unknown): value is JsonObject => typeof value === 'object' && value !== null && !Array.isArray(value);
 
 const readPreset = (path: string): JsonObject => {
-  const parsed = parseJsonc(readFileSync(require.resolve(`@portal/presets/${path}`), 'utf8'));
+  const parsed = parseJsonc(readFileSync(require.resolve(`@portal-poc/presets/${path}`), 'utf8'));
   if (!isObject(parsed)) {
     throw new Error(`Preset ${path} is not a JSON object`);
   }
@@ -32,7 +32,7 @@ const withoutExtends = (config: JsonObject): JsonObject => {
 
 const json = (value: unknown) => `${JSON.stringify(value, null, 2)}\n`;
 
-/** "Inline" mode: the generated remote owns full copies of the configs instead of extending @portal/presets. */
+/** "Inline" mode: the generated remote owns full copies of the configs instead of extending @portal-poc/presets. */
 export const createInlineConfigs = (): Record<string, string> => {
   const tsconfig = ['tsconfig/base.json', 'tsconfig/react-library.json', 'tsconfig/react-app.json']
     .map(readPreset)

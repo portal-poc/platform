@@ -166,7 +166,7 @@ importers:
 
   .:
     devDependencies:
-      '@portal/cli':
+      '@portal-poc/cli':
         specifier: workspace:*
         version: link:packages/portal-cli
       concurrently:
@@ -190,16 +190,16 @@ importers:
       '@mui/joy':
         specifier: 5.0.0-beta.52
         version: 5.0.0-beta.52(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.1)(supports-color@10.2.2))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.1)(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.1)(supports-color@10.2.2))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
-      '@portal/ds':
+      '@portal-poc/ds':
         specifier: workspace:^
         version: link:../../packages/ds
-      '@portal/mf-shared':
+      '@portal-poc/mf-shared':
         specifier: workspace:^
         version: link:../../packages/mf-shared
-      '@portal/platform-contract':
+      '@portal-poc/platform-contract':
         specifier: workspace:^
         version: link:../../packages/platform-contract
-      '@portal/platform-runtime':
+      '@portal-poc/platform-runtime':
         specifier: workspace:^
         version: link:../../packages/platform-runtime
       '@tanstack/react-query':
@@ -227,10 +227,10 @@ importers:
       '@module-federation/vite':
         specifier: ^1.23.5
         version: 1.23.5(typescript@7.0.2)(vite@8.3.5(@types/node@26.6.5))
-      '@portal/presets':
+      '@portal-poc/presets':
         specifier: workspace:^
         version: link:../../packages/presets
-      '@portal/vite-config':
+      '@portal-poc/vite-config':
         specifier: workspace:^
         version: link:../../packages/vite-config
       '@rolldown/plugin-babel':
@@ -281,7 +281,7 @@ importers:
       '@module-federation/bridge-react':
         specifier: ^2.9.2
         version: 2.9.2(react-dom@18.3.1(react@18.3.1))(react-router@7.18.4(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)
-      '@portal/platform-contract':
+      '@portal-poc/platform-contract':
         specifier: workspace:^
         version: link:../../packages/platform-contract
       react:
@@ -297,13 +297,13 @@ importers:
       '@module-federation/vite':
         specifier: ^1.23.5
         version: 1.23.5(typescript@7.0.2)(vite@8.3.5(@types/node@26.6.5))
-      '@portal/cli':
+      '@portal-poc/cli':
         specifier: workspace:^
         version: link:../../packages/portal-cli
-      '@portal/presets':
+      '@portal-poc/presets':
         specifier: workspace:^
         version: link:../../packages/presets
-      '@portal/vite-config':
+      '@portal-poc/vite-config':
         specifier: workspace:^
         version: link:../../packages/vite-config
       '@types/node':
@@ -345,13 +345,13 @@ importers:
       '@mui/joy':
         specifier: 5.0.0-beta.52
         version: 5.0.0-beta.52(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.1)(supports-color@10.2.2))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.1)(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.1)(supports-color@10.2.2))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
-      '@portal/ds':
+      '@portal-poc/ds':
         specifier: workspace:^
         version: link:../../packages/ds
-      '@portal/platform-contract':
+      '@portal-poc/platform-contract':
         specifier: workspace:^
         version: link:../../packages/platform-contract
-      '@portal/platform-runtime':
+      '@portal-poc/platform-runtime':
         specifier: workspace:^
         version: link:../../packages/platform-runtime
       '@tanstack/react-query':
@@ -382,13 +382,13 @@ importers:
       '@module-federation/vite':
         specifier: ^1.23.5
         version: 1.23.5(typescript@7.0.2)(vite@8.3.5(@types/node@26.6.5))
-      '@portal/cli':
+      '@portal-poc/cli':
         specifier: workspace:^
         version: link:../../packages/portal-cli
-      '@portal/presets':
+      '@portal-poc/presets':
         specifier: workspace:^
         version: link:../../packages/presets
-      '@portal/vite-config':
+      '@portal-poc/vite-config':
         specifier: workspace:^
         version: link:../../packages/vite-config
       '@rolldown/plugin-babel':
@@ -452,7 +452,7 @@ importers:
       '@mui/joy':
         specifier: 5.0.0-beta.52
         version: 5.0.0-beta.52(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.1)(supports-color@10.2.2))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.1)(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.1)(supports-color@10.2.2))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
-      '@portal/presets':
+      '@portal-poc/presets':
         specifier: workspace:*
         version: link:../presets
       '@testing-library/jest-dom':
@@ -495,7 +495,7 @@ importers:
         specifier: ^7.8.5
         version: 7.8.5
     devDependencies:
-      '@portal/presets':
+      '@portal-poc/presets':
         specifier: workspace:*
         version: link:../presets
       '@types/semver':
@@ -513,7 +513,7 @@ importers:
 
   packages/platform-contract:
     devDependencies:
-      '@portal/presets':
+      '@portal-poc/presets':
         specifier: workspace:*
         version: link:../presets
       fallow:
@@ -531,7 +531,7 @@ importers:
 
   packages/platform-runtime:
     dependencies:
-      '@portal/platform-contract':
+      '@portal-poc/platform-contract':
         specifier: workspace:*
         version: link:../platform-contract
       '@tanstack/react-query-devtools':
@@ -541,7 +541,7 @@ importers:
       '@azure/msal-browser':
         specifier: ^5.26.0
         version: 5.26.0
-      '@portal/presets':
+      '@portal-poc/presets':
         specifier: workspace:*
         version: link:../presets
       '@tanstack/react-query':
@@ -586,10 +586,10 @@ importers:
       '@inquirer/prompts':
         specifier: ^8.7.4
         version: 8.7.4(@types/node@26.6.5)
-      '@portal/mf-shared':
+      '@portal-poc/mf-shared':
         specifier: workspace:^
         version: link:../mf-shared
-      '@portal/presets':
+      '@portal-poc/presets':
         specifier: workspace:^
         version: link:../presets
       commander:
@@ -644,7 +644,7 @@ importers:
 
   packages/vite-config:
     dependencies:
-      '@portal/mf-shared':
+      '@portal-poc/mf-shared':
         specifier: workspace:^
         version: link:../mf-shared
       semver:
@@ -657,7 +657,7 @@ importers:
       '@module-federation/vite':
         specifier: ^1.23.5
         version: 1.23.5(typescript@7.0.2)(vite@8.3.5(@types/node@26.6.5))
-      '@portal/presets':
+      '@portal-poc/presets':
         specifier: workspace:^
         version: link:../presets
       '@rolldown/plugin-babel':
@@ -690,7 +690,7 @@ importers:
 
   tools/infra:
     devDependencies:
-      '@portal/presets':
+      '@portal-poc/presets':
         specifier: workspace:^
         version: link:../../packages/presets
       '@types/node':
@@ -705,7 +705,7 @@ importers:
 
   tools/polyrepo:
     devDependencies:
-      '@portal/presets':
+      '@portal-poc/presets':
         specifier: workspace:^
         version: link:../../packages/presets
       '@types/node':

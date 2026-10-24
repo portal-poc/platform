@@ -13,11 +13,11 @@ describe('create remote', () => {
     await runCreateRemote('reports', { dir, layers: 'features', presets: true, bridge: true, port: '5180' });
 
     expect(readFileSync(join(dir, 'vite.config.ts'), 'utf8')).toContain("name: 'reports'");
-    expect(readFileSync(join(dir, 'package.json'), 'utf8')).toContain('"@portal/platform-runtime": "^1.0.0"');
+    expect(readFileSync(join(dir, 'package.json'), 'utf8')).toContain('"@portal-poc/platform-runtime": "^1.0.0"');
     expect(existsSync(join(dir, 'src/features/README.md'))).toBe(true);
     expect(existsSync(join(dir, 'src/entities'))).toBe(false);
     expect(existsSync(join(dir, '.gitignore'))).toBe(true);
-    expect(readFileSync(join(dir, '.oxlintrc.json'), 'utf8')).toContain('@portal/presets');
+    expect(readFileSync(join(dir, '.oxlintrc.json'), 'utf8')).toContain('@portal-poc/presets');
   });
 
   it('inlines configs and stubs the bridge entry on request', async () => {

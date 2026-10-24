@@ -63,7 +63,7 @@ export type PlatformEnv = {
 /**
  * Event map of the local bus. Extend it with declaration merging in applications:
  *
- * declare module '@portal/platform-contract' {
+ * declare module '@portal-poc/platform-contract' {
  *   interface PlatformEventMap { 'tasks.something': { id: string } }
  * }
  *

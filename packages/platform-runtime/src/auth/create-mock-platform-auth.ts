@@ -1,4 +1,4 @@
-import type { PlatformAccount, PlatformAuth, PlatformAuthEvent } from '@portal/platform-contract';
+import type { PlatformAccount, PlatformAuth, PlatformAuthEvent } from '@portal-poc/platform-contract';
 import { PlatformInteractionRequiredError } from './errors';
 import { encodeMockToken } from './mock-token';
 

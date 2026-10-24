@@ -1,4 +1,4 @@
-import type { PlatformEventBus, PlatformEventMap } from '@portal/platform-contract';
+import type { PlatformEventBus, PlatformEventMap } from '@portal-poc/platform-contract';
 
 type PlatformEventBusOptions = {
   /** MAY: cross-tab delivery. Off by default: server-side realtime already covers other tabs. */

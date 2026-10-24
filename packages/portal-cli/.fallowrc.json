@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/fallow/schema.json",
-  "extends": "npm:@portal/presets/fallow/library.json",
+  "extends": "npm:@portal-poc/presets/fallow/library.json",
   "entry": [
     "src/main.ts"
   ],
@@ -9,6 +9,6 @@
     "dist/**"
   ],
   "ignoreDependencies": [
-    "@portal/presets"
+    "@portal-poc/presets"
   ]
 }

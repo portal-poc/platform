@@ -1,5 +1,5 @@
 {
-  "name": "@portal/presets",
+  "name": "@portal-poc/presets",
   "version": "1.0.0",
   "description": "Optional shared presets (tsconfig, oxlint incl. React Compiler rules, fallow, vitest, steiger). Teams may inherit or inline them.",
   "type": "module",
@@ -19,7 +19,7 @@
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
     "lint": "oxlint -c oxlint/base.json .",
-    "test": "echo \"no tests in @portal/presets\"",
+    "test": "echo \"no tests in @portal-poc/presets\"",
     "build": "tsc -p tsconfig.build.json"
   },
   "peerDependencies": {

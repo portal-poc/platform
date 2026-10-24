@@ -1,5 +1,5 @@
 {
-  "name": "@portal/platform-runtime",
+  "name": "@portal-poc/platform-runtime",
   "version": "1.0.0",
   "description": "Portal platform runtime: providers, auth adapters, http client, QueryClient factory, realtime, devtools, standalone harness, compat checks. Bundled into every application (not an MF singleton).",
   "type": "module",
@@ -30,7 +30,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@portal/platform-contract": "workspace:*",
+    "@portal-poc/platform-contract": "workspace:*",
     "@tanstack/react-query-devtools": "^5.104.5"
   },
   "peerDependencies": {
@@ -47,7 +47,7 @@
   },
   "devDependencies": {
     "@azure/msal-browser": "^5.26.0",
-    "@portal/presets": "workspace:*",
+    "@portal-poc/presets": "workspace:*",
     "@tanstack/react-query": "^5.104.5",
     "@testing-library/react": "^16.3.3",
     "@types/react": "^19.3.0",

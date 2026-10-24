@@ -2,8 +2,8 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { createBrowserRouter } from 'react-router';
 import { RouterProvider } from 'react-router/dom';
-import { DsProvider } from '@portal/ds';
-import { createMockPlatformAuth, createStandalonePlatform, DevtoolsToolbar } from '@portal/platform-runtime';
+import { DsProvider } from '@portal-poc/ds';
+import { createMockPlatformAuth, createStandalonePlatform, DevtoolsToolbar } from '@portal-poc/platform-runtime';
 import { REMOTE_NAME } from '@/shared/config';
 import { RemoteRoot } from '../exposes/RemoteRoot';
 

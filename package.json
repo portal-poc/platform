@@ -31,7 +31,7 @@
     "polyrepo:dry-run": "pnpm --filter @portal-tools/polyrepo dry-run"
   },
   "devDependencies": {
-    "@portal/cli": "workspace:*",
+    "@portal-poc/cli": "workspace:*",
     "concurrently": "^10.0.6"
   }
 }

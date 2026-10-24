@@ -2,7 +2,7 @@ import { createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { Root } from 'react-dom/client';
 import type { QueryClient } from '@tanstack/react-query';
-import type { MountDevtoolsPanel } from '@portal/platform-contract';
+import type { MountDevtoolsPanel } from '@portal-poc/platform-contract';
 
 const findShadowRoot = (container: HTMLElement): ShadowRoot | undefined => {
   const root = container.getRootNode();

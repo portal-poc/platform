@@ -6,7 +6,7 @@ Remotes render inside the host tree; React contexts (router, emotion/Joy theme, 
 
 ## Decision
 
-Singletons: `react`, `react-dom`, `react-router` (+ `react-router/dom`), `@emotion/react`, `@emotion/styled`, `@mui/joy`, `@portal/ds` — list and ranges in `@portal/mf-shared`. Everything else is either passed by value through the contract (props) or is a versioned package bundled per app (`@portal/platform-runtime`, TanStack Query, RHF, zod).
+Singletons: `react`, `react-dom`, `react-router` (+ `react-router/dom`), `@emotion/react`, `@emotion/styled`, `@mui/joy`, `@portal-poc/ds` — list and ranges in `@portal-poc/mf-shared`. Everything else is either passed by value through the contract (props) or is a versioned package bundled per app (`@portal-poc/platform-runtime`, TanStack Query, RHF, zod).
 
 ## Consequences
 

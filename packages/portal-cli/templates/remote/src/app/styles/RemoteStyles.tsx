@@ -1,4 +1,4 @@
-import { GlobalStyles } from '@portal/ds';
+import { GlobalStyles } from '@portal-poc/ds';
 
 /** Local view-transition classes (the host owns route-level transitions). 150–250 ms, off under reduced motion. */
 const VIEW_TRANSITION_CSS = `

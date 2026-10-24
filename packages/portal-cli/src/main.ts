@@ -23,7 +23,7 @@ create
   .option('--dir <path>', 'target directory (default: ./<name>-remote)')
   .option('--port <port>', 'dev server port', '5176')
   .option('--layers <list>', `optional FSD layers, comma-separated: ${OPTIONAL_LAYERS.join(', ')}`)
-  .option('--presets', 'inherit internal configs from @portal/presets')
+  .option('--presets', 'inherit internal configs from @portal-poc/presets')
   .option('--no-presets', 'inline internal configs into the project')
   .option('--bridge', 'include the bridge (isolated mode) entry')
   .option('--no-bridge', 'generate a stub bridge entry')

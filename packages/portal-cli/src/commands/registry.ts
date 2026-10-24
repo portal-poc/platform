@@ -1,6 +1,6 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
-import { describeConflict, findSingletonConflicts, SINGLETONS } from '@portal/mf-shared';
+import { describeConflict, findSingletonConflicts, SINGLETONS } from '@portal-poc/mf-shared';
 import { readHostCompat, readJsonSource } from '../lib/host-compat.ts';
 import { toManifest } from '../lib/manifest.ts';
 import { readEntries, readStand } from '../lib/registry.ts';
@@ -50,7 +50,7 @@ const requiredOf = (shared: ReadonlyArray<{ name: string; requiredVersion?: stri
 export const runRegistryStatus = async (options: { registry: string; stands?: string }): Promise<void> => {
   const registryDir = resolve(options.registry);
   const stands = (options.stands ?? 'local,uat,prod').split(',');
-  const rows: string[][] = [['stand', 'remote', 'version', 'react', 'react-router', '@portal/ds', 'bridge build']];
+  const rows: string[][] = [['stand', 'remote', 'version', 'react', 'react-router', '@portal-poc/ds', 'bridge build']];
   for (const stand of stands) {
     for (const [name, entry] of Object.entries(readEntries(registryDir, stand))) {
       const shared = await readJsonSource(entry.manifest)
@@ -62,7 +62,7 @@ export const runRegistryStatus = async (options: { registry: string; stands?: st
         entry.version,
         shared ? requiredOf(shared, 'react') : 'unreachable',
         shared ? requiredOf(shared, 'react-router') : '',
-        shared ? requiredOf(shared, '@portal/ds') : '',
+        shared ? requiredOf(shared, '@portal-poc/ds') : '',
         entry.bridgeManifest ? 'yes' : 'no',
       ]);
     }

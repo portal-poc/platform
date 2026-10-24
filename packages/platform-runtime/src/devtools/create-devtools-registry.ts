@@ -1,4 +1,4 @@
-import type { MountDevtoolsPanel, PlatformDevtools } from '@portal/platform-contract';
+import type { MountDevtoolsPanel, PlatformDevtools } from '@portal-poc/platform-contract';
 
 export type DevtoolsPanelEntry = {
   name: string;

@@ -1,3 +1,3 @@
 {
-  "extends": ["./node_modules/@portal/presets/oxlint/base.json"]
+  "extends": ["./node_modules/@portal-poc/presets/oxlint/base.json"]
 }

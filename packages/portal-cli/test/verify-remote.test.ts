@@ -10,7 +10,7 @@ const validManifest: RemoteManifest = {
     { name: 'react', singleton: true, requiredVersion: '^19.3.0' },
     { name: 'react-dom', singleton: true, requiredVersion: '^19.3.0' },
     { name: 'react-router', singleton: true, requiredVersion: '^8.5.0' },
-    { name: '@portal/ds', singleton: true, requiredVersion: '^1.0.0' },
+    { name: '@portal-poc/ds', singleton: true, requiredVersion: '^1.0.0' },
   ],
 };
 
@@ -50,7 +50,7 @@ describe('verifyRemote', () => {
     const hostCompat = { hostVersion: '2.0.0', contract: { min: 1, max: 1 }, remoteTooling: { mfPlugin: '~1.23.0' }, singletons: { react: '19.3.1', 'react-dom': '19.3.1', 'react-router': '9.0.0' } };
     expect(run(validManifest, { hostCompat }).errors).toEqual([
       'incompatible with host 2.0.0: react-router: remote requires ^8.5.0, host provides 9.0.0.',
-      'incompatible with host 2.0.0: @portal/ds: remote requires ^1.0.0, host provides nothing.',
+      'incompatible with host 2.0.0: @portal-poc/ds: remote requires ^1.0.0, host provides nothing.',
     ]);
   });
 
@@ -75,7 +75,7 @@ describe('verifyRemote', () => {
       builtFiles: [['dist/a.js', 'const t = "Bearer abcdefghijklmnopqrstuvwxyz0123"']],
       runtimeConfig: { environments: {}, apiKey: 'x' },
     });
-    expect(report.errors).toEqual(['@portal/platform-contract 2.0.0 is outside the supported range ^1.0.0.']);
+    expect(report.errors).toEqual(['@portal-poc/platform-contract 2.0.0 is outside the supported range ^1.0.0.']);
     expect(report.warnings).toHaveLength(2);
   });
 });

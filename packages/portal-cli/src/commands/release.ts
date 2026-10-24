@@ -1,6 +1,6 @@
 import { cpSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { describeConflict, findSingletonConflicts } from '@portal/mf-shared';
+import { describeConflict, findSingletonConflicts } from '@portal-poc/mf-shared';
 import { readHostCompat, readJsonSource } from '../lib/host-compat.ts';
 import { toManifest } from '../lib/manifest.ts';
 import { readEntry, readStand, writeEntry } from '../lib/registry.ts';

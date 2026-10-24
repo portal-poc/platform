@@ -1,6 +1,6 @@
 import { useQueryErrorResetBoundary } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
-import { AsyncBoundary } from '@portal/ds';
+import { AsyncBoundary } from '@portal-poc/ds';
 
 /** DS AsyncBoundary wired to THIS app's react-query copy (the DS singleton must not import react-query). */
 export const QueryBoundary = ({ children }: { children: ReactNode }) => {

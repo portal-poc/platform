@@ -8,10 +8,10 @@ not just the remote.
 
 ## Decision
 
-- **`@portal/vite-config`**: `createRemoteViteConfig()` / `createHostViteConfig()` own the MF section (name, exposes
+- **`@portal-poc/vite-config`**: `createRemoteViteConfig()` / `createHostViteConfig()` own the MF section (name, exposes
   by convention, shared singletons, bridge variant), React Compiler and the `PORTAL_APP_VERSION` define. Teams extend
   everything else via `extend`.
-- **Pinned ranges** in `@portal/mf-shared` (`SUPPORTED_BUILD_TOOLING`: vite `~8.3`, MF plugin `~1.23`): the preset
+- **Pinned ranges** in `@portal-poc/mf-shared` (`SUPPORTED_BUILD_TOOLING`: vite `~8.3`, MF plugin `~1.23`): the preset
   refuses to build outside them; tooling is upgraded together with the preset, not per app.
 - **Recorded and checked**: manifests carry `metaData.pluginVersion` (+ `metaData.portal.vite/appVersion`); the host
   publishes the plugin range it supports in `compat.json` (`remoteTooling`); `portal-cli verify` and `release` reject

@@ -1,5 +1,5 @@
 import { queryOptions } from '@tanstack/react-query';
-import type { HttpClient } from '@portal/platform-runtime';
+import type { HttpClient } from '@portal-poc/platform-runtime';
 import { itemListSchema } from './contracts';
 import { remoteKeys } from './query-keys';
 

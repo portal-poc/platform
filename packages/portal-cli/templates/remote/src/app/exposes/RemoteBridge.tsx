@@ -2,8 +2,8 @@ import { createBridgeComponent } from '@module-federation/bridge-react/v19';
 import { useState } from 'react';
 import { createBrowserRouter } from 'react-router';
 import { RouterProvider } from 'react-router/dom';
-import { DsProvider } from '@portal/ds';
-import type { PlatformContract } from '@portal/platform-contract';
+import { DsProvider } from '@portal-poc/ds';
+import type { PlatformContract } from '@portal-poc/platform-contract';
 import { RemoteRoot } from './RemoteRoot';
 
 type BridgeRootProps = { platform: PlatformContract; basename?: string };

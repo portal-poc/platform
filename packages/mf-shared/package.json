@@ -1,5 +1,5 @@
 {
-  "name": "@portal/mf-shared",
+  "name": "@portal-poc/mf-shared",
   "version": "1.0.0",
   "description": "Integration contract constants (exposes, singletons, version ranges) + Module Federation shared config helper.",
   "type": "module",
@@ -14,7 +14,7 @@
     "test": "echo \"no tests\""
   },
   "devDependencies": {
-    "@portal/presets": "workspace:*",
+    "@portal-poc/presets": "workspace:*",
     "oxlint": "^1.89.0",
     "typescript": "^7.0.2",
     "fallow": "^3.35.0",

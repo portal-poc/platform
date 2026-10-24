@@ -2,7 +2,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { checkbox, confirm } from '@inquirer/prompts';
-import { REMOTE_NAME_PATTERN } from '@portal/mf-shared';
+import { REMOTE_NAME_PATTERN } from '@portal-poc/mf-shared';
 import { findWorkspaceRoot, isMissingOrEmptyDir, listFilesRecursive } from '../lib/fs.ts';
 import { createInlineConfigs } from '../lib/inline-configs.ts';
 import { parseList, toPascalCase } from '../lib/text.ts';
@@ -56,7 +56,7 @@ const askAnswers = async (options: CreateRemoteOptions): Promise<Answers> => {
           });
   const usePresets =
     options.presets ??
-    (options.yes || (await confirm({ message: 'Inherit internal configs (tsconfig, oxlint, fallow, vitest, steiger) from @portal/presets?', default: true })));
+    (options.yes || (await confirm({ message: 'Inherit internal configs (tsconfig, oxlint, fallow, vitest, steiger) from @portal-poc/presets?', default: true })));
   const withBridge =
     options.bridge ?? (options.yes || (await confirm({ message: 'Include the bridge entry (isolated mode fallback)?', default: true })));
   return { layers, usePresets, withBridge };
@@ -112,7 +112,7 @@ export const runCreateRemote = async (name: string, options: CreateRemoteOptions
 
   for (const file of listFilesRecursive(TEMPLATE_DIR)) {
     // Dotfiles are stored as `_name`: npm drops .gitignore/.npmrc from tarballs, and linters would pick up live
-    // .oxlintrc.json/.fallowrc.json from node_modules/@portal/cli/templates of every app that installs the CLI.
+    // .oxlintrc.json/.fallowrc.json from node_modules/@portal-poc/cli/templates of every app that installs the CLI.
     const relativePath = relative(TEMPLATE_DIR, file).replace(/(^|\/)_(gitignore|npmrc|oxlintrc\.json|fallowrc\.json)$/, '$1.$2');
     let content = overrides[relativePath] ?? readFileSync(file, 'utf8');
     if (relativePath === 'src/app/exposes/RemoteBridge.tsx' && !answers.withBridge) {
@@ -130,6 +130,6 @@ export const runCreateRemote = async (name: string, options: CreateRemoteOptions
 
   console.log(`\n✔ Created remote "${name}" in ${targetDir}`);
   console.log(`  layers: app, pages, shared${answers.layers.length > 0 ? `, ${answers.layers.join(', ')}` : ''}`);
-  console.log(`  configs: ${answers.usePresets ? 'inherited from @portal/presets' : 'inlined'}; bridge entry: ${answers.withBridge ? 'yes' : 'stub'}`);
+  console.log(`  configs: ${answers.usePresets ? 'inherited from @portal-poc/presets' : 'inlined'}; bridge entry: ${answers.withBridge ? 'yes' : 'stub'}`);
   console.log('\nNext: pnpm install && pnpm dev   (then register the remote in the host config.json)');
 };

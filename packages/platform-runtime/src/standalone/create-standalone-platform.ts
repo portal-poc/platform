@@ -1,5 +1,5 @@
-import { PLATFORM_CONTRACT_VERSION } from '@portal/platform-contract';
-import type { PlatformAuth, PlatformContract, PlatformEnv, PlatformLocale } from '@portal/platform-contract';
+import { PLATFORM_CONTRACT_VERSION } from '@portal-poc/platform-contract';
+import type { PlatformAuth, PlatformContract, PlatformEnv, PlatformLocale } from '@portal-poc/platform-contract';
 import { createDevtoolsRegistry } from '../devtools/create-devtools-registry';
 import type { DevtoolsRegistry } from '../devtools/create-devtools-registry';
 import { createPlatformEventBus } from '../events/create-platform-event-bus';

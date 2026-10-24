@@ -5,7 +5,7 @@ uplinks:
   npmjs:
     url: https://registry.npmjs.org/
 packages:
-  '@portal/*':
+  '@portal-poc/*':
     access: $all
     publish: $anonymous
     unpublish: $anonymous

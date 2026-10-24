@@ -1,6 +1,6 @@
 import { useEffect, useEffectEvent } from 'react';
 import type { QueryClient } from '@tanstack/react-query';
-import type { PlatformAuthEvent, PlatformContract } from '@portal/platform-contract';
+import type { PlatformAuthEvent, PlatformContract } from '@portal-poc/platform-contract';
 
 /**
  * Drops every cached query and mutation and reloads what is on screen.

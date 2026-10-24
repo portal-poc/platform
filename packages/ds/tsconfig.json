@@ -1,4 +1,4 @@
 {
-  "extends": "@portal/presets/tsconfig/react-library.json",
+  "extends": "@portal-poc/presets/tsconfig/react-library.json",
   "include": ["src", "test"]
 }

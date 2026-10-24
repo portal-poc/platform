@@ -1,5 +1,5 @@
 {
-  "name": "@portal/platform-contract",
+  "name": "@portal-poc/platform-contract",
   "version": "1.0.0",
   "description": "Portal platform contract: types only + PLATFORM_CONTRACT_VERSION. The only thing every team must agree on.",
   "type": "module",
@@ -25,7 +25,7 @@
     "test": "vitest run --passWithNoTests"
   },
   "devDependencies": {
-    "@portal/presets": "workspace:*",
+    "@portal-poc/presets": "workspace:*",
     "oxlint": "^1.89.0",
     "typescript": "^7.0.2",
     "vitest": "^5.0.5",

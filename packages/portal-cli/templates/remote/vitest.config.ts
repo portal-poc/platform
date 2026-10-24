@@ -1,5 +1,5 @@
 import { fileURLToPath } from 'node:url';
-import { createVitestConfig } from '@portal/presets/vitest';
+import { createVitestConfig } from '@portal-poc/presets/vitest';
 import { mergeConfig } from 'vitest/config';
 
 export default mergeConfig(createVitestConfig({ environment: 'jsdom' }), {

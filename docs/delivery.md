@@ -46,5 +46,5 @@ integrated|bridge|error` for every remote.
 
 ## Build tooling
 
-All apps build through `@portal/vite-config` (pinned Vite + MF plugin, MF section of the contract). Manifests record
+All apps build through `@portal-poc/vite-config` (pinned Vite + MF plugin, MF section of the contract). Manifests record
 `pluginVersion`; `verify`, `release` and the host runtime reject unsupported tooling (ADR 0019).

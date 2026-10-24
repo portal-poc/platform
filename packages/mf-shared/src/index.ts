@@ -31,7 +31,7 @@ export const SINGLETONS = {
   '@emotion/react': '^11.14.0',
   '@emotion/styled': '^11.14.0',
   '@mui/joy': '5.0.0-beta.52',
-  '@portal/ds': '^1.0.0',
+  '@portal-poc/ds': '^1.0.0',
 } as const satisfies Record<string, string>;
 
 /** Versioned packages bundled into every app. Declaring them as singletons fails `portal-cli verify`. */
@@ -39,12 +39,12 @@ export const NEVER_SINGLETONS: readonly string[] = [
   '@tanstack/react-query',
   'react-hook-form',
   'zod',
-  '@portal/platform-runtime',
+  '@portal-poc/platform-runtime',
 ];
 
 export const SUPPORTED_CONTRACT_VERSIONS = { min: 1, max: 1 } as const;
 
-/** `@portal/platform-contract` npm range a remote may depend on. */
+/** `@portal-poc/platform-contract` npm range a remote may depend on. */
 export const SUPPORTED_CONTRACT_PACKAGE_RANGE = '^1.0.0';
 
 /** Remote names must be valid JS identifiers (MF global names) and lower-case. */
@@ -85,7 +85,7 @@ export type HostCompat = {
 
 /**
  * Build tooling is a "build-time singleton": the manifest/remoteEntry format comes from the MF plugin, so every app
- * builds with a platform-approved range. Enforced by @portal/vite-config (on config load), portal-cli verify/release
+ * builds with a platform-approved range. Enforced by @portal-poc/vite-config (on config load), portal-cli verify/release
  * (manifest `metaData.pluginVersion`) and the host at runtime.
  */
 export const SUPPORTED_BUILD_TOOLING = {

@@ -1,5 +1,5 @@
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { List, ListItem, Typography } from '@portal/ds';
+import { List, ListItem, Typography } from '@portal-poc/ds';
 import { itemsListOptions, useRemoteHttp } from '@/shared/api';
 
 export const HomePage = () => {

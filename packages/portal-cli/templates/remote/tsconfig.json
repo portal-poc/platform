@@ -1,5 +1,5 @@
 {
-  "extends": "@portal/presets/tsconfig/react-app.json",
+  "extends": "@portal-poc/presets/tsconfig/react-app.json",
   "include": [
     "src"
   ],

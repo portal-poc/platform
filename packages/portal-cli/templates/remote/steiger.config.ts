@@ -1,3 +1,3 @@
-import { createSteigerConfig } from '@portal/presets/steiger';
+import { createSteigerConfig } from '@portal-poc/presets/steiger';
 
 export default createSteigerConfig();

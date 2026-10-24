@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { Mock } from 'vitest';
 import { z } from 'zod';
-import type { PlatformAuth } from '@portal/platform-contract';
+import type { PlatformAuth } from '@portal-poc/platform-contract';
 import { PlatformInteractionRequiredError } from '../auth/errors';
 import { createHttpClient } from './create-http-client';
 import { HttpError, ResponseValidationError } from './errors';

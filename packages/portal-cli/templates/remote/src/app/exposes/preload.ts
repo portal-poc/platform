@@ -1,4 +1,4 @@
-import type { PlatformContract } from '@portal/platform-contract';
+import type { PlatformContract } from '@portal-poc/platform-contract';
 
 /**
  * Reserved expose (section 13). Future: `getRemoteQueryClient(platform).prefetchQuery(<listOptions>(...))`.

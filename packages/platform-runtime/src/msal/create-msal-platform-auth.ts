@@ -1,6 +1,6 @@
 import { EventType, InteractionRequiredAuthError } from '@azure/msal-browser';
 import type { AccountInfo, EventMessage, IPublicClientApplication } from '@azure/msal-browser';
-import type { PlatformAccount, PlatformAuth, PlatformAuthEvent } from '@portal/platform-contract';
+import type { PlatformAccount, PlatformAuth, PlatformAuthEvent } from '@portal-poc/platform-contract';
 import { PlatformInteractionRequiredError } from '../auth/errors';
 
 type MsalPlatformAuthOptions = {

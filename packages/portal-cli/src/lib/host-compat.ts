@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import type { HostCompat } from '@portal/mf-shared';
+import type { HostCompat } from '@portal-poc/mf-shared';
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
 

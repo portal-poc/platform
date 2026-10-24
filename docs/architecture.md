@@ -11,13 +11,13 @@ meant to be split into separate repositories (polyrepo) later.
 | `apps/host` | Host application (data router, MSAL/mock auth, remote loading, route-level view transitions, bookmarks widget, devtools toolbar, demo panel) | host repo |
 | `apps/tasks-remote` | Remote A, FSD 2.1, equivalent to `portal-cli create remote tasks` + demo pages | tasks team repo |
 | `apps/legacy-remote` | React 18 remote, loaded through MF Bridge (isolated mode) | legacy team repo |
-| `packages/platform-contract` | `@portal/platform-contract` — types only + `PLATFORM_CONTRACT_VERSION` | platform repo |
-| `packages/platform-runtime` | `@portal/platform-runtime` — providers, auth adapters, http client, QueryClient factory, devtools, standalone, compat | platform repo |
-| `packages/ds` | `@portal/ds` — Joy UI wrapper + loading primitives (MF singleton) | DS repo |
-| `packages/mf-shared` | `@portal/mf-shared` — integration-contract constants (exposes, singletons, ranges) + shared config helper | platform repo |
-| `packages/vite-config` | `@portal/vite-config` — build preset: pinned Vite + MF plugin, MF section of the contract, React Compiler | platform repo |
-| `packages/presets` | `@portal/presets` — optional tsconfig / oxlint (incl. React Compiler rules) / fallow / vitest / steiger presets | platform repo |
-| `packages/portal-cli` | `@portal/cli` (command `portal-cli`) — `create remote`, `add <layer>`, `verify`, `publish`, `release`, `registry check|build|status` | platform repo |
+| `packages/platform-contract` | `@portal-poc/platform-contract` — types only + `PLATFORM_CONTRACT_VERSION` | platform repo |
+| `packages/platform-runtime` | `@portal-poc/platform-runtime` — providers, auth adapters, http client, QueryClient factory, devtools, standalone, compat | platform repo |
+| `packages/ds` | `@portal-poc/ds` — Joy UI wrapper + loading primitives (MF singleton) | DS repo |
+| `packages/mf-shared` | `@portal-poc/mf-shared` — integration-contract constants (exposes, singletons, ranges) + shared config helper | platform repo |
+| `packages/vite-config` | `@portal-poc/vite-config` — build preset: pinned Vite + MF plugin, MF section of the contract, React Compiler | platform repo |
+| `packages/presets` | `@portal-poc/presets` — optional tsconfig / oxlint (incl. React Compiler rules) / fallow / vitest / steiger presets | platform repo |
+| `packages/portal-cli` | `@portal-poc/cli` (command `portal-cli`) — `create remote`, `add <layer>`, `verify`, `publish`, `release`, `registry check|build|status` | platform repo |
 | `registry/` | Which version of which remote runs on which stand (`<stand>/<remote>.json`, `stands.json`) | registry repo |
 | `tools/polyrepo` | Polyrepo dry run: Verdaccio (Nexus stand-in) + split every app into its own repo and check it ([`polyrepo.md`](./polyrepo.md)) | — |
 | `tools/infra` | PoC stand-ins: Nexus (immutable artifacts) and stands (host + `/config.json` + `compat.json`) | — (infra) |
@@ -64,7 +64,7 @@ Decided with the project owner before implementation:
   `shared` — overrides "CLI does not create empty layers" from section 16.1.
 - Keep the code minimal: this is a PoC, not production code.
 - **Linting** = oxlint (code style + React Compiler rules, native port of eslint-plugin-react-hooks v7) + Steiger (FSD)
-  + **fallow** (unused files/exports/dependencies, duplication, FSD boundaries). All presets live in `@portal/presets`;
-  apps extend them (`.oxlintrc.json`, `.fallowrc.json` with `extends: "npm:@portal/presets/fallow/<kind>.json"`).
-- Optional parts implemented: `@portal/presets`, bridge demo (`legacy-remote`). Not implemented: preload hover demo
+  + **fallow** (unused files/exports/dependencies, duplication, FSD boundaries). All presets live in `@portal-poc/presets`;
+  apps extend them (`.oxlintrc.json`, `.fallowrc.json` with `extends: "npm:@portal-poc/presets/fallow/<kind>.json"`).
+- Optional parts implemented: `@portal-poc/presets`, bridge demo (`legacy-remote`). Not implemented: preload hover demo
   (the architecture is ready — section 13), Playwright e2e.

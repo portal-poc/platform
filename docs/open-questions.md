@@ -57,8 +57,8 @@ discovered while building this reference repo. Code that depends on an open deci
 - **(found, fixed)** Polyrepo dry run findings (dependency confusion with public `portal-cli`, TS-only packages,
   hoisted `@types/node`, live linter configs inside the published CLI, statically imported optional peer) — see
   [`polyrepo.md`](./polyrepo.md).
-- **(found)** Nexus setup: internal scope `@portal` must be hosted-only (never proxied from npmjs) and "disable
-  redeploy" on; developer onboarding pins `@portal:registry` in `~/.npmrc`.
+- **(found)** Nexus setup: internal scope `@portal-poc` must be hosted-only (never proxied from npmjs) and "disable
+  redeploy" on; developer onboarding pins `@portal-poc:registry` in `~/.npmrc`.
 - **(found)** pnpm 12 asks to approve "agent skills" shipped by dependencies (`fallow`); CI policy needed.
 - **(found)** oxlint has no port of `react-hooks/component-hook-factories`; add `eslint-plugin-react-hooks` as an
   oxlint JS plugin (aliased name) if needed.

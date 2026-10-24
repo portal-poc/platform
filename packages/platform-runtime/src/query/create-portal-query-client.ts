@@ -1,6 +1,6 @@
 import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query';
 import type { QueryClientConfig } from '@tanstack/react-query';
-import type { PlatformTelemetry } from '@portal/platform-contract';
+import type { PlatformTelemetry } from '@portal-poc/platform-contract';
 import { PlatformInteractionRequiredError, PlatformScopeNotAllowedError } from '../auth/errors';
 import { HttpError, ResponseValidationError } from '../http/errors';
 

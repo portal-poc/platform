@@ -1,5 +1,5 @@
 {
-  "extends": "@portal/presets/tsconfig/node.json",
+  "extends": "@portal-poc/presets/tsconfig/node.json",
   "include": [
     "src",
     "bin",

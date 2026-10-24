@@ -1,6 +1,6 @@
 import { use } from 'react';
 import { z } from 'zod';
-import { usePlatformEnv } from '@portal/platform-runtime';
+import { usePlatformEnv } from '@portal-poc/platform-runtime';
 
 export const REMOTE_NAME = '__NAME__';
 

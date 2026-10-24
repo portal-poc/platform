@@ -1,4 +1,4 @@
-import type { PlatformAuth, PlatformTelemetry } from '@portal/platform-contract';
+import type { PlatformAuth, PlatformTelemetry } from '@portal-poc/platform-contract';
 import { isInteractionRequiredError, PlatformScopeNotAllowedError } from './errors';
 
 type RemoteAuthOptions = {

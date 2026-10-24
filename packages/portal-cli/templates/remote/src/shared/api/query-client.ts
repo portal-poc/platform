@@ -1,6 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query';
-import { createPortalQueryClient, createQueryDevtoolsMount } from '@portal/platform-runtime';
-import type { PlatformContract } from '@portal/platform-contract';
+import { createPortalQueryClient, createQueryDevtoolsMount } from '@portal-poc/platform-runtime';
+import type { PlatformContract } from '@portal-poc/platform-contract';
 import { REMOTE_NAME } from '../config';
 
 let queryClient: QueryClient | null = null;

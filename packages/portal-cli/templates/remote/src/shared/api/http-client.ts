@@ -1,6 +1,6 @@
-import { createHttpClient, usePlatform } from '@portal/platform-runtime';
-import type { HttpClient } from '@portal/platform-runtime';
-import type { PlatformContract } from '@portal/platform-contract';
+import { createHttpClient, usePlatform } from '@portal-poc/platform-runtime';
+import type { HttpClient } from '@portal-poc/platform-runtime';
+import type { PlatformContract } from '@portal-poc/platform-contract';
 import { REMOTE_NAME, useRemoteEnvConfig } from '../config';
 import type { RemoteEnvConfig } from '../config';
 import { fakeBackendFetch } from './fake-backend';

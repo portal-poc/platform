@@ -7,8 +7,8 @@ import {
   REMOTE_EXPOSES,
   SUPPORTED_BUILD_TOOLING,
   toBridgeRemoteName,
-} from '@portal/mf-shared';
-import type { SharedEntry } from '@portal/mf-shared';
+} from '@portal-poc/mf-shared';
+import type { SharedEntry } from '@portal-poc/mf-shared';
 import react, { reactCompilerPreset } from '@vitejs/plugin-react';
 import semver from 'semver';
 import { defineConfig, mergeConfig } from 'vite';
@@ -38,7 +38,7 @@ const assertBuildTooling = (appRoot: string) => {
     if (!semver.satisfies(version, range)) {
       throw new Error(
         `${name}@${version} is outside the platform-supported range ${range}. ` +
-          'Build tooling is upgraded together with @portal/vite-config, not per app.',
+          'Build tooling is upgraded together with @portal-poc/vite-config, not per app.',
       );
     }
   }

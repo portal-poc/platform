@@ -1,5 +1,5 @@
 import semver from 'semver';
-import type { HostCompat } from '@portal/mf-shared';
+import type { HostCompat } from '@portal-poc/mf-shared';
 import {
   BRIDGE_BUILD_SUFFIX,
   describeConflict,
@@ -11,7 +11,7 @@ import {
   REQUIRED_EXPOSES,
   SINGLETONS,
   SUPPORTED_CONTRACT_PACKAGE_RANGE,
-} from '@portal/mf-shared';
+} from '@portal-poc/mf-shared';
 
 export type VerifyMode = 'integrated' | 'bridge';
 
@@ -27,7 +27,7 @@ export type RemoteManifest = {
 
 export type VerifyInput = {
   manifest: RemoteManifest;
-  /** Resolved version of @portal/platform-contract installed in the remote; null = missing; omitted = not checked
+  /** Resolved version of @portal-poc/platform-contract installed in the remote; null = missing; omitted = not checked
    *  (release/rollback work on published artifacts, the build-time verify already checked it). */
   contractPackageVersion?: string | null;
   mode: VerifyMode;
@@ -119,9 +119,9 @@ export const verifyRemote = (input: VerifyInput): VerifyReport => {
 
   const contractVersion = input.contractPackageVersion;
   if (contractVersion === null) {
-    errors.push('@portal/platform-contract is not installed.');
+    errors.push('@portal-poc/platform-contract is not installed.');
   } else if (contractVersion !== undefined && !semver.satisfies(contractVersion, SUPPORTED_CONTRACT_PACKAGE_RANGE)) {
-    errors.push(`@portal/platform-contract ${contractVersion} is outside the supported range ${SUPPORTED_CONTRACT_PACKAGE_RANGE}.`);
+    errors.push(`@portal-poc/platform-contract ${contractVersion} is outside the supported range ${SUPPORTED_CONTRACT_PACKAGE_RANGE}.`);
   }
 
   for (const [path, content] of input.builtFiles ?? []) {
