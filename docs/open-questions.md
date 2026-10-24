@@ -45,3 +45,9 @@ discovered while building this reference repo. Code that depends on an open deci
 - **(found)** Steiger's `repetitive-naming` rejects `task-list` / `task-create` / `task-details` (section 16.2 names);
   pages are `list` / `create` / `details`. The bookmark mutation is used by two pages, so it lives in
   `features/toggle-bookmark`; shared query factories live in `shared/api` (no `entities/task` yet).
+- **(found)** `react-router/dom` must be shared as a singleton too: it carries its own copy of the router internals,
+  so a remote `RouterProvider` and shared `<Routes>` otherwise see different contexts (broke bridge mode).
+- **(found)** Route elements need a `key` per route for page-level `<ViewTransition>` enter/exit: without it React
+  reconciles them as an update of one component.
+- **(found)** With React Compiler, components passed to `react-error-boundary` as `fallbackRender` break (hooks in a
+  plain function call); pass `FallbackComponent` instead.

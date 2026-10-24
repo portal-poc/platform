@@ -28,8 +28,10 @@ export const createDevtoolsRegistry = (now: () => number = Date.now): DevtoolsRe
   const mountCounts = new Map<string, number>();
   const listeners = new Set<() => void>();
   let snapshot: DevtoolsSnapshot = { panels: [] };
+  let isUpdateScheduled = false;
 
-  const rebuildSnapshot = () => {
+  const publishSnapshot = () => {
+    isUpdateScheduled = false;
     snapshot = {
       panels: [...panels.entries()].map(([name, panel]) => ({
         name,
@@ -40,6 +42,15 @@ export const createDevtoolsRegistry = (now: () => number = Date.now): DevtoolsRe
     };
     for (const listener of listeners) {
       listener();
+    }
+  };
+
+  // Registration happens while a remote renders (QueryClient is created lazily in render), so updates are
+  // published in a microtask: never setState in another component during render; bursts are coalesced.
+  const rebuildSnapshot = () => {
+    if (!isUpdateScheduled) {
+      isUpdateScheduled = true;
+      queueMicrotask(publishSnapshot);
     }
   };
 

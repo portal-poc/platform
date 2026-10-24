@@ -27,9 +27,17 @@ const DefaultError = ({ error, resetErrorBoundary }: FallbackProps) => (
   </Alert>
 );
 
-/** ErrorBoundary + Suspense with the portal Spinner as the default fallback. */
+/**
+ * ErrorBoundary + Suspense with the portal Spinner as the default fallback.
+ * The default error UI is passed as `FallbackComponent`, not `fallbackRender`: React Compiler adds a hook
+ * (memo cache) to components, and `fallbackRender` is called as a plain function inside a class render.
+ */
 export const AsyncBoundary = ({ children, fallback, renderError, onReset, resetKeys }: AsyncBoundaryProps) => (
-  <ErrorBoundary fallbackRender={renderError ?? DefaultError} {...(onReset ? { onReset } : {})} {...(resetKeys ? { resetKeys } : {})}>
+  <ErrorBoundary
+    {...(renderError ? { fallbackRender: renderError } : { FallbackComponent: DefaultError })}
+    {...(onReset ? { onReset } : {})}
+    {...(resetKeys ? { resetKeys } : {})}
+  >
     <Suspense fallback={fallback ?? <SpinnerFallback />}>{children}</Suspense>
   </ErrorBoundary>
 );

@@ -23,6 +23,9 @@ export const SINGLETONS = {
   react: '^19.3.0',
   'react-dom': '^19.3.0',
   'react-router': '^8.5.0',
+  // Subpath with its own copy of the router internals: without sharing it, a RouterProvider from the remote's
+  // `react-router/dom` and <Routes> from the shared `react-router` see different contexts (found in bridge mode).
+  'react-router/dom': '^8.5.0',
   '@emotion/react': '^11.14.0',
   '@emotion/styled': '^11.14.0',
   '@mui/joy': '5.0.0-beta.52',
