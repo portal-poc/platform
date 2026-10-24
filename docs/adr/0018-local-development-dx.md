@@ -1,27 +1,29 @@
-# ADR 0018: Local development experience across hosts and remotes
+# ADR 0018: Local development — standalone, or local host + local remotes
 
 ## Context
 
-With many teams, nobody should need to run every app locally, yet everyone must be able to see their code inside the
-real host.
+Developers need a fast loop and, sometimes, their remote inside the real host. Mechanisms that inject local code
+into deployed stands (URL overrides) add complexity and an attack surface.
 
 ## Decision
 
-Three supported modes, each one command:
+Two modes only:
 
-1. **Remote standalone** — `pnpm --filter tasks-remote dev:standalone`: same `RemoteRoot`, own mock auth, router,
-   devtools. Fastest loop for most work.
-2. **Remote inside a deployed host** — run only the remote's dev server and open the stand with
-   `?remote.tasks=http://localhost:5174/mf-manifest.json` (allowed on non-prod stands; kept for the session;
-   `?remote.tasks=` clears it). Every other remote comes from the stand registry. The host attaches to the remote's
-   dev server (React Refresh runtime + Vite client); the deployed host runs production React, so a save reloads the
-   page.
-3. **Everything local** — `pnpm dev`: local stand (registry `local` = dev servers), **real Fast Refresh of remote
-   components inside the host** (the host injects a recording React DevTools hook in dev so the remote's refresh
-   runtime finds React DOM). `PORTAL_STAND=uat pnpm --filter host dev` runs the local host against uat remotes
-   instead — host developers need no remote dev servers.
+1. **Standalone** — `pnpm --filter tasks-remote dev:standalone`: the same `RemoteRoot` with its own mock platform,
+   router and devtools. The default loop.
+2. **Local host + the remotes you work on** — run the host repo locally and your remote's dev server. The host dev
+   server builds `/config.json` itself: the registry config of `PORTAL_STAND` (what is actually deployed there) with
+   the remotes listed as `PORTAL_REMOTE_<NAME>=<dev manifest URL>` in `.env.development.local` replaced by the local
+   dev servers. Anything not overridden runs the version currently registered on that stand.
+   `pnpm dev` (monorepo) = `PORTAL_STAND=local`, where every remote is a dev server.
+
+Local remotes get **real Fast Refresh inside the host**: the host dev server injects a recording React DevTools hook
+before React DOM loads, and attaches to each local remote's React Refresh runtime and Vite client.
+
+Deployed hosts never accept overrides; the stand CSP allows only the Nexus origin.
 
 ## Consequences
 
-The toolbar shows where each remote comes from (registry version or local override) and in which mode it runs.
-Overrides are a dev feature: disabled on prod stands and still limited by the stand CSP.
+The host toolbar shows `name@version · registry|local · integrated|bridge|error`. The dev attach relies on Vite /
+plugin-react internals (`/@react-refresh`, `createHotContext`, the DevTools hook shape) — dev-only, but covered by the
+pinned build tooling (ADR 0019) and should get a smoke test.

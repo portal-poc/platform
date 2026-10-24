@@ -31,19 +31,46 @@ pipeline templates). "Per remote" = work each remote team does once, mostly a pi
 | 3 | **Registry + PR flow** | `registry/<stand>/<remote>.json` (start as a folder in the host repo, move to its own repo later); CODEOWNERS; branch policy; remote pipeline opens the PR (`portal-cli release`); merge triggers the config deploy | 3–5 days (incl. PR automation with a service account) | ~0.5 day | Audited releases without the host team; rollback = revert |
 | 4 | **Compatibility gates** | Host build emits `compat.json`; `release` checks the stand's host; host deploy runs `registry check`; host checks manifests at runtime | 2–3 days | — (comes with the template) | Incompatible releases blocked before users see them |
 | 5 | **Remotes own their config** | `config.json` inside the remote's version folder, validated by zod; stand name from the platform contract (`platform.env`); a transition helper falls back to `window.env` with a deprecation warning; then `window.env` is removed | 1 day (helper) | 0.5–1 day | Host no longer knows remote settings. *Depends on the remote receiving the platform contract as a prop (architecture track) — until then the helper can read the stand name from `window.env`.* |
-| 6 | **Developer experience** | `?remote.<name>=` overrides on non-prod stands, dev-server attach (refresh runtime, Vite client), recording DevTools hook, `PORTAL_STAND` for host dev | 1–2 days | — | Remote teams test inside the real host without running it |
+| 6 | **Local development** | Standalone mode for every remote; host dev server builds `/config.json` from `PORTAL_STAND` + `PORTAL_REMOTE_*` (`.env.development.local`); Fast Refresh of local remotes inside the host (recording DevTools hook, refresh runtime + Vite client attach) | 1–2 days | — (template) | Work on one remote against what is really deployed, without running every app |
+| 6a | **Build preset (tooling as a build-time singleton)** | `@portal/vite-config` owns the MF section and pins Vite + MF plugin; manifests carry `pluginVersion`; `verify`/`release`/host runtime reject unsupported tooling | 1–2 days | ~0.5 day (switch `vite.config.ts` to the preset) | A remote can no longer break federation in the host with another bundler/plugin version |
 | 7 | **Observability** | Telemetry tagged `name@version`, remote status in the toolbar, `registry status` dashboard (or a page generated from the registry) | 1–2 days | — | Fast triage: which version, which mode, which stand |
 | 8 | **Bridge builds** (when the first singleton major upgrade is planned) | Second build target without shared deps per remote; registry carries `bridgeManifest` | 0.5 day | ~0.5 day | Host can upgrade React/router/DS majors without stopping laggards |
 
-**Total:** roughly **3–5 weeks of platform/host work** (phases 1–7; partly parallelisable) plus **1–2 days per remote
-team**, spread over their normal releases. Phase 8 is scheduled with the first singleton major upgrade.
+**Total:** roughly **4–6 weeks of platform/host work** (phases 1–7 incl. 6a; partly parallelisable) plus **1–2 days
+per remote team**, spread over their normal releases. Phase 8 is scheduled with the first singleton major upgrade.
 
 ## Order and quick wins
 
 1. **Phase 1** first — nothing else helps while configs are bundled into the host.
 2. **Phase 2** right after — the biggest operational win (rollback, cache, open tabs) and independent of the rest.
 3. Phases 3–4 together (the registry PR is where the gate runs).
-4. Phase 5 per remote, opportunistically; phases 6–7 any time after phase 1.
+4. Phase 6a early — it is cheap and protects the host from tooling drift while teams are still few.
+5. Phase 5 per remote, opportunistically; phases 6–7 any time after phase 1.
+
+## Backend track: remote frontend ↔ its BFF
+
+Every remote frontend has its own BFF (separate repositories, today deployed manually, independently of the
+frontend). Before the first production release this mismatch is harmless; after it, a frontend can expect fields an
+older BFF does not return (strict zod validation then fails the screen) and a BFF can drop what an older frontend or
+a rollback still needs.
+
+**Now (cheap, no gates):**
+- The http client sends `X-Client-Version: <name>@<version>` (implemented in `createHttpClient`); BFFs log it.
+- BFFs expose their API version (response header or `/.well-known/api-version`).
+- Tolerant reader in zod schemas: no `.strict()`, new fields optional until every stand's BFF has them.
+
+**Before the first production release:**
+- Rules: expand → migrate → contract; BFF deploys before the frontend that needs it; breaking change = new API
+  version, never an in-place change; a compatibility window (the BFF supports frontends released in the last N
+  releases/weeks — covers rollbacks and long-lived tabs).
+- Frontend build records the API version it expects (from the OpenAPI package of the backend specs repo) in its
+  manifest; `portal-cli release` checks it against the BFF version on the target stand (same gate as singletons).
+- BFF answers `426 Upgrade Required` to frontends outside its window; the frontend shows "a new version is
+  available — reload".
+- Automated BFF deployments (otherwise there is nothing reliable to check against); versions dashboard shows the
+  frontend/BFF pair per stand.
+
+Effort: the "now" part is hours per BFF; the gate needs automated BFF deploys first, then ~2–3 days of platform work.
 
 ## Rollout without a big bang
 

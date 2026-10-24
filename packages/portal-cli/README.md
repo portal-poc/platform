@@ -16,5 +16,7 @@ portal-cli verify [--dir .] [--mode integrated|bridge]
   (name, exposes, singletons and ranges, react-query not a singleton, contract version; warns about secrets and
   environment-specific `config.json`). It is the only permanent consistency mechanism — run it in CI.
 
+Generated remotes build through `@portal/vite-config` (pinned Vite + MF plugin, MF section of the contract).
+
 The template (`templates/remote`) is `apps/tasks-remote` without its demo pages (`pages/list|create|details`,
 `features/toggle-bookmark`, the tasks fake backend) — keep them in sync when changing the skeleton.

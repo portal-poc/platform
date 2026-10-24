@@ -1,13 +1,14 @@
 # Delivery: releases, stands and local development
 
 ```
-remote repo CI                     registry (git)                       stand (uat/prod)
-───────────────                    ──────────────                       ────────────────
-build (+ bridge build)             registry/uat/tasks.json              /config.json  ← registry build (on merge)
-verify  (gate 1)                   { version, manifest,                 /compat.json  ← host build
-publish → nexus/tasks/1.4.2/         bridgeManifest, basePath, scopes } host loads manifest → gate 3 → integrated |
-release --stand uat (gate 2) ──PR──►  branch policy: gate + owner        bridge build | clear error
-                                       approval → merge → config deploy
+remote repo CI                        registry (git)                      stand (uat / prod)
+──────────────                        ──────────────                      ──────────────────
+build (+ bridge build)                registry/uat/tasks.json             /config.json  ← registry build on merge
+verify       (gate 1: contract,       { version, manifest,                /compat.json  ← host build
+              singletons, tooling)      bridgeManifest,                   host reads the manifest (gate 3) →
+publish → nexus/tasks/1.4.2/            basePath, scopes }                  integrated | bridge build | clear error
+release --stand uat (gate 2) ──PR──►  branch policy: gate +
+                                       owner approval → merge
 host repo CI: build → registry check (gate 2, reverse) → deploy host files → registry build
 ```
 
@@ -34,11 +35,16 @@ pnpm registry:status           # versions dashboard
 
 ## Local development
 
-| Who | Command | Result |
+| Mode | How | Result |
 |---|---|---|
-| Remote team, quick loop | `pnpm --filter tasks-remote dev:standalone` | Remote alone with mock platform |
-| Remote team, inside the real host | `pnpm --filter tasks-remote dev:in-uat` → open the printed URL | uat host + uat remotes + YOUR dev server; save → reload |
-| Host team | `pnpm dev:host:uat` (with `pnpm infra`) | Local host (HMR) + remotes registered on uat |
-| Everything local | `pnpm dev` | Local stand: host + remotes on dev servers, Fast Refresh for remote components inside the host |
+| Standalone remote | `pnpm --filter tasks-remote dev:standalone` | Remote alone with its mock platform — the default loop |
+| Local host + local remote(s) | `apps/host/.env.development.local`: `PORTAL_STAND=uat` + `PORTAL_REMOTE_TASKS=http://localhost:5174/mf-manifest.json`; run `pnpm infra`, the remote's `pnpm dev` and the host's `pnpm dev` | Host + your remote locally with Fast Refresh; every other remote at the version registered on uat |
+| Everything local (monorepo) | `pnpm dev` | `PORTAL_STAND=local`: all remotes on dev servers |
 
-The host toolbar / demo panel shows `name@version · registry|override · integrated|bridge|error` for every remote.
+Deployed stands never load local code. The host toolbar / demo panel shows `name@version · registry|local ·
+integrated|bridge|error` for every remote.
+
+## Build tooling
+
+All apps build through `@portal/vite-config` (pinned Vite + MF plugin, MF section of the contract). Manifests record
+`pluginVersion`; `verify`, `release` and the host runtime reject unsupported tooling (ADR 0019).

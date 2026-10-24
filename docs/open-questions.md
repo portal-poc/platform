@@ -43,7 +43,10 @@ discovered while building this reference repo. Code that depends on an open deci
   PoC; `portal-cli release` writes the entry locally.
 - **(found)** `portal-cli publish` copies to a folder; real Nexus upload (raw repository, PUT with credentials, refuse
   overwrite on the server side) is a TODO(decision).
-- **(found)** Remote dev servers inside a deployed host get page reloads, not Fast Refresh (production React).
+- **(found)** Remote frontend ↔ BFF compatibility is not enforced yet (BFFs deployed manually, no prod). Plan in
+  `migration-plan.md` → "Backend track".
+- **(found)** Upgrading Vite / the MF plugin needs a transition window where the host's MF runtime loads manifests of
+  both versions (widen `SUPPORTED_BUILD_TOOLING` first). Not exercised in the PoC.
 
 ## Tooling
 

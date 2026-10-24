@@ -13,6 +13,9 @@ pnpm dev            # infra + local stand: tasks-remote, legacy-remote, host (de
 open http://localhost:5173
 ```
 
+Work on one remote against a deployed stand: copy `apps/host/.env.development.local.example` to
+`.env.development.local`, run `pnpm infra`, the remote's `pnpm dev` and the host's `pnpm dev`.
+
 Release flow on a production-like stand (Nexus, registry, gates): see [`docs/delivery.md`](./docs/delivery.md).
 Migration from the current project: [`docs/migration-plan.md`](./docs/migration-plan.md).
 

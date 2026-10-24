@@ -1,7 +1,8 @@
 # Demo scenarios (acceptance criteria)
 
 Start everything: `pnpm install && pnpm dev`, open http://localhost:5173 (local stand: dev servers). Release and
-stand scenarios (new version, rollback, gates, bridge fallback, dev overrides) are in [`delivery.md`](./delivery.md). The **Demo panel** (bottom-left) switches
+stand scenarios (new version, rollback, gates, bridge fallback, local host + local remote) are in
+[`delivery.md`](./delivery.md). The **Demo panel** (bottom-left) switches
 account, fake-BFF delay, token TTL, forced bridge mode and an incompatible contract. The **Devtools** button
 (bottom-right) is the query devtools toolbar. Out of scope (see `architecture.md`): realtime scenarios 6–9,
 API-contract scenario 17, preload demo 18.
