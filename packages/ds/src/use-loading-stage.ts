@@ -1,11 +1,11 @@
-import { useSpinDelay } from 'spin-delay';
+import { useDelayedFlag } from './use-delayed-flag';
 
 export type LoadingStage = 'idle' | 'button' | 'blocking';
 
 /** JS variant for when the stage drives logic/text/analytics. Prefer the CSS primitives for visuals. */
 export const useLoadingStage = (isPending: boolean): LoadingStage => {
-  const isButtonStage = useSpinDelay(isPending, { delay: 300, minDuration: 0, ssr: false });
-  const isBlockingStage = useSpinDelay(isPending, { delay: 2000, minDuration: 0, ssr: false });
+  const isButtonStage = useDelayedFlag(isPending, 300);
+  const isBlockingStage = useDelayedFlag(isPending, 2000);
   if (isBlockingStage) {
     return 'blocking';
   }

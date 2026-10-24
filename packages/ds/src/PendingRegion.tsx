@@ -1,6 +1,6 @@
 import { styled } from '@mui/joy';
 import type { ReactNode } from 'react';
-import { useSpinDelay } from 'spin-delay';
+import { useDelayedFlag } from './use-delayed-flag';
 import { Spinner } from './Spinner';
 
 /**
@@ -38,7 +38,7 @@ type PendingRegionProps = {
 };
 
 export const PendingRegion = ({ isPending, children, stillLoadingMessage = 'Still loading…' }: PendingRegionProps) => {
-  const isSlow = useSpinDelay(isPending, { delay: 2000, ssr: false });
+  const isSlow = useDelayedFlag(isPending, 2000);
   return (
     <Region data-pending={isPending ? '' : undefined} aria-busy={isPending}>
       {children}

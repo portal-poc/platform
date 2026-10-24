@@ -1,6 +1,6 @@
 {
   "name": "@portal-poc/ds",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Portal design system: MUI Joy wrapper, tokens and loading primitives. Module Federation singleton.",
   "type": "module",
   "sideEffects": false,
@@ -26,8 +26,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "react-error-boundary": "^6.1.6",
-    "spin-delay": "^2.0.1"
+    "react-error-boundary": "^6.1.6"
   },
   "peerDependencies": {
     "@emotion/react": "^11.14.0",
