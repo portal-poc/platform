@@ -30,3 +30,4 @@ export { default as Tab } from '@mui/joy/Tab';
 export { default as TabList } from '@mui/joy/TabList';
 export { default as Tabs } from '@mui/joy/Tabs';
 export { default as Typography } from '@mui/joy/Typography';
+export { default as GlobalStyles } from '@mui/joy/GlobalStyles';

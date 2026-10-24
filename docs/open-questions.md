@@ -39,3 +39,9 @@ discovered while building this reference repo. Code that depends on an open deci
 
 - **(found)** `@mui/joy` is still `5.0.0-beta.52` (never reached stable; MUI put Joy in maintenance). Long-term DS base
   needs a decision.
+
+## FSD
+
+- **(found)** Steiger's `repetitive-naming` rejects `task-list` / `task-create` / `task-details` (section 16.2 names);
+  pages are `list` / `create` / `details`. The bookmark mutation is used by two pages, so it lives in
+  `features/toggle-bookmark`; shared query factories live in `shared/api` (no `entities/task` yet).
