@@ -47,11 +47,11 @@ Each `@portal-poc` package grants Read access to the app repositories (package s
    for repo in platform registry host tasks-remote legacy-remote; do gh repo clone portal-poc/$repo; done
    for repo in platform registry host tasks-remote legacy-remote; do (cd $repo && pnpm install); done
    ```
-3. **Infrastructure** (PoC Nexus :4400, stands uat :4501 / prod :4502) — keep running:
+3. **Infrastructure** (PoC Nexus :4400, stands dev3 :4501 / dev2 :4502 / dev1 :4503 / tst :4504) — keep running:
    ```sh
    cd platform && pnpm infra
    ```
-4. **Local development** (host + the remotes you work on, everything else as deployed on uat). Local setup lives
+4. **Local development** (host + the remotes you work on, everything else as deployed on dev3). Local setup lives
    only in `host/.env.development.local` (copy the `.example`), never in the registry:
    ```sh
    cd tasks-remote && pnpm dev         # :5174, listed as PORTAL_REMOTE_TASKS
@@ -59,12 +59,12 @@ Each `@portal-poc` package grants Read access to the app repositories (package s
    ```
    `PORTAL_STAND=none` = only your local remotes, no infra needed. Or a remote standalone:
    `cd tasks-remote && pnpm dev:standalone`.
-5. **Release flow on the uat stand** (production builds, immutable artifacts, gates, registry PR):
+5. **Release flow** (branches → stands, see [`docs/branching.md`](docs/branching.md)):
    ```sh
-   cd host && pnpm build && cd ../platform && pnpm deploy:host uat
+   cd host && pnpm build && cd ../platform && for s in dev3 dev2 dev1 tst; do pnpm deploy:host $s; done
    export PORTAL_NEXUS_DIR=~/projects/portal-poc/platform/.infra/nexus PORTAL_REGISTRY_DIR=~/projects/portal-poc/registry
-   cd ../tasks-remote && pnpm release:uat        # opens a PR in portal-poc/registry
+   cd ../tasks-remote && git switch release/1.4 && PORTAL_APP_VERSION=1.4.1 pnpm release   # PR → dev1
    # merge the PR, then:
-   cd ../registry && git pull && pnpm deploy:uat
-   open http://localhost:4501
+   cd ../registry && git pull && pnpm deploy
+   open http://localhost:4503
    ```

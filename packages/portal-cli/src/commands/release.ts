@@ -1,24 +1,34 @@
-import { execSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
-import { join, relative, resolve } from 'node:path';
+import { join, resolve } from 'node:path';
 import { describeConflict, findSingletonConflicts } from '@portal-poc/mf-shared';
 import { readHostCompat, readJsonSource } from '../lib/host-compat.ts';
 import { toManifest } from '../lib/manifest.ts';
+import { branchOfVersion, latestReleaseBranch, standsTrackingBranch } from '../lib/branches.ts';
 import { readEntry, readStand, writeEntry } from '../lib/registry.ts';
+import { openRegistryPullRequest } from '../lib/registry-pr.ts';
 import { parseList } from '../lib/text.ts';
 import { verifyRemote } from './verify-remote.ts';
 import type { VerifyMode } from './verify-remote.ts';
 
-const readPackageVersion = (appDir: string): string => {
+/** `PORTAL_APP_VERSION` (set by CI for build, publish and release alike) or the package.json version. */
+const readAppVersion = (appDir: string): string => {
   const pkg: { version?: string } = JSON.parse(readFileSync(join(appDir, 'package.json'), 'utf8'));
-  if (!pkg.version) {
-    throw new Error('package.json has no version');
+  const version = process.env['PORTAL_APP_VERSION'] || pkg.version;
+  if (!version) {
+    throw new Error('No version: set PORTAL_APP_VERSION or package.json version');
   }
-  return pkg.version;
+  return version;
 };
 
 const readRemoteName = (appDir: string): string =>
   toManifest(JSON.parse(readFileSync(join(appDir, 'dist', 'mf-manifest.json'), 'utf8'))).name;
+
+const readBuiltVersion = (appDir: string): unknown => {
+  const manifest: { metaData?: { portal?: { appVersion?: unknown } } } = JSON.parse(
+    readFileSync(join(appDir, 'dist', 'mf-manifest.json'), 'utf8'),
+  );
+  return manifest.metaData?.portal?.appVersion;
+};
 
 type PublishOptions = { dir?: string; nexusDir: string; version?: string };
 
@@ -29,7 +39,11 @@ type PublishOptions = { dir?: string; nexusDir: string; version?: string };
 export const runPublish = (options: PublishOptions): void => {
   const appDir = resolve(options.dir ?? '.');
   const name = readRemoteName(appDir);
-  const version = options.version ?? readPackageVersion(appDir);
+  const version = options.version ?? readAppVersion(appDir);
+  const builtAs = readBuiltVersion(appDir);
+  if (builtAs !== version) {
+    throw new Error(`dist was built as ${builtAs}, not ${version}: build with PORTAL_APP_VERSION=${version}.`);
+  }
   const target = join(resolve(options.nexusDir), name, version);
   if (existsSync(target)) {
     throw new Error(`${name}@${version} is already published — artifacts are immutable, bump the version.`);
@@ -45,34 +59,15 @@ export const runPublish = (options: PublishOptions): void => {
 
 type ReleaseOptions = {
   dir?: string;
-  stand: string;
+  stand?: string;
+  /** Pick the stands from the version's branch (stands.json `branch`) — what CI runs after publish. */
+  auto?: boolean;
   registry: string;
   version?: string;
   mode?: VerifyMode;
   basePath?: string;
   scopes?: string;
   pr?: boolean;
-};
-
-const git = (registryDir: string, args: string) => execSync(`git ${args}`, { cwd: registryDir, stdio: 'pipe', encoding: 'utf8' });
-
-/**
- * The release IS a pull request to the registry repository: branch, commit, push, `gh pr create`.
- * Branch policies there require the gate (registry check) and the owner's approval; merge triggers the config deploy.
- */
-const openRegistryPullRequest = (registryDir: string, entryFile: string, title: string): string => {
-  const branch = `release/${title.replace(/[^a-z0-9.@-]+/gi, '-')}`;
-  git(registryDir, `checkout -B ${branch}`);
-  git(registryDir, `add ${entryFile}`);
-  git(registryDir, `commit -m "${title}"`);
-  git(registryDir, `push -u origin ${branch} --force-with-lease`);
-  const url = execSync(`gh pr create --fill --head ${branch} --title "${title}"`, {
-    cwd: registryDir,
-    stdio: 'pipe',
-    encoding: 'utf8',
-  }).trim();
-  git(registryDir, 'checkout -');
-  return url;
 };
 
 const hasBridgeVariant = async (url: string): Promise<boolean> => {
@@ -89,15 +84,18 @@ const hasBridgeVariant = async (url: string): Promise<boolean> => {
  * compat.json of the host CURRENTLY deployed on that stand. Writes `registry/<stand>/<name>.json` — in CI this is the
  * PR; `--version <older>` is a rollback through the same gate.
  */
-export const runRelease = async (options: ReleaseOptions): Promise<void> => {
+const releaseToStand = async (options: ReleaseOptions & { stand: string }): Promise<void> => {
   const appDir = resolve(options.dir ?? '.');
   const registryDir = resolve(options.registry);
   const stand = readStand(registryDir, options.stand);
   if (!stand.nexusUrl) {
-    throw new Error(`Stand "${options.stand}" has no nexusUrl: it runs dev servers, nothing to release.`);
+    throw new Error(`Stand "${options.stand}" has no nexusUrl.`);
+  }
+  if (stand.promoteFrom) {
+    throw new Error(`Stand "${options.stand}" only accepts promotions from "${stand.promoteFrom}": portal-cli promote --from ${stand.promoteFrom} --to ${options.stand}`);
   }
   const name = readRemoteName(appDir);
-  const version = options.version ?? readPackageVersion(appDir);
+  const version = options.version ?? readAppVersion(appDir);
   const mode = options.mode ?? 'integrated';
   const manifestUrl = `${stand.nexusUrl}/${name}/${version}/mf-manifest.json`;
   const bridgeManifestUrl = `${stand.nexusUrl}/${name}/${version}/bridge/mf-manifest.json`;
@@ -141,9 +139,35 @@ export const runRelease = async (options: ReleaseOptions): Promise<void> => {
   });
   console.log(`\n✔ ${options.stand}: ${name} ${previous?.version ?? '(new)'} → ${version}`);
   if (options.pr) {
-    const url = openRegistryPullRequest(registryDir, relative(registryDir, path), `${options.stand}: ${name}@${version}`);
+    const url = openRegistryPullRequest(registryDir, [path], `${options.stand}: ${name}@${version}`);
     console.log(`  Pull request: ${url} — merge deploys the stand config.`);
   } else {
     console.log(`  Updated ${path} — run with --pr to open the registry pull request.`);
+  }
+};
+
+/**
+ * `--stand X`: release to one stand (manual release, rollback). `--auto`: the stands tracking the branch this version
+ * was built from — `X.Y.Z-dev.N` → develop, `X.Y.Z` → release/X.Y (+ `latest-release` if it is the newest line).
+ */
+export const runRelease = async (options: ReleaseOptions): Promise<void> => {
+  if (options.stand) {
+    await releaseToStand({ ...options, stand: options.stand });
+    return;
+  }
+  if (!options.auto) {
+    throw new Error('Pass --stand <stand> or --auto.');
+  }
+  const appDir = resolve(options.dir ?? '.');
+  const version = options.version ?? readAppVersion(appDir);
+  const branch = branchOfVersion(version);
+  const stands = standsTrackingBranch(resolve(options.registry), branch, latestReleaseBranch(appDir));
+  if (stands.length === 0) {
+    console.log(`No stand tracks ${branch}: ${version} stays published only (release it by hand with --stand if needed).`);
+    return;
+  }
+  console.log(`${version} was built from ${branch} → ${stands.join(', ')}\n`);
+  for (const stand of stands) {
+    await releaseToStand({ ...options, version, stand });
   }
 };

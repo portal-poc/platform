@@ -74,9 +74,10 @@ Effort: the "now" part is hours per BFF; the gate needs automated BFF deploys fi
 
 ## Rollout without a big bang
 
-- **Pilot**: one remote on `uat` moves to versioned publishing + registry; the others keep their stable URLs. Both
+- **Pilot**: one remote on `dev3` moves to versioned publishing + registry; the others keep their stable URLs. Both
   forms are just a manifest URL in the stand config, so the host supports them at the same time.
-- **Stands in order**: dev → uat → prod. Prod gets branch policies with mandatory approval; dev may auto-merge.
+- **Stands in order**: dev3 → dev2 → dev1 → tst (prod later). dev3 auto-merges on a green gate; tst only accepts
+  promotions from dev1 with business approval (see [`branching.md`](./branching.md)).
 - **Exit criteria per remote**: publishes immutable versions, released only through the registry, `verify` green in
   CI, no `window.env` reads (telemetry shows no fallback warnings).
 - **Rollback of the migration itself**: point the stand config back at the old stable URL — the host logic does not

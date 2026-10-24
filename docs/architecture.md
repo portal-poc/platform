@@ -33,7 +33,7 @@ meant to be split into separate repositories (polyrepo) later.
 | generated remotes (default) | 5176 |
 | PoC Nexus | 4400 |
 | Verdaccio (polyrepo dry run) | 4873 |
-| stand uat / prod | 4501 / 4502 |
+| stands dev3 / dev2 / dev1 / tst | 4501 / 4502 / 4503 / 4504 |
 
 ## Delivery
 

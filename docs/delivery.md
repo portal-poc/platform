@@ -1,35 +1,34 @@
 # Delivery: releases, stands and local development
 
+Which branch feeds which stand: [`branching.md`](./branching.md).
+
 ```
-remote repo CI                        registry (git)                      stand (uat / prod)
-──────────────                        ──────────────                      ──────────────────
-build (+ bridge build)                registry/uat/tasks.json             /config.json  ← registry build on merge
+remote repo CI                        registry (git)                      stand (dev3 / dev2 / dev1 / tst)
+──────────────                        ──────────────                      ────────────────────────────────
+build (+ bridge build)                registry/dev1/tasks.json            /config.json  ← registry build on merge
 verify       (gate 1: contract,       { version, manifest,                /compat.json  ← host build
               singletons, tooling)      bridgeManifest,                   host reads the manifest (gate 3) →
 publish → nexus/tasks/1.4.2/            basePath, scopes }                  integrated | bridge build | clear error
-release --stand uat (gate 2) ──PR──►  branch policy: gate +
-                                       owner approval → merge
+release --auto (gate 2) ──PR──►       branch policy: gate +
+                                       stand owner approval → merge
+promote --from dev1 --to tst ──PR──►  (same artifact, gate against the tst host)
 host repo CI: build → registry check (gate 2, reverse) → deploy host files → registry build
 ```
 
 ## Try it (PoC)
 
-```sh
-pnpm install
-pnpm infra                     # terminal 1: Nexus :4400, stands uat :4501, prod :4502
-pnpm demo:uat                  # terminal 2: deploy host to uat + release tasks & legacy (0.1.0)
-open http://localhost:4501     # uat stand (production builds from Nexus)
-pnpm registry:status           # versions dashboard
-```
+Clone and start everything as in the [README](../README.md) (`pnpm infra`, host deployed to every stand), then from
+`tasks-remote` (with `PORTAL_NEXUS_DIR` / `PORTAL_REGISTRY_DIR` exported):
 
-| Action | Command (from `apps/tasks-remote`) | What happens |
+| Action | Command | What happens |
 |---|---|---|
-| New version | `pnpm build && pnpm exec portal-cli publish --nexus-dir ../../.infra/nexus --version 0.2.0 && pnpm exec portal-cli release --stand uat --registry ../../registry --version 0.2.0` | Gate passes, `registry/uat/tasks.json` changes (= the PR). Then `pnpm exec portal-cli registry build --stand uat --registry ../../registry --out ../../.infra/stands/uat/config.json` (= config deploy on merge). Reload uat: `tasks@0.2.0`, host untouched. |
-| Rollback | `pnpm exec portal-cli release --stand uat --registry ../../registry --version 0.1.0` + registry build | Back to 0.1.0 in seconds, through the same gate. |
+| New version of a line | `PORTAL_APP_VERSION=1.4.1 pnpm release` | Built, verified, published as `tasks/1.4.1/`; PR to the stands following `release/1.4` (dev1). Merge, `pnpm deploy` in registry: dev1 runs `tasks@1.4.1`, host untouched. |
+| Rollback | `pnpm exec portal-cli release --stand dev1 --version 1.4.0 --pr` | Back to 1.4.0 through the same gate (or revert the registry PR). |
+| Promote | `pnpm promote:tst` in registry | tst gets exactly what dev1 runs. |
 | Incompatible build | `DEMO_REQUIRE_ROUTER=^9.0.0 pnpm build && pnpm exec portal-cli verify` | Gate 1 fails. |
-| CI bypassed, bridge build exists | publish `--version 0.3.0`, release `--version 0.3.0` | Gate 2 warns, releases as **isolated**; host loads `tasks_bridge` (status chip: `bridge`). |
-| CI bypassed, no bridge build | `rm -rf dist-bridge`, publish/release `0.3.1` | Gate 2 blocks; registry unchanged. |
-| Host deploy | `pnpm deploy:host:uat` (repo root) | `registry check` against the NEW host compat.json first: a host cannot break registered remotes. |
+| CI bypassed, bridge build exists | build/publish/release `PORTAL_APP_VERSION=1.4.90` with a conflicting singleton | Gate 2 warns, releases as **isolated**; host loads `tasks_bridge` (status chip: `bridge`). |
+| CI bypassed, no bridge build | `rm -rf dist-bridge`, publish/release `1.4.91` | Gate 2 blocks; registry unchanged. |
+| Host deploy | `pnpm deploy:host dev1` (platform) after `registry check --stand dev1` | A host cannot break the remotes registered on its stand. |
 
 `pnpm infra:reset` wipes the PoC Nexus/stands (artifacts are immutable, so re-running a release needs a new version).
 
@@ -38,7 +37,7 @@ pnpm registry:status           # versions dashboard
 | Mode | How | Result |
 |---|---|---|
 | Standalone remote | `pnpm --filter tasks-remote dev:standalone` | Remote alone with its mock platform — the default loop |
-| Local host + local remote(s) | `host/.env.development.local`: `PORTAL_STAND=uat` + `PORTAL_REMOTE_TASKS=http://localhost:5174/mf-manifest.json`; run `pnpm infra`, the remote's `pnpm dev` and the host's `pnpm dev` | Host + your remote locally with Fast Refresh; every other remote at the version registered on uat |
+| Local host + local remote(s) | `host/.env.development.local`: `PORTAL_STAND=dev3` + `PORTAL_REMOTE_TASKS=http://localhost:5174/mf-manifest.json`; run `pnpm infra`, the remote's `pnpm dev` and the host's `pnpm dev` | Host + your remote locally with Fast Refresh; every other remote at the version registered on dev3 |
 | Only local remotes | `PORTAL_STAND=none` + one `PORTAL_REMOTE_*` per remote you run | No infra; the host shows just your remotes |
 | New remote, not released yet | `PORTAL_REMOTE_REPORTS=http://localhost:5176/mf-manifest.json` | Works before any registration: route `/reports`, scopes from its own `config.json` |
 

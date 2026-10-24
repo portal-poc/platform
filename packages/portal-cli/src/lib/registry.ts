@@ -12,7 +12,15 @@ export type RegistryEntry = {
   title?: string;
 };
 
-export type StandDefinition = { url: string; nexusUrl?: string };
+/**
+ * Where a stand's versions come from — exactly one of:
+ * - `branch`: `develop`, `release/X.Y` (a pinned line, e.g. the pilot) or `latest-release` (the newest release/*);
+ *   CI releases builds of that branch there automatically (`portal-cli release --auto`);
+ * - `promoteFrom`: nothing is built for it, versions arrive only via `portal-cli promote` from that stand.
+ */
+export type StandDefinition = { url: string; nexusUrl?: string; branch?: string; promoteFrom?: string };
+
+export const LATEST_RELEASE = 'latest-release';
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
 
@@ -25,7 +33,22 @@ export const readStand = (registryDir: string, stand: string): StandDefinition =
   return {
     url: definition['url'],
     ...(typeof definition['nexusUrl'] === 'string' ? { nexusUrl: definition['nexusUrl'] } : {}),
+    ...(typeof definition['branch'] === 'string' ? { branch: definition['branch'] } : {}),
+    ...(typeof definition['promoteFrom'] === 'string' ? { promoteFrom: definition['promoteFrom'] } : {}),
   };
+};
+
+/** Changes one stand's branch in stands.json, keeping everything else as is. Returns the file path. */
+export const writeStandBranch = (registryDir: string, stand: string, branch: string): string => {
+  const path = join(registryDir, 'stands.json');
+  const stands: Record<string, Record<string, unknown>> = JSON.parse(readFileSync(path, 'utf8'));
+  const definition = stands[stand];
+  if (!definition) {
+    throw new Error(`Unknown stand "${stand}" in ${path}`);
+  }
+  definition['branch'] = branch;
+  writeFileSync(path, `${JSON.stringify(stands, null, 2)}\n`);
+  return path;
 };
 
 export const readStandNames = (registryDir: string): string[] => {

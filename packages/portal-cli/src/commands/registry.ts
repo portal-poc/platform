@@ -1,6 +1,8 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
-import { describeConflict, findSingletonConflicts, SINGLETONS } from '@portal-poc/mf-shared';
+import { SINGLETONS } from '@portal-poc/mf-shared';
+import { isValidTrackedBranch } from '../lib/branches.ts';
+import { gateEntry } from '../lib/gate.ts';
 import { readHostCompat, readJsonSource } from '../lib/host-compat.ts';
 import { toManifest } from '../lib/manifest.ts';
 import { readEntries, readStand, readStandNames } from '../lib/registry.ts';
@@ -15,15 +17,14 @@ export const runRegistryCheck = async (options: RegistryOptions & { against?: st
   let failed = 0;
   console.log(`portal-cli registry check — stand "${options.stand}" against host ${hostCompat.hostVersion}`);
   for (const [name, entry] of Object.entries(readEntries(registryDir, options.stand))) {
-    const manifest = toManifest(await readJsonSource(entry.manifest), entry.manifest);
-    const conflicts = findSingletonConflicts(manifest.shared, hostCompat.singletons);
-    if (conflicts.length === 0) {
+    const gate = await gateEntry(entry, hostCompat);
+    if (gate.status === 'ok') {
       console.log(`  ✔ ${name}@${entry.version}`);
-    } else if (entry.bridgeManifest) {
-      console.log(`  ⚠ ${name}@${entry.version} will run isolated: ${conflicts.map(describeConflict).join('; ')}`);
+    } else if (gate.status === 'isolated') {
+      console.log(`  ⚠ ${name}@${entry.version} will run isolated: ${gate.detail}`);
     } else {
       failed += 1;
-      console.log(`  ✗ ${name}@${entry.version}: ${conflicts.map(describeConflict).join('; ')}`);
+      console.log(`  ✗ ${name}@${entry.version}: ${gate.detail}`);
     }
   }
   if (failed > 0) {
@@ -49,7 +50,7 @@ const requiredOf = (shared: ReadonlyArray<{ name: string; requiredVersion?: stri
 /** Who runs which version where — built from the registry and the published manifests. */
 export const runRegistryStatus = async (options: { registry: string; stands?: string }): Promise<void> => {
   const registryDir = resolve(options.registry);
-  const stands = (options.stands ?? 'local,uat,prod').split(',');
+  const stands = options.stands ? options.stands.split(',') : readStandNames(registryDir);
   const rows: string[][] = [['stand', 'remote', 'version', 'react', 'react-router', '@portal-poc/ds', 'bridge build']];
   for (const stand of stands) {
     for (const [name, entry] of Object.entries(readEntries(registryDir, stand))) {
@@ -80,8 +81,18 @@ export const runRegistryValidate = (options: { registry: string }): void => {
   const registryDir = resolve(options.registry);
   const problems: string[] = [];
   let entries = 0;
-  for (const stand of readStandNames(registryDir)) {
+  const standNames = readStandNames(registryDir);
+  for (const stand of standNames) {
     const definition = readStand(registryDir, stand);
+    if (Boolean(definition.branch) === Boolean(definition.promoteFrom)) {
+      problems.push(`stands.json ${stand}: set exactly one of "branch" or "promoteFrom"`);
+    }
+    if (definition.branch && !isValidTrackedBranch(definition.branch)) {
+      problems.push(`stands.json ${stand}: branch "${definition.branch}" must be develop, latest-release or release/X.Y`);
+    }
+    if (definition.promoteFrom && (definition.promoteFrom === stand || !standNames.includes(definition.promoteFrom))) {
+      problems.push(`stands.json ${stand}: promoteFrom "${definition.promoteFrom}" is not another stand`);
+    }
     for (const [name, entry] of Object.entries(readEntries(registryDir, stand))) {
       entries += 1;
       const where = `${stand}/${name}.json`;

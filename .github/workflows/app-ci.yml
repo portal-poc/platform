@@ -2,6 +2,11 @@ name: App CI (central)
 # Reusable workflow for every app repository (host, remotes, registry) — the GitHub counterpart of an Azure DevOps
 # `extends: template`. Callers stay thin and pin a version (`@v1`); the pipeline is changed in one place.
 # The caller must grant `packages: read`, and its repository must have read access to the @portal-poc packages.
+#
+# Branch → version → stand (registry stands.json decides the stand, see docs/branching.md):
+#   develop       → <package.json version>-dev.<run>  → stands with branch: develop          (dev3)
+#   tag vX.Y.Z    → X.Y.Z (built on release/X.Y)       → stands with branch: release/X.Y      (dev1, pinned pilot)
+#                                                        or latest-release if X.Y is the newest (dev2)
 on:
   workflow_call:
 
@@ -30,3 +35,44 @@ jobs:
         run: pnpm run --if-present verify
       - name: Registry entries (portal-cli registry validate)
         run: pnpm run --if-present validate
+
+  release:
+    needs: check
+    # Needs the artifact repository and a registry token: off until the organisation sets PORTAL_RELEASE=true.
+    if: vars.PORTAL_RELEASE == 'true' && (github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/tags/v'))
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # release branches decide which line is the newest (latest-release)
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Authenticate to GitHub Packages (@portal-poc)
+        run: echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> ~/.npmrc
+      - run: pnpm install --frozen-lockfile
+      - name: Version (one value for build, publish and release)
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "PORTAL_APP_VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+          else
+            echo "PORTAL_APP_VERSION=$(node -p "require('./package.json').version")-dev.${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
+          fi
+      - run: pnpm build && pnpm verify
+      - name: Publish the immutable artifact
+        run: pnpm exec portal-cli publish
+        env:
+          PORTAL_NEXUS_DIR: ${{ vars.PORTAL_NEXUS_DIR }}
+      - uses: actions/checkout@v4
+        with:
+          repository: portal-poc/registry
+          path: .registry
+          token: ${{ secrets.PORTAL_REGISTRY_TOKEN }}
+      - name: Release = registry PR to the stands tracking this branch
+        run: |
+          git config --global user.name "portal-release"
+          git config --global user.email "portal-release@users.noreply.github.com"
+          pnpm exec portal-cli release --auto --registry .registry --pr
+        env:
+          GH_TOKEN: ${{ secrets.PORTAL_REGISTRY_TOKEN }}
