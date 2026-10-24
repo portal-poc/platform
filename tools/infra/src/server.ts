@@ -36,6 +36,12 @@ const isFile = (path: string | null): path is string => path !== null && existsS
 /** Nexus stand-in: immutable remote builds + stand configs (for host dev proxies). CORS open, cache by path. */
 const handleNexus = (request: IncomingMessage, response: ServerResponse) => {
   const urlPath = new URL(request.url ?? '/', 'http://x').pathname;
+  if (urlPath === '/stands.json') {
+    // Names of the deployed stands, for the host dev server's error messages (PORTAL_STAND typos).
+    response.writeHead(200, { 'Content-Type': MIME['.json'], 'Cache-Control': 'no-cache' });
+    response.end(JSON.stringify(Object.keys(readStands())));
+    return;
+  }
   const path = safeJoin(INFRA_DIR, urlPath);
   if (!isFile(path)) {
     notFound(response);
