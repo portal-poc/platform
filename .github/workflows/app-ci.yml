@@ -1,0 +1,32 @@
+name: App CI (central)
+# Reusable workflow for every app repository (host, remotes, registry) — the GitHub counterpart of an Azure DevOps
+# `extends: template`. Callers stay thin and pin a version (`@v1`); the pipeline is changed in one place.
+# The caller must grant `packages: read`, and its repository must have read access to the @portal-poc packages.
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      # pnpm does not expand env vars in repository .npmrc credentials: auth goes to the user-level config.
+      - name: Authenticate to GitHub Packages (@portal-poc)
+        run: echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> ~/.npmrc
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run --if-present typecheck
+      - run: pnpm run --if-present lint
+      - run: pnpm run --if-present test
+      - run: pnpm run --if-present build
+      - name: Integration contract (portal-cli verify)
+        run: pnpm run --if-present verify
+      - name: Registry entries (portal-cli registry validate)
+        run: pnpm run --if-present validate

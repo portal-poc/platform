@@ -29,9 +29,14 @@ Portal micro-frontend platform (PoC, organisation [`portal-poc`](https://github.
 
 Release: bump versions → run the **Release packages** workflow (or push a `v*` tag). Versions are immutable.
 
+CI of every app repository calls the central reusable workflow
+[`app-ci.yml`](./.github/workflows/app-ci.yml) pinned to `@v1` (GitHub counterpart of an Azure DevOps template).
+Each `@portal-poc` package grants Read access to the app repositories (package settings → Manage Actions access).
+
 ## Run everything on one machine
 
-1. **Token for packages** (classic PAT or `gh auth refresh -s read:packages`), then in `~/.npmrc`:
+1. **Token for packages** (classic PAT or `gh auth refresh -s read:packages`), then in `~/.npmrc` — it must be the
+   user-level file: pnpm does not expand env vars in a repository's `.npmrc` credentials:
    ```sh
    @portal-poc:registry=https://npm.pkg.github.com
    //npm.pkg.github.com/:_authToken=<token>
