@@ -35,6 +35,16 @@ discovered while building this reference repo. Code that depends on an open deci
 - **(from requirements)** Final home of generated API code (package from the specs repo is preferred). Out of scope
   for this PoC by decision of the project owner.
 
+## Delivery
+
+- **(found)** Registry as a folder vs. its own repository vs. a small service — start as a folder in the host repo,
+  move out when PR volume grows.
+- **(found)** PR automation from remote pipelines (service account, ADO REST) is described but not implemented in the
+  PoC; `portal-cli release` writes the entry locally.
+- **(found)** `portal-cli publish` copies to a folder; real Nexus upload (raw repository, PUT with credentials, refuse
+  overwrite on the server side) is a TODO(decision).
+- **(found)** Remote dev servers inside a deployed host get page reloads, not Fast Refresh (production React).
+
 ## Tooling
 
 - **(found)** `portal-cli` runs TypeScript via Node type stripping inside the monorepo; publishing to Nexus needs a JS

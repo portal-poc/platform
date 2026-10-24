@@ -16,7 +16,9 @@ meant to be split into separate repositories (polyrepo) later.
 | `packages/ds` | `@portal/ds` — Joy UI wrapper + loading primitives (MF singleton) | DS repo |
 | `packages/mf-shared` | `@portal/mf-shared` — integration-contract constants (exposes, singletons, ranges) + shared config helper | platform repo |
 | `packages/presets` | `@portal/presets` — optional tsconfig / oxlint (incl. React Compiler rules) / fallow / vitest / steiger presets | platform repo |
-| `packages/portal-cli` | `portal-cli` — `create remote`, `add <layer>`, `verify` | platform repo |
+| `packages/portal-cli` | `portal-cli` — `create remote`, `add <layer>`, `verify`, `publish`, `release`, `registry check|build|status` | platform repo |
+| `registry/` | Which version of which remote runs on which stand (`<stand>/<remote>.json`, `stands.json`) | registry repo |
+| `tools/infra` | PoC stand-ins: Nexus (immutable artifacts) and stands (host + `/config.json` + `compat.json`) | — (infra) |
 
 ## Ports (local)
 
@@ -26,6 +28,14 @@ meant to be split into separate repositories (polyrepo) later.
 | tasks-remote | 5174 |
 | legacy-remote | 5175 |
 | generated remotes (default) | 5176 |
+| PoC Nexus | 4400 |
+| stand uat / prod | 4501 / 4502 |
+
+## Delivery
+
+Releases go through immutable artifacts, a per-stand registry and three compatibility gates; local development has
+three one-command modes. See [`delivery.md`](./delivery.md) and the migration path from the current project in
+[`migration-plan.md`](./migration-plan.md).
 
 ## Key decisions (ADRs)
 

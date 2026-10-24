@@ -18,3 +18,5 @@ Format: Context → Decision → Consequences.
 - [0014 — CLI: template owned by teams, verify is the contract](./0014-cli.md)
 - [0015 — DS AsyncBoundary does not depend on TanStack Query](./0015-async-boundary-without-react-query.md)
 - [0016 — Lint stack: oxlint + Steiger + fallow](./0016-lint-stack.md)
+- [0017 — Remote registry, immutable releases and compatibility gates](./0017-remote-registry-and-releases.md)
+- [0018 — Local development experience](./0018-local-development-dx.md)

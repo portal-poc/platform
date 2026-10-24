@@ -1,10 +1,16 @@
-# Remote CI: build → test → lint (oxlint + Steiger) → portal-cli verify → publish static build to Nexus.
+# Thin pipeline: the steps live in the platform's versioned template (see docs/delivery.md). Shown inline for the PoC.
+# Gates: verify (CI) → publish immutable artifact → release = PR to the registry (gate against the stand's host).
 trigger:
   branches:
     include: [main]
 
 pool:
   vmImage: ubuntu-latest
+
+variables:
+  STAND: uat
+  NEXUS_URL: <NEXUS_PLACEHOLDER>/mfe
+  REGISTRY_REPO: <REGISTRY_REPO_PLACEHOLDER>
 
 steps:
   - task: NodeTool@0
@@ -16,8 +22,10 @@ steps:
   - script: pnpm typecheck && pnpm lint && pnpm test
     displayName: Typecheck, lint, test
   - script: pnpm build
-    displayName: Build
+    displayName: Build (main + bridge variant)
   - script: pnpm verify
-    displayName: Verify integration contract (portal-cli verify)
-  - script: echo "TODO(decision) publish dist/ to Nexus raw repository <NEXUS_PLACEHOLDER>"
-    displayName: Publish
+    displayName: Gate 1 — integration contract (portal-cli verify)
+  - script: echo "TODO(decision) portal-cli publish → $(NEXUS_URL)/__NAME__/<version>/ (immutable)"
+    displayName: Publish immutable artifact
+  - script: echo "TODO(decision) portal-cli release --stand $(STAND) → PR to $(REGISTRY_REPO) (gate 2 runs on the PR)"
+    displayName: Release = registry PR
