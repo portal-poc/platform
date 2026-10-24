@@ -1,0 +1,35 @@
+{
+  "name": "portal-cli",
+  "version": "0.1.0",
+  "description": "Portal CLI: create remotes from the reference template, add FSD slices, verify the integration contract.",
+  "type": "module",
+  "bin": {
+    "portal-cli": "./bin/portal-cli.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "templates"
+  ],
+  "scripts": {
+    "build": "echo \"portal-cli runs TypeScript sources via Node type stripping\"",
+    "typecheck": "tsc -p tsconfig.json",
+    "lint": "oxlint src && fallow dead-code",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@inquirer/prompts": "^8.7.4",
+    "@portal/mf-shared": "workspace:^",
+    "@portal/presets": "workspace:^",
+    "commander": "^15.0.0",
+    "semver": "^7.8.5"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "@types/semver": "^7.8.0",
+    "fallow": "^3.35.0",
+    "oxlint": "^1.89.0",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
+  }
+}

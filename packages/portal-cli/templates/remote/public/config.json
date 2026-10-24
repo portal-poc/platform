@@ -1,0 +1,12 @@
+{
+  "environments": {
+    "local": {
+      "bffBaseUrl": "https://__NAME__-bff.local/api",
+      "scopes": ["api://__NAME__-bff/__TITLE__.ReadWrite"]
+    },
+    "dev": {
+      "bffBaseUrl": "https://__NAME__-bff.dev.bank.example/api",
+      "scopes": ["api://__NAME__-bff/__TITLE__.ReadWrite"]
+    }
+  }
+}

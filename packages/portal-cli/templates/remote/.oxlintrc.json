@@ -1,0 +1,4 @@
+{
+  "extends": ["./node_modules/@portal/presets/oxlint/react.json"],
+  "ignorePatterns": ["dist/**", "node_modules/**", ".__mf__temp/**"]
+}

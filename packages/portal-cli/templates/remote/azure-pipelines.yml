@@ -1,0 +1,23 @@
+# Remote CI: build → test → lint (oxlint + Steiger) → portal-cli verify → publish static build to Nexus.
+trigger:
+  branches:
+    include: [main]
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+  - task: NodeTool@0
+    inputs:
+      versionSource: fromFile
+      versionFilePath: .nvmrc
+  - script: corepack enable && pnpm install --frozen-lockfile
+    displayName: Install
+  - script: pnpm typecheck && pnpm lint && pnpm test
+    displayName: Typecheck, lint, test
+  - script: pnpm build
+    displayName: Build
+  - script: pnpm verify
+    displayName: Verify integration contract (portal-cli verify)
+  - script: echo "TODO(decision) publish dist/ to Nexus raw repository <NEXUS_PLACEHOLDER>"
+    displayName: Publish

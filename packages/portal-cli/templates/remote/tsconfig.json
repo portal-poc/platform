@@ -1,0 +1,16 @@
+{
+  "extends": "@portal/presets/tsconfig/react-app.json",
+  "include": [
+    "src",
+    "vite.config.ts",
+    "vitest.config.ts",
+    "steiger.config.ts"
+  ],
+  "compilerOptions": {
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    }
+  }
+}
