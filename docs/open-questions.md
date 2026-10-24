@@ -1,0 +1,41 @@
+# Open questions
+
+Items marked **(from requirements)** come from section 23 of `PORTAL_MFE_CONTEXT.md`. Items marked **(found)** were
+discovered while building this reference repo. Code that depends on an open decision carries `TODO(decision)`.
+
+## Platform policy
+
+- **(from requirements)** React/DS version policy: who upgrades first (host), deadline for remotes, what happens to
+  laggards (automatic bridge or block).
+- **(from requirements)** Admission criteria for bridge remotes and who approves them.
+- **(from requirements)** DS singleton vs stack freedom: move the Joy theme to CSS variables so visual consistency rests
+  on tokens rather than on a shared DS major?
+- **(from requirements)** Contract versioning: additive-only changes, or explicit support of several `contractVersion`
+  values by the host.
+- **(from requirements)** Do we need `portal-cli doctor` / codemods for contract changes?
+
+## Realtime / infrastructure
+
+- **(from requirements)** Realtime transport through the bank proxy: HTTP/2? WS upgrade? SSE buffering?
+- **(from requirements)** Where each BFF's realtime gateway lives (inside the BFF or a separate per-cluster service) —
+  backend decision.
+
+## Build / Module Federation
+
+- **(from requirements)** `singleton` / `strictVersion` behaviour of the chosen Vite MF plugin and whether
+  `query-client.ts` lands in one shared chunk for both `./preload` and `./RemoteRoot`.
+- **(from requirements)** Status of `@tanstack/react-devtools` (was alpha) — current decision: own toolbar, no dependency
+  on the alpha shell.
+- **(found)** `@module-federation/bridge-react@2.9.2` declares `react-router` peer `^6 || ^7`; React Router v8 removed
+  `react-router-dom`. The host therefore uses the router-agnostic entry `@module-federation/bridge-react/base` and passes
+  `basename` explicitly. Bridge remotes bring their own router (v7 in `legacy-remote`).
+
+## API contracts
+
+- **(from requirements)** Final home of generated API code (package from the specs repo is preferred). Out of scope
+  for this PoC by decision of the project owner.
+
+## Design system
+
+- **(found)** `@mui/joy` is still `5.0.0-beta.52` (never reached stable; MUI put Joy in maintenance). Long-term DS base
+  needs a decision.

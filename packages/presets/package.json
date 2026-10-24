@@ -1,0 +1,37 @@
+{
+  "name": "@portal/presets",
+  "version": "0.1.0",
+  "description": "Optional shared presets (tsconfig, oxlint, vitest, steiger). Teams may inherit or inline them.",
+  "type": "module",
+  "exports": {
+    "./tsconfig/*.json": "./tsconfig/*.json",
+    "./oxlint/*.json": "./oxlint/*.json",
+    "./vitest": "./vitest/index.ts",
+    "./steiger": "./steiger/index.ts"
+  },
+  "files": ["tsconfig", "oxlint", "vitest", "steiger"],
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "lint": "oxlint -c oxlint/base.json .",
+    "test": "echo \"no tests in @portal/presets\"",
+    "build": "echo \"@portal/presets ships sources\""
+  },
+  "peerDependencies": {
+    "vitest": "^5.0.0",
+    "steiger": "^0.8.0",
+    "@feature-sliced/steiger-plugin": "^0.8.0"
+  },
+  "peerDependenciesMeta": {
+    "vitest": { "optional": true },
+    "steiger": { "optional": true },
+    "@feature-sliced/steiger-plugin": { "optional": true }
+  },
+  "devDependencies": {
+    "@feature-sliced/steiger-plugin": "^0.8.0",
+    "@types/node": "^26.6.5",
+    "oxlint": "^1.89.0",
+    "steiger": "^0.8.0",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
+  }
+}

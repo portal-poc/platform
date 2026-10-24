@@ -1,0 +1,11 @@
+node_modules/
+dist/
+coverage/
+.vite/
+.__mf__temp/
+__mf__virtual/
+*.tsbuildinfo
+.DS_Store
+*.log
+.env.local
+/tmp/
