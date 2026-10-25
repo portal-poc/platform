@@ -1,12 +1,13 @@
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { SINGLETONS } from '@portal-poc/mf-shared';
-import { isValidTrackedBranch } from '../lib/branches.ts';
+import { isValidTrackedBranch, releaseLineProblem } from '../lib/branches.ts';
 import { gateEntry } from '../lib/gate.ts';
 import { readHostCompat, readJsonSource } from '../lib/host-compat.ts';
 import { toManifest } from '../lib/manifest.ts';
 import { uploadDir, uploadFile } from '../lib/nexus.ts';
 import {
+  LATEST_RELEASE,
   readEntries,
   readStand,
   readStandNames,
@@ -137,6 +138,10 @@ export const runRegistryValidate = (options: { registry: string }): void => {
   const problems: string[] = [];
   let entries = 0;
   const standNames = readStandNames(registryDir);
+  const pinnedBranches = standNames.flatMap((name) => {
+    const branch = readStand(registryDir, name).branch;
+    return branch && isValidTrackedBranch(branch) && branch !== LATEST_RELEASE ? [branch] : [];
+  });
   for (const stand of standNames) {
     const definition = readStand(registryDir, stand);
     if ([definition.snapshot, definition.branch, definition.promoteFrom].filter(Boolean).length !== 1) {
@@ -158,6 +163,10 @@ export const runRegistryValidate = (options: { registry: string }): void => {
         : releaseUrl(definition.nexusUrl, name, entry.version);
       if (definition.snapshot ? entry.version !== SNAPSHOT_VERSION : !/^\d+\.\d+\.\d+/.test(entry.version)) {
         problems.push(`${where}: version "${entry.version}" must be ${definition.snapshot ? `"${SNAPSHOT_VERSION}"` : 'semver'}`);
+      }
+      const lineProblem = definition.snapshot ? null : releaseLineProblem(definition, entry.version, pinnedBranches);
+      if (lineProblem) {
+        problems.push(`${where}: ${lineProblem}`);
       }
       if (!entry.manifest.startsWith(`${expected}/`)) {
         problems.push(`${where}: manifest must point into ${expected}/ (${definition.snapshot ? 'the stand snapshot' : 'immutable artifact'})`);

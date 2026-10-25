@@ -22,6 +22,27 @@ const releaseOrder = (branch: string): number => {
   return match ? Number(match[1]) * 10_000 + Number(match[2]) : -1;
 };
 
+/**
+ * Offline check of a release stand's entry (registry CI): its version must come from the line the stand runs.
+ * A pinned stand knows its line; a `latest-release` stand only knows it cannot be older than any pinned line (the
+ * newest release branch lives in the remotes' repositories, not in the registry). Promoted stands are not checked:
+ * they lag their source until the next promotion by design.
+ */
+export const releaseLineProblem = (definition: StandDefinition, version: string, pinnedBranches: readonly string[]): string | null => {
+  const line = branchOfVersion(version);
+  if (definition.branch === LATEST_RELEASE) {
+    const newer = pinnedBranches.find((branch) => releaseOrder(branch) > releaseOrder(line ?? ''));
+    if (!line) {
+      return `${version} is not a release build`;
+    }
+    return newer ? `${version} is from ${line}, older than the pinned ${newer}: this stand runs the newest line` : null;
+  }
+  if (definition.branch && line !== definition.branch) {
+    return `${version} is from ${line ?? 'no release line'}, the stand runs ${definition.branch}`;
+  }
+  return null;
+};
+
 /** The newest release/X.Y of the repository in `dir` (local and origin branches). */
 export const latestReleaseBranch = (dir: string): string | undefined => {
   const refs = git(dir, "for-each-ref --format='%(refname:short)' refs/heads/release refs/remotes/origin/release");
