@@ -1,7 +1,8 @@
 name: Forward merge (central)
 # A fix lands on the release line where the bug was found (e.g. release/1.4 for the pilot on dev1/tst) and must reach
-# every newer line and develop, or it comes back with the next release. After each push to release/X.Y this opens a
-# PR to the NEXT line (release/1.4 → release/1.5 → … → develop); merging it triggers the next hop.
+# every newer line and the trunk, or it comes back with the next release. After each push to release/X.Y this opens a
+# PR to the NEXT line (release/1.4 → release/1.5 → … → trunk); merging it triggers the next hop. The trunk is `develop`,
+# or the repository's default branch where there is no develop (legacy-remote works on main).
 # Merge these PRs with a merge commit (not squash), so git knows the fix is already there.
 # Needs "Allow GitHub Actions to create and approve pull requests" in the organisation/repository settings.
 on:
@@ -21,11 +22,14 @@ jobs:
       - name: Open the forward-merge PR to the next line
         env:
           GH_TOKEN: ${{ github.token }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           current="$GITHUB_REF_NAME"
           next=$(git for-each-ref --format='%(refname:lstrip=3)' refs/remotes/origin/release \
             | sort -V | awk -v current="$current" 'found { print; exit } $0 == current { found = 1 }')
-          next="${next:-develop}"
+          trunk=develop
+          git rev-parse -q --verify origin/develop >/dev/null || trunk="$DEFAULT_BRANCH"
+          next="${next:-$trunk}"
           if git merge-base --is-ancestor "origin/$current" "origin/$next"; then
             echo "$next already contains $current"; exit 0
           fi
