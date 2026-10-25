@@ -12,8 +12,7 @@
     "lint": "oxlint . && steiger ./src && fallow dead-code",
     "analyze": "fallow",
     "test": "vitest run --passWithNoTests",
-    "verify": "portal-cli verify && portal-cli verify --dist dist-bridge --mode bridge",
-    "release": "pnpm build && pnpm verify && portal-cli publish && portal-cli release --auto --pr"
+    "verify": "portal-cli verify && portal-cli verify --dist dist-bridge --mode bridge"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -33,7 +32,7 @@
     "@babel/core": "^8.0.9",
     "@feature-sliced/steiger-plugin": "^0.8.0",
     "@module-federation/vite": "^1.23.5",
-    "@portal-poc/cli": "__PORTAL_VERSION__",
+    "@portal-poc/cli": "__CLI_VERSION__",
     "@portal-poc/presets": "__PORTAL_VERSION__",
     "@portal-poc/vite-config": "__PORTAL_VERSION__",
     "@rolldown/plugin-babel": "^0.2.4",

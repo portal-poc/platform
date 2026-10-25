@@ -1,48 +1,89 @@
 # Branches → stands
 
-GitHub flow with release branches; fixes are made **in the release branch** where the bug was found.
+GitHub flow with release branches; fixes are made **in the release branch** where the bug was found. **Nothing
+deploys by itself**: a developer opens the remote's **Deploy** workflow, picks the stand and the branch or tag, and
+presses Run (as in the current project). The registry (`stands.json`) says what each stand accepts; `portal-cli
+deploy` checks it **before building**.
 
-| Stand | Who | Follows (registry `stands.json`) | How a version gets there |
+| Stand | Who | Accepts (registry `stands.json`) | Artifact |
 |---|---|---|---|
-| dev3 | developers | `develop` | automatically on every merge to develop |
-| dev2 | QA | `latest-release` — the newest `release/X.Y` | automatically on a `vX.Y.Z` tag of that line |
-| dev1 | team testers | `release/1.4` — the pilot line, pinned | automatically on a `vX.Y.Z` tag of that line |
-| tst | business | `promoteFrom: dev1` | only by promotion: exactly what passed dev1, never rebuilt |
+| dev3 | developers | `"snapshot": true` — any branch (`develop`, `feature/…`) | overwritten in place: `portal-snapshots/dev3/<remote>/` |
+| dev2 | QA | `"branch": "latest-release"` — the newest `release/X.Y` and its tags | immutable: `portal-releases/<remote>/<version>/` |
+| dev1 | team testers | `"branch": "release/1.5"` — the pilot line, pinned | immutable |
+| tst | business | `"promoteFrom": "dev1"` — never deployed to | the same artifacts dev1 runs |
+
+```
+            Deploy → Run workflow:  stand [dev3 ▾]   ref [develop ▾]
+                 │
+     ┌───────────┴──────────────────────────────┐
+     ▼ snapshot stand (dev3)                    ▼ release stand (dev2 / dev1)
+ any branch                                release/X.Y → X.Y.<next>-rc.<run>
+ version 1.6.0-snapshot.<run>+<sha>        tag vX.Y.Z  → X.Y.Z (published once, reused afterwards)
+ (identifies the build, addresses nothing) only the stand's line (else refused, before the build)
+     │                                          │
+ build → gate vs dev3 host → upload        build → publish (no redeploy) → gate vs the stand's host
+ OVERWRITE portal-snapshots/dev3/tasks/    → commit dev2/tasks.json = the release
+ registry untouched (constant entry)            │
+     ▼                                          ▼
+ dev3 runs it on the next page load        dev2 / dev1 run it on the next page load
+
+ tst: "Promote" in the registry repository copies what dev1 runs (same artifacts, no rebuild)
+```
 
 ## Day to day
 
-1. **Feature** — PR to `develop`, merge. CI builds `1.6.0-dev.57` → PR to `dev3` (auto-merge on a green gate).
-2. **New release** — create `release/1.5` from develop, tag `v1.5.0`. CI → `dev2`. Bump develop's `package.json` to
-   the next line (`1.6.0`) — the only version commit; patch numbers live in tags.
-3. **Fix in the newest release** — fix branch from `release/1.5` → PR → merge → tag `v1.5.1`. CI → `dev2`, and opens
-   the forward-merge PR `release/1.5 → develop`.
-4. **Fix in the pilot** — the same on `release/1.4` → tag `v1.4.2`. CI → `dev1`, forward-merge PRs
-   `release/1.4 → release/1.5 → develop` (each merge opens the next). After the testers: **Promote** workflow in the
-   registry (or `pnpm promote:tst`) → the same `1.4.2` on `tst`.
-5. **Pilot moves to 1.5** — `portal-cli stand switch dev1 --branch release/1.5 --pr`: one registry PR with the
-   mapping and the current 1.5 versions on dev1. tst follows with the next promotion.
-6. **Something broke** — revert the registry PR; the stand is back on the previous version, no build.
+1. **Feature** — work on `feature/x`; to show it, **Deploy** `feature/x` → `dev3`. Merge to `develop`, **Deploy**
+   `develop` → `dev3`. No version bump, no registry change.
+2. **New release** — create `release/1.6` from develop, bump develop's `package.json` to `1.7.0` (the only version
+   commit; patch numbers live in tags). QA: **Deploy** `release/1.6` → `dev2` (`1.6.0-rc.N`), or tag `v1.6.0` and
+   deploy the tag.
+3. **Fix in the newest release** — fix branch from `release/1.6` → PR → merge; **Deploy** `release/1.6` → `dev2`
+   (`1.6.1-rc.N`); when QA is happy, tag `v1.6.1` and deploy the tag. The forward-merge PR
+   `release/1.6 → develop` opens automatically.
+4. **Fix in the pilot** — the same on `release/1.5` → **Deploy** to `dev1`; forward-merge PRs
+   `release/1.5 → release/1.6 → develop` (each merge opens the next). After the testers: **Promote** in the registry
+   (or `pnpm promote:tst`) → the same version on `tst`.
+5. **Pilot moves to 1.6** — `portal-cli stand switch dev1 --branch release/1.6 --pr`: one registry PR with the
+   mapping and the current 1.6 versions on dev1 (copied from dev2). tst follows with the next promotion.
+6. **Something broke** — dev2/dev1: **Deploy** the previous tag (the published artifact is reused, no rebuild) or
+   `portal-cli release --stand dev2 --version 1.6.0`. dev3: deploy a fixed branch.
 
-People merge PRs, push tags and press "Promote"; CI decides versions and stands.
+## What is refused (before anything is built)
+
+| Deploy | Answer |
+|---|---|
+| `develop` or `feature/x` → dev2 / dev1 | not a release ref: deploy `release/X.Y` or `vX.Y.Z`; other branches go to the snapshot stand |
+| `release/1.5` → dev2 when `release/1.6` exists | dev2 always follows the newest line |
+| `release/1.4` → dev1 (pinned `release/1.5`) | refused, with the hint `portal-cli stand switch dev1 --branch release/1.4` |
+| anything → tst | never deployed to: Promote from dev1 |
+| a build incompatible with the stand's host | gate: blocked (or isolated if a bridge build exists); dev3 keeps its current snapshot |
+| re-publishing an existing version | Nexus `portal-releases` refuses redeploy |
 
 ## Rules that make it work
 
-- **The version names its branch** (`portal-cli release --auto`): `X.Y.Z-dev.N` → develop, `X.Y.Z[-rc.N]` →
-  `release/X.Y`. CI never guesses from git history (after a forward merge one commit is on several branches).
-  This assumes a release train: `release/1.4` means the same portal release in every repository.
-- **One version per build**: CI sets `PORTAL_APP_VERSION` (tag, or `package.json`-dev.run) for build, publish and
-  release; `publish` refuses a dist built with another version. Versions are immutable: a fix is always a new patch.
+- **The version names its line**: `X.Y.Z` and `X.Y.Z-rc.N` belong to `release/X.Y`, so the check needs no git
+  history (after a forward merge one commit is on several branches). A release train is assumed: `release/1.5`
+  means the same portal release in every repository.
+- **One version per build**: the deploy sets `PORTAL_APP_VERSION` for build and publish; `publish` refuses a dist
+  built with another version. Release versions are immutable: a fix is always a new rc or patch.
+- **Snapshots only where nobody needs history**: on dev3 the registry entry never changes, the build is identified by
+  `metaData.portal.appVersion` in its manifest (the host's remotes panel and `pnpm status` show it). Chunks are only
+  added, never deleted (hashed names), and `mf-manifest.json` is uploaded last, so open tabs keep working; Nexus
+  cleanup policies remove old chunks. Nothing from a snapshot stand can be promoted.
+- **The CLI comes from the platform**, not from the ref: `deploy.yml` runs `pnpm dlx @portal-poc/cli@2`, so an old
+  tag deploys under today's rules; the app's own `build`/`verify` scripts come from the ref.
 - **Forward merges are automatic and visible** (`forward-merge.yml`): a fix cannot silently miss newer lines.
   Merge them with a merge commit, not squash.
-- **Gates per stand**: every release/promotion is checked against the host deployed on that stand, so a 1.4 fix is
-  checked against the 1.4 host on dev1/tst, not against develop.
-- **A tag on a line nobody follows** (e.g. `release/1.3`) is published but released nowhere; release it by hand with
-  `portal-cli release --stand <stand>` if needed.
+- **Gates per stand**: every deploy/promotion is checked against the host deployed on that stand, so a 1.5 fix is
+  checked against the 1.5 host on dev1/tst, not against develop.
 
 ## Not in the PoC
 
-- The CI release job is off until `PORTAL_RELEASE=true`, a real artifact repository and a registry token
-  (`PORTAL_REGISTRY_TOKEN`, a GitHub App in real life) exist; the PoC runs the same commands locally.
+- The PoC stands and Nexus are on localhost: the Deploy workflow has the real shape, but a GitHub runner cannot reach
+  them; the PoC runs the same `portal-cli deploy` locally. Real setup: `PORTAL_NEXUS_USER`/`PORTAL_NEXUS_PASSWORD`
+  and `PORTAL_REGISTRY_TOKEN` (a GitHub App) as organisation secrets, the deploy bot allowed to push to the
+  registry's main.
 - Forward-merge PRs need "Allow GitHub Actions to create and approve pull requests" in the organisation settings.
-- Auto-merge for dev3 and CODEOWNERS approvals need the teams and branch protection in the organisation.
-- The host follows the same flow in real life; the PoC deploys one host build to every stand.
+- Approvals per stand (e.g. tst) would be GitHub environments with required reviewers.
+- The host is deployed the same way in real life (Deploy → stand, `registry check` first); the PoC deploys one host
+  build to every stand with `pnpm deploy:host <stand>`.

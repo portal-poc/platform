@@ -59,12 +59,12 @@ Each `@portal-poc` package grants Read access to the app repositories (package s
    ```
    `PORTAL_STAND=none` = only your local remotes, no infra needed. Or a remote standalone:
    `cd tasks-remote && pnpm dev:standalone`.
-5. **Release flow** (branches → stands, see [`docs/branching.md`](docs/branching.md)):
+5. **Deploy flow** (manual: stand + ref, see [`docs/branching.md`](docs/branching.md)) — the same command the
+   remote's Deploy workflow runs:
    ```sh
    cd host && pnpm build && cd ../platform && for s in dev3 dev2 dev1 tst; do pnpm deploy:host $s; done
-   export PORTAL_NEXUS_DIR=~/projects/portal-poc/platform/.infra/nexus PORTAL_REGISTRY_DIR=~/projects/portal-poc/registry
-   cd ../tasks-remote && git switch release/1.4 && PORTAL_APP_VERSION=1.4.1 pnpm release   # PR → dev1
-   # merge the PR, then:
-   cd ../registry && git pull && pnpm deploy
-   open http://localhost:4503
+   export PORTAL_REGISTRY_DIR=~/projects/portal-poc/registry PORTAL_NEXUS_USER=poc PORTAL_NEXUS_PASSWORD=poc
+   cd ../tasks-remote && git switch develop && pnpm dlx @portal-poc/cli@2 deploy --stand dev3      # snapshot
+   git switch release/1.5 && pnpm install && pnpm dlx @portal-poc/cli@2 deploy --stand dev1     # 1.5.3-rc.N
+   cd ../registry && pnpm deploy && open http://localhost:4503
    ```

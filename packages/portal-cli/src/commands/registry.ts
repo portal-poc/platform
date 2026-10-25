@@ -5,7 +5,7 @@ import { isValidTrackedBranch } from '../lib/branches.ts';
 import { gateEntry } from '../lib/gate.ts';
 import { readHostCompat, readJsonSource } from '../lib/host-compat.ts';
 import { toManifest } from '../lib/manifest.ts';
-import { readEntries, readStand, readStandNames } from '../lib/registry.ts';
+import { readEntries, readStand, readStandNames, releaseUrl, SNAPSHOT_VERSION, snapshotUrl } from '../lib/registry.ts';
 
 type RegistryOptions = { stand: string; registry: string };
 
@@ -44,6 +44,11 @@ export const runRegistryBuild = (options: RegistryOptions & { out: string }): vo
   console.log(`✔ ${options.stand} config: ${Object.keys(config.remotes).length} remote(s) → ${out}`);
 };
 
+const builtVersionOf = (manifest: unknown): string => {
+  const metaData = (manifest as { metaData?: { portal?: { appVersion?: unknown } } } | null)?.metaData;
+  return String(metaData?.portal?.appVersion ?? '?');
+};
+
 const requiredOf = (shared: ReadonlyArray<{ name: string; requiredVersion?: string }>, name: string) =>
   shared.find((entry) => entry.name === name)?.requiredVersion ?? '—';
 
@@ -54,13 +59,12 @@ export const runRegistryStatus = async (options: { registry: string; stands?: st
   const rows: string[][] = [['stand', 'remote', 'version', 'react', 'react-router', '@portal-poc/ds', 'bridge build']];
   for (const stand of stands) {
     for (const [name, entry] of Object.entries(readEntries(registryDir, stand))) {
-      const shared = await readJsonSource(entry.manifest)
-        .then((value) => toManifest(value, entry.manifest).shared)
-        .catch(() => null);
+      const published = await readJsonSource(entry.manifest).catch(() => null);
+      const shared = published === null ? null : toManifest(published, entry.manifest).shared;
       rows.push([
         stand,
         name,
-        entry.version,
+        entry.version === SNAPSHOT_VERSION ? `snapshot ${builtVersionOf(published)}` : entry.version,
         shared ? requiredOf(shared, 'react') : 'unreachable',
         shared ? requiredOf(shared, 'react-router') : '',
         shared ? requiredOf(shared, '@portal-poc/ds') : '',
@@ -75,7 +79,6 @@ export const runRegistryStatus = async (options: { registry: string; stands?: st
   console.log(`\nHost singletons supported by this platform version: ${Object.keys(SINGLETONS).join(', ')}`);
 };
 
-
 /** Offline validation for the registry repository's CI: every stand folder is defined, every entry is well-formed. */
 export const runRegistryValidate = (options: { registry: string }): void => {
   const registryDir = resolve(options.registry);
@@ -84,23 +87,28 @@ export const runRegistryValidate = (options: { registry: string }): void => {
   const standNames = readStandNames(registryDir);
   for (const stand of standNames) {
     const definition = readStand(registryDir, stand);
-    if (Boolean(definition.branch) === Boolean(definition.promoteFrom)) {
-      problems.push(`stands.json ${stand}: set exactly one of "branch" or "promoteFrom"`);
+    if ([definition.snapshot, definition.branch, definition.promoteFrom].filter(Boolean).length !== 1) {
+      problems.push(`stands.json ${stand}: set exactly one of "snapshot", "branch" or "promoteFrom"`);
     }
     if (definition.branch && !isValidTrackedBranch(definition.branch)) {
-      problems.push(`stands.json ${stand}: branch "${definition.branch}" must be develop, latest-release or release/X.Y`);
+      problems.push(`stands.json ${stand}: branch "${definition.branch}" must be latest-release or release/X.Y`);
     }
     if (definition.promoteFrom && (definition.promoteFrom === stand || !standNames.includes(definition.promoteFrom))) {
       problems.push(`stands.json ${stand}: promoteFrom "${definition.promoteFrom}" is not another stand`);
+    } else if (definition.promoteFrom && readStand(registryDir, definition.promoteFrom).snapshot) {
+      problems.push(`stands.json ${stand}: promoteFrom "${definition.promoteFrom}" is a snapshot stand (nothing immutable to promote)`);
     }
     for (const [name, entry] of Object.entries(readEntries(registryDir, stand))) {
       entries += 1;
       const where = `${stand}/${name}.json`;
-      if (!/^\d+\.\d+\.\d+/.test(entry.version)) {
-        problems.push(`${where}: version "${entry.version}" is not semver`);
+      const expected = definition.snapshot
+        ? snapshotUrl(definition.nexusUrl, stand, name)
+        : releaseUrl(definition.nexusUrl, name, entry.version);
+      if (definition.snapshot ? entry.version !== SNAPSHOT_VERSION : !/^\d+\.\d+\.\d+/.test(entry.version)) {
+        problems.push(`${where}: version "${entry.version}" must be ${definition.snapshot ? `"${SNAPSHOT_VERSION}"` : 'semver'}`);
       }
-      if (definition.nexusUrl && !entry.manifest.startsWith(`${definition.nexusUrl}/${name}/${entry.version}/`)) {
-        problems.push(`${where}: manifest must point into ${definition.nexusUrl}/${name}/${entry.version}/ (immutable artifact)`);
+      if (!entry.manifest.startsWith(`${expected}/`)) {
+        problems.push(`${where}: manifest must point into ${expected}/ (${definition.snapshot ? 'the stand snapshot' : 'immutable artifact'})`);
       }
       if (!entry.basePath.startsWith('/') || entry.scopes.length === 0) {
         problems.push(`${where}: basePath and scopes are required`);

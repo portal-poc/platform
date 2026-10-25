@@ -15,7 +15,8 @@ step here depends on it, it says so.
 
 ## Target (what the PoC shows)
 
-Immutable versioned artifacts · registry per stand (PR = release, revert = rollback) · host config read at runtime ·
+Manual Deploy (stand + ref) as today · immutable versioned artifacts on the testers' stands, a snapshot stand for
+developers · registry per stand (commit = release, deploy an old tag = rollback) · host config read at runtime ·
 remotes own their config · three compatibility gates · bridge builds as a safety net · versions in telemetry ·
 one-command local development modes.
 
@@ -27,8 +28,8 @@ pipeline templates). "Per remote" = work each remote team does once, mostly a pi
 | # | Phase | What changes | Platform / host effort | Per remote | Unlocks |
 |---|---|---|---|---|---|
 | 1 | **Host reads its stand config at runtime** | `/config.json` fetched before render; remotes registered with `registerRemotes` from it; a tiny "deploy config" job per stand copies the stand file next to the host | 2–4 days | — | Config changes without host rebuild. **Prerequisite for everything else.** |
-| 2 | **Immutable versioned publishing** | Remote pipelines publish to `<nexus>/<name>/<version>/` and never overwrite; the stand config points at versioned manifest URLs | 1–2 days (central pipeline template + `portal-cli publish`) | ~0.5 day | Rollback by pointer, no broken open tabs, correct caching, "what runs where" |
-| 3 | **Registry + PR flow** | `registry/<stand>/<remote>.json` (start as a folder in the host repo, move to its own repo later); CODEOWNERS; branch policy; remote pipeline opens the PR (`portal-cli release`); merge triggers the config deploy | 3–5 days (incl. PR automation with a service account) | ~0.5 day | Audited releases without the host team; rollback = revert |
+| 2 | **Immutable versioned publishing** | The manual deploy pipeline keeps its "stand + branch" inputs; release stands get `portal-releases/<name>/<version>/` (never overwritten), dev3 keeps overwriting in `portal-snapshots/dev3/<name>/` (ADR 0020); the stand config points at the manifest URLs | 1–2 days (central pipeline template + `portal-cli publish`) | ~0.5 day | Rollback by pointer, no broken open tabs, correct caching, "what runs where" |
+| 3 | **Registry + deploy rules** | `registry/<stand>/<remote>.json` (start as a folder in the host repo, move to its own repo later) + `stands.json` (what each stand accepts); the deploy pipeline (`portal-cli deploy`) refuses wrong stand/branch pairs and commits the entry with a service account; hand edits via PR + CODEOWNERS; a change triggers the config deploy | 3–5 days (incl. the service account) | ~0.5 day | Audited releases without the host team; rollback = deploy the previous tag |
 | 4 | **Compatibility gates** | Host build emits `compat.json`; `release` checks the stand's host; host deploy runs `registry check`; host checks manifests at runtime | 2–3 days | — (comes with the template) | Incompatible releases blocked before users see them |
 | 5 | **Remotes own their config** | `config.json` inside the remote's version folder, validated by zod; stand name from the platform contract (`platform.env`); a transition helper falls back to `window.env` with a deprecation warning; then `window.env` is removed | 1 day (helper) | 0.5–1 day | Host no longer knows remote settings. *Depends on the remote receiving the platform contract as a prop (architecture track) — until then the helper can read the stand name from `window.env`.* |
 | 6 | **Local development** | Standalone mode for every remote; host dev server builds `/config.json` from `PORTAL_STAND` + `PORTAL_REMOTE_*` (`.env.development.local`); Fast Refresh of local remotes inside the host (recording DevTools hook, refresh runtime + Vite client attach) | 1–2 days | — (template) | Work on one remote against what is really deployed, without running every app |

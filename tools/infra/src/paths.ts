@@ -7,6 +7,12 @@ export const INFRA_DIR = join(REPO_ROOT, '.infra');
 export const NEXUS_DIR = join(INFRA_DIR, 'nexus');
 export const NEXUS_PORT = 4400;
 
+/** Raw hosted repositories, as configured in the real Nexus: releases "Disable redeploy", snapshots "Allow redeploy". */
+export const REPOSITORIES: Record<string, { redeploy: boolean }> = {
+  'portal-releases': { redeploy: false },
+  'portal-snapshots': { redeploy: true },
+};
+
 export const standDir = (stand: string) => join(INFRA_DIR, 'stands', stand);
 
 export type StandDefinition = { url: string; nexusUrl?: string };

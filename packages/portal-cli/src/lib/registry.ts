@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { dirname, join } from 'node:path';
 
 export type RegistryEntry = {
+  /** Published version, or `snapshot` on a snapshot stand (the build is identified by its manifest). */
   version: string;
   manifest: string;
   /** Isolated (no shared deps) build, used by the host when the main build is incompatible with its singletons. */
@@ -13,26 +14,37 @@ export type RegistryEntry = {
 };
 
 /**
- * Where a stand's versions come from — exactly one of:
- * - `branch`: `develop`, `release/X.Y` (a pinned line, e.g. the pilot) or `latest-release` (the newest release/*);
- *   CI releases builds of that branch there automatically (`portal-cli release --auto`);
- * - `promoteFrom`: nothing is built for it, versions arrive only via `portal-cli promote` from that stand.
+ * What a stand runs — exactly one of:
+ * - `snapshot: true`: whatever was deployed last, from any branch, overwritten in place (dev3);
+ * - `branch`: immutable release builds of one line — `release/X.Y` (pinned, e.g. the pilot) or `latest-release`
+ *   (the newest release/*); `portal-cli deploy` refuses builds of another line;
+ * - `promoteFrom`: never deployed to, versions arrive only via `portal-cli promote` from that stand (tst).
+ * `nexusUrl` is the Nexus `/repository` base: releases live in portal-releases, snapshots in portal-snapshots.
  */
-export type StandDefinition = { url: string; nexusUrl?: string; branch?: string; promoteFrom?: string };
+export type StandDefinition = { url: string; nexusUrl: string; snapshot?: boolean; branch?: string; promoteFrom?: string };
 
 export const LATEST_RELEASE = 'latest-release';
+export const SNAPSHOT_VERSION = 'snapshot';
+
+/** Raw repositories: releases refuse redeploy (immutable versions), snapshots allow it (one folder per stand). */
+const RELEASES_REPO = 'portal-releases';
+const SNAPSHOTS_REPO = 'portal-snapshots';
+
+export const releaseUrl = (nexusUrl: string, name: string, version: string): string => `${nexusUrl}/${RELEASES_REPO}/${name}/${version}`;
+export const snapshotUrl = (nexusUrl: string, stand: string, name: string): string => `${nexusUrl}/${SNAPSHOTS_REPO}/${stand}/${name}`;
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
 
 export const readStand = (registryDir: string, stand: string): StandDefinition => {
   const stands: unknown = JSON.parse(readFileSync(join(registryDir, 'stands.json'), 'utf8'));
   const definition = isRecord(stands) ? stands[stand] : undefined;
-  if (!isRecord(definition) || typeof definition['url'] !== 'string') {
-    throw new Error(`Unknown stand "${stand}" in ${join(registryDir, 'stands.json')}`);
+  if (!isRecord(definition) || typeof definition['url'] !== 'string' || typeof definition['nexusUrl'] !== 'string') {
+    throw new Error(`Unknown stand "${stand}" (or no url/nexusUrl) in ${join(registryDir, 'stands.json')}`);
   }
   return {
     url: definition['url'],
-    ...(typeof definition['nexusUrl'] === 'string' ? { nexusUrl: definition['nexusUrl'] } : {}),
+    nexusUrl: definition['nexusUrl'],
+    ...(definition['snapshot'] === true ? { snapshot: true } : {}),
     ...(typeof definition['branch'] === 'string' ? { branch: definition['branch'] } : {}),
     ...(typeof definition['promoteFrom'] === 'string' ? { promoteFrom: definition['promoteFrom'] } : {}),
   };
@@ -92,9 +104,15 @@ export const readEntries = (registryDir: string, stand: string): Record<string, 
   );
 };
 
-export const writeEntry = (registryDir: string, stand: string, name: string, entry: RegistryEntry): string => {
+const serialize = (entry: RegistryEntry) => `${JSON.stringify(entry, null, 2)}\n`;
+
+/** Writes the entry; null when the file already holds exactly this entry (nothing to commit). */
+export const writeEntry = (registryDir: string, stand: string, name: string, entry: RegistryEntry): string | null => {
   const path = entryPath(registryDir, stand, name);
+  if (existsSync(path) && readFileSync(path, 'utf8') === serialize(entry)) {
+    return null;
+  }
   mkdirSync(dirname(path), { recursive: true });
-  writeFileSync(path, `${JSON.stringify(entry, null, 2)}\n`);
+  writeFileSync(path, serialize(entry));
   return path;
 };

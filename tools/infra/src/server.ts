@@ -1,8 +1,8 @@
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { extname, join, normalize } from 'node:path';
-import { INFRA_DIR, NEXUS_DIR, NEXUS_PORT, readStands, standDir } from './paths.ts';
+import { dirname, extname, join, normalize } from 'node:path';
+import { INFRA_DIR, NEXUS_DIR, NEXUS_PORT, readStands, REPOSITORIES, standDir } from './paths.ts';
 
 const MIME: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -13,44 +13,90 @@ const MIME: Record<string, string> = {
   '.map': 'application/json',
 };
 
-/** `<name>/<semver>/…` folders are immutable artifacts; everything else (pointers, configs) must not be cached. */
-const IMMUTABLE_PATH = /^\/nexus\/[a-z][a-z0-9_]*\/\d+\.\d+\.\d+[^/]*\//;
-
 const safeJoin = (root: string, urlPath: string): string | null => {
   const path = normalize(join(root, decodeURIComponent(urlPath)));
   return path.startsWith(root) ? path : null;
 };
 
-const sendFile = (response: ServerResponse, path: string, headers: Record<string, string>) => {
+const sendFile = (request: IncomingMessage, response: ServerResponse, path: string, headers: Record<string, string>) => {
   response.writeHead(200, { 'Content-Type': MIME[extname(path)] ?? 'application/octet-stream', ...headers });
-  response.end(readFileSync(path));
+  response.end(request.method === 'HEAD' ? undefined : readFileSync(path));
 };
 
-const notFound = (response: ServerResponse) => {
-  response.writeHead(404, { 'Content-Type': 'text/plain' });
-  response.end('Not found');
+const sendText = (response: ServerResponse, status: number, text: string, headers: Record<string, string> = {}) => {
+  response.writeHead(status, { 'Content-Type': 'text/plain', ...headers });
+  response.end(text);
 };
 
 const isFile = (path: string | null): path is string => path !== null && existsSync(path) && statSync(path).isFile();
 
-/** Nexus stand-in: immutable remote builds + stand configs (for host dev proxies). CORS open, cache by path. */
+const readBody = async (request: IncomingMessage): Promise<Buffer> => {
+  const chunks: Buffer[] = [];
+  for await (const chunk of request) {
+    chunks.push(chunk as Buffer);
+  }
+  return Buffer.concat(chunks);
+};
+
+/**
+ * Nexus raw hosted repository API: `GET|HEAD|PUT /repository/<repo>/<path>`. PUT needs Basic auth (the PoC accepts any
+ * credentials); portal-releases answers a redeploy like Nexus with "Disable redeploy" does. Releases are cached
+ * forever, snapshots revalidate (overwritten in place; remoteEntry.js has no hash in its name).
+ */
+const handleRepository = async (request: IncomingMessage, response: ServerResponse, repository: string, path: string) => {
+  const policy = REPOSITORIES[repository];
+  const file = safeJoin(join(NEXUS_DIR, repository), path);
+  if (!policy || !file) {
+    sendText(response, 404, `Repository not found: ${repository}`);
+    return;
+  }
+  if (request.method === 'PUT') {
+    if (!request.headers.authorization?.startsWith('Basic ')) {
+      sendText(response, 401, 'Unauthorized', { 'WWW-Authenticate': 'BASIC realm="Sonatype Nexus Repository Manager"' });
+      return;
+    }
+    if (!policy.redeploy && existsSync(file)) {
+      sendText(response, 400, `Repository does not allow updating assets: ${repository}`);
+      return;
+    }
+    const body = await readBody(request);
+    mkdirSync(dirname(file), { recursive: true });
+    writeFileSync(file, body);
+    sendText(response, 201, '');
+    return;
+  }
+  if (!isFile(file)) {
+    sendText(response, 404, 'Not found', { 'Access-Control-Allow-Origin': '*' });
+    return;
+  }
+  sendFile(request, response, file, {
+    'Access-Control-Allow-Origin': '*',
+    'Cache-Control': policy.redeploy ? 'no-cache' : 'public, max-age=31536000, immutable',
+  });
+};
+
+/** Nexus stand-in (+ what the host dev server needs from the PoC infra: the stand list and stand configs). */
 const handleNexus = (request: IncomingMessage, response: ServerResponse) => {
   const urlPath = new URL(request.url ?? '/', 'http://x').pathname;
+  const repository = /^\/repository\/([^/]+)\/(.+)$/.exec(urlPath);
+  if (repository?.[1] && repository[2]) {
+    handleRepository(request, response, repository[1], repository[2]).catch((error: unknown) => {
+      sendText(response, 500, String(error));
+    });
+    return;
+  }
   if (urlPath === '/stands.json') {
     // Names of the deployed stands, for the host dev server's error messages (PORTAL_STAND typos).
     response.writeHead(200, { 'Content-Type': MIME['.json'], 'Cache-Control': 'no-cache' });
     response.end(JSON.stringify(Object.keys(readStands())));
     return;
   }
-  const path = safeJoin(INFRA_DIR, urlPath);
-  if (!isFile(path)) {
-    notFound(response);
+  const config = /^\/stands\/[a-z0-9-]+\/config\.json$/.test(urlPath) ? safeJoin(INFRA_DIR, urlPath) : null;
+  if (isFile(config)) {
+    sendFile(request, response, config, { 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-cache' });
     return;
   }
-  sendFile(response, path, {
-    'Access-Control-Allow-Origin': '*',
-    'Cache-Control': IMMUTABLE_PATH.test(urlPath) ? 'public, max-age=31536000, immutable' : 'no-cache',
-  });
+  sendText(response, 404, 'Not found');
 };
 
 /** Remotes are served from ONE Nexus origin, so the stand CSP never changes when remotes are added or released. */
@@ -73,28 +119,28 @@ const createStandHandler = (name: string) => (request: IncomingMessage, response
   if (urlPath === '/config.json') {
     const config = join(standDir(name), 'config.json');
     if (isFile(config)) {
-      sendFile(response, config, { 'Cache-Control': 'no-cache', ...headers });
+      sendFile(request, response, config, { 'Cache-Control': 'no-cache', ...headers });
     } else {
-      notFound(response);
+      sendText(response, 404, 'Not found');
     }
     return;
   }
   const file = safeJoin(hostDir, urlPath);
   if (isFile(file)) {
     const cache = urlPath.startsWith('/assets/') ? 'public, max-age=31536000, immutable' : 'no-cache';
-    sendFile(response, file, { 'Cache-Control': cache, 'Access-Control-Allow-Origin': '*', ...headers });
+    sendFile(request, response, file, { 'Cache-Control': cache, 'Access-Control-Allow-Origin': '*', ...headers });
     return;
   }
   const index = join(hostDir, 'index.html');
   if (!extname(urlPath) && isFile(index)) {
-    sendFile(response, index, { 'Cache-Control': 'no-cache', ...headers });
+    sendFile(request, response, index, { 'Cache-Control': 'no-cache', ...headers });
     return;
   }
-  notFound(response);
+  sendText(response, 404, 'Not found');
 };
 
 createServer(handleNexus).listen(NEXUS_PORT, () => {
-  console.log(`[infra] nexus  http://localhost:${NEXUS_PORT}/nexus/  (dir ${NEXUS_DIR})`);
+  console.log(`[infra] nexus  http://localhost:${NEXUS_PORT}/repository/{${Object.keys(REPOSITORIES).join(',')}}/  (dir ${NEXUS_DIR})`);
 });
 
 for (const [name, stand] of Object.entries(readStands())) {

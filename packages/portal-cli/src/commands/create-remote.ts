@@ -8,6 +8,8 @@ import { createInlineConfigs } from '../lib/inline-configs.ts';
 import { parseList, toPascalCase } from '../lib/text.ts';
 
 const TEMPLATE_DIR = fileURLToPath(new URL('../../templates/remote', import.meta.url));
+/** The CLI pins itself: its major moves on its own (deploy rules), apart from the runtime packages. */
+const { version: CLI_VERSION }: { version: string } = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8'));
 
 /** `app`, `pages`, `shared` are always created; these are optional (FSD 2.1 "pages first"). */
 export const OPTIONAL_LAYERS = ['entities', 'features', 'widgets'] as const;
@@ -106,6 +108,7 @@ export const runCreateRemote = async (name: string, options: CreateRemoteOptions
     __TITLE__: toPascalCase(name),
     __PORT__: options.port ?? '5176',
     __PORTAL_VERSION__: inWorkspace ? 'workspace:^' : '^1.0.0',
+    __CLI_VERSION__: inWorkspace ? 'workspace:^' : `^${CLI_VERSION}`,
     __REGISTRY__: process.env['PORTAL_REGISTRY'] ?? 'https://npm.pkg.github.com',
   };
   const overrides: Record<string, string> = answers.usePresets ? {} : createInlineConfigs();

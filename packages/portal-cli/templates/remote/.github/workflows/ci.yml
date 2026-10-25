@@ -2,7 +2,6 @@ name: CI
 on:
   push:
     branches: [main, develop, 'release/**']
-    tags: ['v*']
   pull_request:
 
 permissions:
@@ -12,11 +11,11 @@ permissions:
 
 jobs:
   ci:
-    # Central pipeline owned by the platform team (pinned version): checks; on develop / v* tags also publish + release.
-    uses: portal-poc/platform/.github/workflows/app-ci.yml@v1
+    # Central pipeline owned by the platform team (pinned version): checks only, deploys are manual (deploy.yml).
+    uses: portal-poc/platform/.github/workflows/app-ci.yml@v2
     secrets: inherit
 
   forward-merge:
     # A fix on release/X.Y must reach the newer lines and develop: opens the next forward-merge PR.
     if: startsWith(github.ref, 'refs/heads/release/')
-    uses: portal-poc/platform/.github/workflows/forward-merge.yml@v1
+    uses: portal-poc/platform/.github/workflows/forward-merge.yml@v2

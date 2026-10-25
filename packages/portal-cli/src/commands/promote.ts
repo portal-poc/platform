@@ -3,7 +3,8 @@ import { gateEntry } from '../lib/gate.ts';
 import { readHostCompat } from '../lib/host-compat.ts';
 import { LATEST_RELEASE, readEntries, readEntry, readStand, readStandNames, writeEntry, writeStandBranch } from '../lib/registry.ts';
 import type { RegistryEntry } from '../lib/registry.ts';
-import { openRegistryPullRequest } from '../lib/registry-pr.ts';
+import { saveRegistryChange } from '../lib/registry-change.ts';
+import type { ChangeMode } from '../lib/registry-change.ts';
 
 /**
  * Copies entries (the SAME immutable versions, nothing is rebuilt) from one stand to another through the singleton
@@ -11,6 +12,9 @@ import { openRegistryPullRequest } from '../lib/registry-pr.ts';
  * Returns the written files (empty: already up to date), or null when the gate blocked something (nothing written).
  */
 const copyEntries = async (registryDir: string, from: string, to: string, only?: string): Promise<string[] | null> => {
+  if (readStand(registryDir, from).snapshot) {
+    throw new Error(`"${from}" runs snapshots (rebuilt in place): nothing immutable to copy — deploy a release build instead.`);
+  }
   const hostCompat = await readHostCompat(`${readStand(registryDir, to).url}/compat.json`);
   const source = Object.entries(readEntries(registryDir, from)).filter(([name]) => !only || name === only);
   if (source.length === 0) {
@@ -43,18 +47,15 @@ const copyEntries = async (registryDir: string, from: string, to: string, only?:
     process.exitCode = 1;
     return null;
   }
-  return accepted.map(([name, entry]) => writeEntry(registryDir, to, name, entry));
+  return accepted.map(([name, entry]) => writeEntry(registryDir, to, name, entry)).filter((path) => path !== null);
 };
 
-const finish = (registryDir: string, files: string[], title: string, pr?: boolean) => {
-  if (pr) {
-    console.log(`\n✔ Pull request: ${openRegistryPullRequest(registryDir, files, title)} — merge deploys the stand config.`);
-  } else {
-    console.log(`\n✔ ${title} — written locally, run with --pr to open the registry pull request.`);
-  }
+const finish = (registryDir: string, files: string[], title: string, mode: ChangeMode) => {
+  console.log(`\n✔ ${title}`);
+  saveRegistryChange(registryDir, files, title, mode);
 };
 
-type PromoteOptions = { registry: string; from: string; to: string; remote?: string; pr?: boolean };
+type PromoteOptions = ChangeMode & { registry: string; from: string; to: string; remote?: string };
 
 /** tst never builds anything: it gets exactly what passed the stand it promotes from (stands.json `promoteFrom`). */
 export const runPromote = async (options: PromoteOptions): Promise<void> => {
@@ -67,18 +68,22 @@ export const runPromote = async (options: PromoteOptions): Promise<void> => {
   if (files?.length === 0) {
     console.log(`\n✔ "${options.to}" already runs these versions.`);
   } else if (files) {
-    finish(registryDir, files, `${options.to}: promote ${options.remote ?? 'all'} from ${options.from}`, options.pr);
+    finish(registryDir, files, `${options.to}: promote ${options.remote ?? 'all'} from ${options.from}`, options);
   }
 };
 
-type SwitchOptions = { registry: string; branch: string; from?: string; pr?: boolean };
+type SwitchOptions = ChangeMode & { registry: string; branch: string; from?: string };
 
 /**
- * Moves a stand to another release line (the pilot moves from release/1.4 to release/1.5) in ONE pull request:
+ * Moves a stand to another release line (the pilot moves from release/1.4 to release/1.5) in ONE registry change:
  * the stands.json mapping plus the current versions of that line, copied from the stand that runs it now.
  */
 export const runStandSwitch = async (stand: string, options: SwitchOptions): Promise<void> => {
   const registryDir = resolve(options.registry);
+  const definition = readStand(registryDir, stand);
+  if (!definition.branch) {
+    throw new Error(`"${stand}" does not run a release line (${definition.snapshot ? 'snapshot stand' : `promoted from ${definition.promoteFrom}`}).`);
+  }
   const others = readStandNames(registryDir).filter((name) => name !== stand);
   const from =
     options.from ??
@@ -90,6 +95,6 @@ export const runStandSwitch = async (stand: string, options: SwitchOptions): Pro
   const files = await copyEntries(registryDir, from, stand);
   if (files) {
     files.push(writeStandBranch(registryDir, stand, options.branch));
-    finish(registryDir, files, `${stand}: switch to ${options.branch} (versions from ${from})`, options.pr);
+    finish(registryDir, files, `${stand}: switch to ${options.branch} (versions from ${from})`, options);
   }
 };

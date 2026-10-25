@@ -18,10 +18,10 @@ meant to be split into separate repositories (polyrepo) later.
 | `packages/mf-shared` | `@portal-poc/mf-shared` — integration-contract constants (exposes, singletons, ranges) + shared config helper | platform repo |
 | `packages/vite-config` | `@portal-poc/vite-config` — build preset: pinned Vite + MF plugin, MF section of the contract, React Compiler | platform repo |
 | `packages/presets` | `@portal-poc/presets` — optional tsconfig / oxlint (incl. React Compiler rules) / fallow / vitest / steiger presets | platform repo |
-| `packages/portal-cli` | `@portal-poc/cli` (command `portal-cli`) — `create remote`, `add <layer>`, `verify`, `publish`, `release`, `registry check|build|status` | platform repo |
+| `packages/portal-cli` | `@portal-poc/cli` (command `portal-cli`) — `create remote`, `add <layer>`, `verify`, `deploy`, `publish`, `release`, `promote`, `stand switch`, `registry check|build|status|validate` | platform repo |
 | `registry/` | Which version of which remote runs on which stand (`<stand>/<remote>.json`, `stands.json`) | registry repo |
 | `tools/polyrepo` | Polyrepo dry run: Verdaccio (Nexus stand-in) + split every app into its own repo and check it ([`polyrepo.md`](./polyrepo.md)) | — |
-| `tools/infra` | PoC stand-ins: Nexus (immutable artifacts) and stands (host + `/config.json` + `compat.json`) | — (infra) |
+| `tools/infra` | PoC stand-ins: Nexus raw API (`portal-releases`, `portal-snapshots`) and stands (host + `/config.json` + `compat.json`) | — (infra) |
 
 ## Ports (local)
 

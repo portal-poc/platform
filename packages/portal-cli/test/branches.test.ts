@@ -1,40 +1,39 @@
-import { mkdtempSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { branchOfVersion, standsTrackingBranch } from '../src/lib/branches.ts';
+import { branchOfVersion, releaseVersionOf, snapshotVersionOf } from '../src/lib/branches.ts';
 
 describe('branchOfVersion', () => {
-  it('maps dev prereleases to develop and everything else to its release line', () => {
-    expect(branchOfVersion('1.6.0-dev.57')).toBe('develop');
+  it('maps release versions and release candidates to their line', () => {
     expect(branchOfVersion('1.4.2')).toBe('release/1.4');
-    expect(branchOfVersion('1.5.0-rc.1')).toBe('release/1.5');
+    expect(branchOfVersion('1.5.3-rc.12')).toBe('release/1.5');
   });
 
-  it('rejects non-semver versions', () => {
-    expect(() => branchOfVersion('latest')).toThrow('not a semver');
+  it('has no line for snapshot builds and non-semver versions', () => {
+    expect(branchOfVersion('1.6.0-snapshot.58+a1b2c3d')).toBeNull();
+    expect(branchOfVersion('latest')).toBeNull();
   });
 });
 
-describe('standsTrackingBranch', () => {
-  const registry = mkdtempSync(join(tmpdir(), 'registry-'));
-  writeFileSync(
-    join(registry, 'stands.json'),
-    JSON.stringify({
-      dev3: { url: 'http://dev3', branch: 'develop' },
-      dev2: { url: 'http://dev2', branch: 'latest-release' },
-      dev1: { url: 'http://dev1', branch: 'release/1.4' },
-      tst: { url: 'http://tst', promoteFrom: 'dev1' },
-    }),
-  );
+describe('releaseVersionOf', () => {
+  const tags = ['v1.4.0', 'v1.4.1', 'v1.5.0', 'v1.5.1', 'v1.5.2'];
 
-  it.each([
-    ['develop', 'release/1.5', ['dev3']],
-    ['release/1.5', 'release/1.5', ['dev2']],
-    ['release/1.4', 'release/1.5', ['dev1']],
-    ['release/1.4', 'release/1.4', ['dev2', 'dev1']],
-    ['release/1.3', 'release/1.5', []],
-  ])('%s (newest %s) → %o', (branch, latest, stands) => {
-    expect(standsTrackingBranch(registry, branch, latest)).toEqual(stands);
+  it('deploys a tag as exactly its version', () => {
+    expect(releaseVersionOf('v1.5.1', tags, '7')).toBe('1.5.1');
+  });
+
+  it('builds a release branch as the next patch release candidate', () => {
+    expect(releaseVersionOf('release/1.5', tags, '7')).toBe('1.5.3-rc.7');
+    expect(releaseVersionOf('release/1.4', tags, '8')).toBe('1.4.2-rc.8');
+    expect(releaseVersionOf('release/1.6', tags, '9')).toBe('1.6.0-rc.9');
+  });
+
+  it.each(['develop', 'feature/filters', 'v1.5', 'main'])('refuses %s', (ref) => {
+    expect(() => releaseVersionOf(ref, tags, '1')).toThrow('cannot go to a release stand');
+  });
+});
+
+describe('snapshotVersionOf', () => {
+  it('identifies the build by run and commit', () => {
+    expect(snapshotVersionOf('1.6.0', '58', 'a1b2c3d4e5f6')).toBe('1.6.0-snapshot.58+a1b2c3d');
+    expect(snapshotVersionOf('1.6.0-rc.1', '58', 'a1b2c3d4e5f6')).toBe('1.6.0-snapshot.58+a1b2c3d');
   });
 });

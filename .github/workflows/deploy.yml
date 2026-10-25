@@ -1,0 +1,64 @@
+name: Deploy (central)
+# The "Deploy" button of every remote repository: a developer picks the stand and the branch or tag, nothing deploys
+# by itself. The stand rules live in the registry (stands.json) and are enforced by `portal-cli deploy` BEFORE the
+# build (docs/branching.md):
+#   snapshot stand (dev3)        any branch → rebuilt and OVERWRITTEN in place (portal-snapshots), registry untouched
+#   release stands (dev2, dev1)  release/X.Y → X.Y.<next>-rc.<run>, tag vX.Y.Z → X.Y.Z (published once, then reused),
+#                                only of the stand's line (dev2: the newest one, dev1: the pinned pilot line);
+#                                the registry commit is the release
+#   tst                          refused: "Promote" in the registry repository
+# The CLI comes from this platform version, not from the ref being deployed: an old tag still deploys with today's
+# rules. The app's own scripts (build, verify) come from the ref.
+#
+# Secrets: PORTAL_REGISTRY_TOKEN (push to portal-poc/registry), PORTAL_NEXUS_USER / PORTAL_NEXUS_PASSWORD (upload).
+on:
+  workflow_call:
+    inputs:
+      stand:
+        type: string
+        required: true
+      ref:
+        type: string
+        required: true
+      mode:
+        description: integrated | bridge (a remote that shares nothing, e.g. legacy)
+        type: string
+        default: integrated
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # One deploy per stand and repository at a time; a second one waits instead of interleaving uploads.
+    concurrency:
+      group: deploy-${{ github.repository }}-${{ inputs.stand }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0 # tags and release branches decide versions and the newest line
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Authenticate to GitHub Packages (@portal-poc)
+        run: echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> ~/.npmrc
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/checkout@v4
+        with:
+          repository: portal-poc/registry
+          path: .registry
+          token: ${{ secrets.PORTAL_REGISTRY_TOKEN }}
+      - name: Deploy ${{ inputs.ref }} → ${{ inputs.stand }}
+        run: |
+          git config --global user.name "portal-deploy"
+          git config --global user.email "portal-deploy@users.noreply.github.com"
+          pnpm dlx @portal-poc/cli@2 deploy --stand "${{ inputs.stand }}" --ref "${{ inputs.ref }}" \
+            --mode "${{ inputs.mode }}" --registry .registry --push
+        env:
+          PORTAL_NEXUS_USER: ${{ secrets.PORTAL_NEXUS_USER }}
+          PORTAL_NEXUS_PASSWORD: ${{ secrets.PORTAL_NEXUS_PASSWORD }}

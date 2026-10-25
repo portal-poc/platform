@@ -6,6 +6,7 @@ import type { SliceLayer } from './commands/add-slice.ts';
 import { OPTIONAL_LAYERS, runCreateRemote } from './commands/create-remote.ts';
 import { runRegistryBuild, runRegistryCheck, runRegistryStatus, runRegistryValidate } from './commands/registry.ts';
 import { runPromote, runStandSwitch } from './commands/promote.ts';
+import { runDeploy } from './commands/deploy.ts';
 import { runPublish, runRelease } from './commands/release.ts';
 import { runVerify } from './commands/verify.ts';
 
@@ -51,30 +52,46 @@ program
   .addOption(new Option('--mode <mode>', 'integration mode the remote targets').choices(['integrated', 'bridge']).default('integrated'))
   .action(runVerify);
 
+const registryOption = () =>
+  new Option('--registry <path>', 'local clone of the registry repository').env('PORTAL_REGISTRY_DIR').makeOptionMandatory();
+const modeOption = () => new Option('--mode <mode>', 'integration mode').choices(['integrated', 'bridge']).default('integrated');
+
+program
+  .command('deploy')
+  .description('The pipeline "Deploy" button: build a branch/tag and put it on a stand (rules: registry stands.json)')
+  .requiredOption('--stand <stand>', 'target stand (snapshot: any branch; release stand: release/X.Y or vX.Y.Z of its line)')
+  .option('--ref <ref>', 'branch or tag being deployed (default: the checked-out one)')
+  .option('--run <number>', 'build number for rc/snapshot versions (default: GITHUB_RUN_NUMBER, else a timestamp)')
+  .addOption(registryOption())
+  .option('--dir <path>', 'remote root', '.')
+  .option('--base-path <path>', 'route in the host (first deploy to a stand only)')
+  .option('--scopes <list>', 'token scopes allowlist (first deploy to a stand only)')
+  .addOption(modeOption())
+  .option('--push', 'commit the registry change to its main branch and push (CI)')
+  .option('--pr', 'open a registry pull request instead (gh)')
+  .action(runDeploy);
+
 program
   .command('publish')
-  .description('Upload the build (and the bridge variant) as an immutable versioned artifact')
-  .addOption(
-    new Option('--nexus-dir <path>', 'artifact repository (PoC: a folder; real: Nexus raw repository)')
-      .env('PORTAL_NEXUS_DIR')
-      .makeOptionMandatory(),
-  )
+  .description('Upload the build (and the bridge variant) to portal-releases as an immutable versioned artifact')
+  .addOption(new Option('--nexus-url <url>', 'Nexus /repository base URL').env('PORTAL_NEXUS_URL').makeOptionMandatory())
   .option('--dir <path>', 'remote root', '.')
   .option('--version <version>', 'artifact version (default: PORTAL_APP_VERSION, else package.json)')
+  .option('--reuse', 'an already published version is used as is instead of failing')
   .action(runPublish);
 
 program
   .command('release')
-  .description('Point a stand at a published version through the compatibility gate (writes the registry entry = PR)')
-  .option('--stand <stand>', 'target stand (manual release or rollback)')
-  .option('--auto', "the stands tracking this version's branch (X.Y.Z-dev.N → develop, X.Y.Z → release/X.Y) — CI")
-  .addOption(new Option('--registry <path>', 'local clone of the registry repository').env('PORTAL_REGISTRY_DIR').makeOptionMandatory())
+  .description('Point a release stand at a published version through the gate (rollback: --version <older>)')
+  .requiredOption('--stand <stand>', 'target release stand')
+  .addOption(registryOption())
   .option('--dir <path>', 'remote root', '.')
-  .option('--version <version>', 'published version (default: PORTAL_APP_VERSION, else package.json; older = rollback)')
+  .option('--version <version>', 'published version (default: PORTAL_APP_VERSION, else package.json)')
   .option('--base-path <path>', 'route in the host (first release only)')
   .option('--scopes <list>', 'token scopes allowlist (first release only)')
-  .addOption(new Option('--mode <mode>', 'integration mode').choices(['integrated', 'bridge']).default('integrated'))
-  .option('--pr', 'commit the entry on a release branch of the registry clone, push it and open a pull request (gh)')
+  .addOption(modeOption())
+  .option('--push', 'commit the registry change to its main branch and push (CI)')
+  .option('--pr', 'open a registry pull request instead (gh)')
   .action(runRelease);
 
 program
@@ -84,19 +101,21 @@ program
   .requiredOption('--to <stand>', 'target stand with promoteFrom = source (e.g. tst)')
   .option('--remote <name>', 'only this remote (default: all)')
   .addOption(new Option('--registry <path>', 'local clone of the registry repository').env('PORTAL_REGISTRY_DIR').default('.'))
-  .option('--pr', 'open the registry pull request (gh)')
+  .option('--push', 'commit to the registry main branch and push (CI)')
+  .option('--pr', 'open a registry pull request instead (gh)')
   .action(runPromote);
 
-const stand = program.command('stand').description('Stand ↔ branch mapping (registry stands.json)');
+const stand = program.command('stand').description('Stand ↔ release line (registry stands.json)');
 
 stand
   .command('switch')
-  .description('Move a stand to another release line: mapping + that line\'s current versions in one PR')
+  .description('Move a stand to another release line: mapping + that line\'s current versions in one change')
   .argument('<stand>', 'stand to switch (e.g. dev1)')
   .requiredOption('--branch <branch>', 'release/X.Y the stand follows from now on')
   .option('--from <stand>', 'stand that runs that line now (default: the one tracking it, else latest-release)')
   .addOption(new Option('--registry <path>', 'local clone of the registry repository').env('PORTAL_REGISTRY_DIR').default('.'))
-  .option('--pr', 'open the registry pull request (gh)')
+  .option('--push', 'commit to the registry main branch and push')
+  .option('--pr', 'open a registry pull request instead (gh)')
   .action(runStandSwitch);
 
 const registry = program.command('registry').description('Remote registry: which version runs on which stand');
@@ -105,7 +124,7 @@ registry
   .command('check')
   .description('Host deploy gate: verify every registered remote against a host compat.json')
   .requiredOption('--stand <stand>', 'stand')
-  .addOption(new Option('--registry <path>', 'local clone of the registry repository').env('PORTAL_REGISTRY_DIR').makeOptionMandatory())
+  .addOption(registryOption())
   .option('--against <compat>', "host compat.json (default: the stand's deployed host)")
   .action(runRegistryCheck);
 
@@ -119,14 +138,14 @@ registry
   .command('build')
   .description("Config deploy job: aggregate the stand's entries into the host /config.json")
   .requiredOption('--stand <stand>', 'stand')
-  .addOption(new Option('--registry <path>', 'local clone of the registry repository').env('PORTAL_REGISTRY_DIR').makeOptionMandatory())
+  .addOption(registryOption())
   .requiredOption('--out <file>', 'output file')
   .action(runRegistryBuild);
 
 registry
   .command('status')
   .description('Versions dashboard: remote × stand × required singletons')
-  .addOption(new Option('--registry <path>', 'local clone of the registry repository').env('PORTAL_REGISTRY_DIR').makeOptionMandatory())
+  .addOption(registryOption())
   .option('--stands <list>', 'stands to show (default: all in stands.json)')
   .action(runRegistryStatus);
 

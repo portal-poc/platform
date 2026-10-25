@@ -43,10 +43,11 @@ discovered while building this reference repo. Code that depends on an open deci
 
 - **(found)** Registry as a folder vs. its own repository vs. a small service — start as a folder in the host repo,
   move out when PR volume grows.
-- **(found)** PR automation from remote pipelines (service account, ADO REST) is described but not implemented in the
-  PoC; `portal-cli release` writes the entry locally.
-- **(found)** `portal-cli publish` copies to a folder; real Nexus upload (raw repository, PUT with credentials, refuse
-  overwrite on the server side) is a TODO(decision).
+- **(resolved)** Registry writes from pipelines: the manual Deploy workflow commits to the registry's main with a bot
+  token (`--push`), `--pr` remains for changes that need an approval (ADR 0020). Needs the token/GitHub App.
+- **(resolved)** `portal-cli publish` uploads over the Nexus raw API (PUT with credentials); `portal-releases`
+  refuses redeploy on the server side, `portal-snapshots` allows it for dev3 (ADR 0020). The PoC stand-in speaks the
+  same API.
 - **(found)** Remote frontend ↔ BFF compatibility is not enforced yet (BFFs deployed manually, no prod). Plan in
   `migration-plan.md` → "Backend track".
 - **(found)** Upgrading Vite / the MF plugin needs a transition window where the host's MF runtime loads manifests of

@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "PoC stand-ins for Nexus (immutable artifacts) and stand hosting (host + /config.json + compat.json).",
+  "description": "PoC stand-ins for Nexus (raw repositories portal-releases / portal-snapshots) and stand hosting (host + /config.json + compat.json).",
   "scripts": {
     "start": "node src/server.ts",
     "typecheck": "tsc -p tsconfig.json",

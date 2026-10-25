@@ -1,0 +1,25 @@
+name: Deploy
+# Pick the stand and the branch or tag, press "Run workflow". The stand rules (registry stands.json) are checked
+# before anything is built: see README "Deploy".
+on:
+  workflow_dispatch:
+    inputs:
+      stand:
+        description: Stand
+        type: choice
+        options: [dev3, dev2, dev1]
+      ref:
+        description: Branch or tag (develop, feature/…, release/1.5, v1.5.2)
+        default: develop
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  deploy:
+    uses: portal-poc/platform/.github/workflows/deploy.yml@v2
+    with:
+      stand: ${{ inputs.stand }}
+      ref: ${{ inputs.ref }}
+    secrets: inherit

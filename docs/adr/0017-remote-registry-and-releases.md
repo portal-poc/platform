@@ -10,9 +10,9 @@ back, and how open tabs survive a deploy. Overwriting one stable URL per stand g
 
 - **Immutable artifacts**: every remote build is published once to `<nexus>/<name>/<version>/` (+ `bridge/` for the
   isolated variant) and never overwritten (`portal-cli publish`). Cache: versioned folders `immutable`, configs
-  `no-cache`.
+  `no-cache`. Exception: the developers' snapshot stand (ADR 0020).
 - **Registry** (`registry/<stand>/<remote>.json`): version + manifest URL (+ bridge manifest) owned by the remote team;
-  `basePath`/`scopes` owned by the host team (CODEOWNERS). A release is a change of one file → a PR; merge runs the
+  `basePath`/`scopes` owned by the host team (CODEOWNERS). A release is a change of one file (a commit by the deploy, ADR 0020); it runs the
   config deploy (`portal-cli registry build` → the stand's `/config.json`). Rollback = point back to an older version.
   The host is never rebuilt for a remote release.
 - **The host publishes `compat.json`** (exact singleton versions it provides + supported contract range) with every

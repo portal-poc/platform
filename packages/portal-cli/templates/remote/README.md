@@ -8,3 +8,16 @@ pnpm dev                 # :__PORT__ — remoteEntry for the host + standalone a
 pnpm build && pnpm verify
 portal-cli add page settings
 ```
+
+## Deploy
+
+Nothing deploys by itself: **Actions → Deploy → Run workflow**, pick the stand and the branch or tag.
+
+| Stand | What you can deploy | What happens |
+|---|---|---|
+| `dev3` | any branch (`develop`, `feature/…`) | rebuilt and overwritten in place |
+| `dev2` | the newest `release/X.Y` or its `vX.Y.Z` tag | immutable version (`X.Y.Z`, or `X.Y.Z-rc.N` from the branch) |
+| `dev1` | the pilot line's `release/X.Y` or its tags | same |
+| `tst` | — | "Promote" in the registry repository copies what passed `dev1` |
+
+Rollback = deploy the previous tag (the published artifact is reused, nothing is rebuilt).
