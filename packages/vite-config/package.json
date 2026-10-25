@@ -1,6 +1,6 @@
 {
   "name": "@portal-poc/vite-config",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Platform build preset: pinned Vite + Module Federation plugin, the MF section of the integration contract, React Compiler.",
   "type": "module",
   "exports": {

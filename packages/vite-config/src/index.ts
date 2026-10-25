@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
@@ -22,6 +23,23 @@ const readJson = (path: string): PackageJson => JSON.parse(readFileSync(path, 'u
 const installedVersion = (appRoot: string, name: string): string => {
   const require = createRequire(`${appRoot}/package.json`);
   return readJson(require.resolve(`${name}/package.json`)).version;
+};
+
+const git = (dir: string, args: string[]): string =>
+  execFileSync('git', args, { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+
+/**
+ * The commit a build was made from, recorded in every artifact (remote manifests, the host's compat.json): a version
+ * like `1.5.3-rc.2` names a deploy, not a commit, and the release branch moves on. `-dirty` when the working tree had
+ * uncommitted changes (a local build); undefined outside git.
+ */
+export const gitCommitOf = (dir: string): string | undefined => {
+  try {
+    const sha = git(dir, ['rev-parse', 'HEAD']);
+    return git(dir, ['status', '--porcelain', '--untracked-files=no']) ? `${sha}-dirty` : sha;
+  } catch {
+    return undefined;
+  }
 };
 
 /**
@@ -94,6 +112,7 @@ export const createRemoteViteConfig = (options: RemoteViteOptions): UserConfigFn
   // package.json only holds the line.
   const appVersion = process.env['PORTAL_APP_VERSION'] || readJson(`${appRoot}/package.json`).version;
   const viteVersion = installedVersion(appRoot, 'vite');
+  const commit = gitCommitOf(appRoot);
   const exposesDir = options.exposesDir ?? 'src/app/exposes';
   const sharedConfig = options.unsafeSharedOverride?.(createSharedConfig()) ?? createSharedConfig();
 
@@ -121,12 +140,13 @@ export const createRemoteViteConfig = (options: RemoteViteOptions): UserConfigFn
           filename: 'remoteEntry.js',
           dts: false,
           manifest: {
-            // Recorded for the gates and the host's runtime check (pluginVersion is added by the plugin itself).
+            // Recorded for the gates, the host's runtime check and investigations (pluginVersion is added by the
+            // plugin itself; `commit`: what to check out to reproduce this build).
             // The plugin calls this for mf-manifest.json (passed as `stats`) and for mf-stats.json.
             additionalData: ({ stats }) => {
               const metaData = stats['metaData'];
               if (metaData && typeof metaData === 'object') {
-                Object.assign(metaData, { portal: { appVersion, vite: viteVersion } });
+                Object.assign(metaData, { portal: { appVersion, vite: viteVersion, ...(commit ? { commit } : {}) } });
               }
             },
           },

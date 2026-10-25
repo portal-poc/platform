@@ -99,10 +99,16 @@ export const runRegistryBuild = async (options: RegistryOptions & { out?: string
   }
 };
 
-const builtVersionOf = (manifest: unknown): string => {
-  const metaData = (manifest as { metaData?: { portal?: { appVersion?: unknown } } } | null)?.metaData;
-  return String(metaData?.portal?.appVersion ?? '?');
-};
+type PortalMetaData = { appVersion?: unknown; commit?: unknown };
+
+const portalMetaOf = (manifest: unknown): PortalMetaData =>
+  (manifest as { metaData?: { portal?: PortalMetaData } } | null)?.metaData?.portal ?? {};
+
+const builtVersionOf = (manifest: unknown): string => String(portalMetaOf(manifest).appVersion ?? '?');
+
+/** Short sha (+ `-dirty`) to check out for a build; `—` for builds made before vite-config 1.3. */
+const shortCommit = (commit: unknown): string =>
+  typeof commit === 'string' ? commit.replace(/^([0-9a-f]{7})[0-9a-f]*/, '$1') : '—';
 
 const requiredOf = (shared: ReadonlyArray<{ name: string; requiredVersion?: string }>, name: string) =>
   shared.find((entry) => entry.name === name)?.requiredVersion ?? '—';
@@ -111,7 +117,7 @@ const requiredOf = (shared: ReadonlyArray<{ name: string; requiredVersion?: stri
 export const runRegistryStatus = async (options: { registry: string; stands?: string }): Promise<void> => {
   const registryDir = resolve(options.registry);
   const stands = options.stands ? options.stands.split(',') : readStandNames(registryDir);
-  const rows: string[][] = [['stand', 'remote', 'version', 'react', 'react-router', '@portal-poc/ds', 'bridge build']];
+  const rows: string[][] = [['stand', 'remote', 'version', 'commit', 'react', 'react-router', '@portal-poc/ds', 'bridge build']];
   for (const stand of stands) {
     for (const [name, entry] of Object.entries(readEntries(registryDir, stand))) {
       const published = await readJsonSource(entry.manifest).catch(() => null);
@@ -120,6 +126,7 @@ export const runRegistryStatus = async (options: { registry: string; stands?: st
         stand,
         name,
         entry.version === SNAPSHOT_VERSION ? `snapshot ${builtVersionOf(published)}` : entry.version,
+        published === null ? '' : shortCommit(portalMetaOf(published).commit),
         shared ? requiredOf(shared, 'react') : 'unreachable',
         shared ? requiredOf(shared, 'react-router') : '',
         shared ? requiredOf(shared, '@portal-poc/ds') : '',
@@ -130,6 +137,12 @@ export const runRegistryStatus = async (options: { registry: string; stands?: st
   const widths = rows[0]?.map((_, column) => Math.max(...rows.map((row) => (row[column] ?? '').length))) ?? [];
   for (const row of rows) {
     console.log(row.map((cell, column) => cell.padEnd(widths[column] ?? 0)).join('  '));
+  }
+  console.log('');
+  for (const stand of stands) {
+    const compat = await readJsonSource(`${readStand(registryDir, stand).url}/compat.json`).catch(() => null);
+    const { hostVersion, commit } = (compat ?? {}) as { hostVersion?: unknown; commit?: unknown };
+    console.log(`host on ${stand.padEnd(5)} ${compat ? `${String(hostVersion)} · ${shortCommit(commit)}` : 'unreachable'}`);
   }
   console.log(`\nHost singletons supported by this platform version: ${Object.keys(SINGLETONS).join(', ')}`);
 };

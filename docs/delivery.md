@@ -67,6 +67,15 @@ gates, not upload.
 Deployed stands never load local code. The host toolbar / demo panel shows `name@version · registry|local ·
 integrated|bridge|error` for every remote.
 
+## Investigating a bug on a stand
+
+Every build records the commit it was made from: `metaData.portal.commit` in a remote's `mf-manifest.json`, `commit`
+in the host's `compat.json` (`-dirty` if the working tree had uncommitted changes). `pnpm status` in the registry
+lists both per stand; the host's remotes panel shows them in the browser. To reproduce: check out those commits,
+run the remote(s) locally and the host with `PORTAL_STAND=<stand>` — the other remotes stay as deployed there, and
+every app talks to that stand's backends (`env.name` = the stand). In the real project this needs `localhost` in
+the stand's app registration (redirect URI) and in its BFFs' CORS; production stays closed to it.
+
 ## Build tooling
 
 All apps build through `@portal-poc/vite-config` (pinned Vite + MF plugin, MF section of the contract). Manifests record
