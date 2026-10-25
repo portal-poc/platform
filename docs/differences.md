@@ -4,7 +4,7 @@
   stands in for Nexus versions; `portal-cli create` switches to `^1.0.0` outside a workspace).
 - TypeScript `strict: true` (off in the real project).
 - Mock auth by default (MSAL adapter implemented: `@portal-poc/platform-runtime/msal`).
-- No BFFs at all: each app injects a fake `fetch` with hard-coded data into the real http client.
+- No BFFs at all: each app injects a fake `fetch` with hard-coded data behind its real axios client.
 - No realtime (the real project has WebSocket pub/sub); no API-contracts codegen (backend shared repo).
 - React Router v8 instead of v7.
 - The real project's shared host QueryClient and bookmark hacks are **removed** when migrating to this scheme:

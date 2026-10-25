@@ -1,2 +1,1 @@
-export { REMOTE_NAME, useRemoteEnvConfig } from './remote-config';
-export type { RemoteEnvConfig } from './remote-config';
+export { getRemoteEnvConfig, REMOTE_NAME } from './remote-config';

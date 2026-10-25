@@ -20,7 +20,8 @@ Portal micro-frontend platform (PoC, organisation [`portal-poc`](https://github.
 | Package | Role |
 |---|---|
 | `@portal-poc/platform-contract` | Types only + `PLATFORM_CONTRACT_VERSION` |
-| `@portal-poc/platform-runtime` | Provider, auth adapters, http client, QueryClient factory, devtools, standalone, compat |
+| `@portal-poc/platform-runtime` | Provider, auth adapters, QueryClient factory, devtools, standalone, compat |
+| `@portal-poc/http` | axios bound to the host's login: `attachPlatformAuth`, `createPlatformBinding`, `parseResponse` (no React) |
 | `@portal-poc/ds` | Design system (MF singleton) + loading primitives |
 | `@portal-poc/mf-shared` | Integration contract constants: exposes, singletons, supported ranges, compat checks |
 | `@portal-poc/vite-config` | Build preset: pinned Vite + MF plugin, MF section, React Compiler |

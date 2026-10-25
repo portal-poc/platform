@@ -68,6 +68,8 @@ export const createInlineConfigs = (): Record<string, string> => {
       '',
       'export default defineConfig({',
       "  resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },",
+      '  // Injected by @portal-poc/vite-config at build time; modules may read it at import time.',
+      "  define: { PORTAL_APP_VERSION: JSON.stringify('test') },",
       '  test: {',
       "    environment: 'jsdom',",
       "    include: ['src/**/*.test.{ts,tsx}'],",

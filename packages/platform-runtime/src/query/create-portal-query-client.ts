@@ -1,30 +1,32 @@
 import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query';
 import type { QueryClientConfig } from '@tanstack/react-query';
 import type { PlatformTelemetry } from '@portal-poc/platform-contract';
-import { PlatformInteractionRequiredError, PlatformScopeNotAllowedError } from '../auth/errors';
-import { HttpError, ResponseValidationError } from '../http/errors';
 
 const MAX_RETRIES = 2;
 
 const isTransientStatus = (status: number): boolean => status >= 500 || status === 429;
 
-/** Do not retry 4xx (401/403/404…) and validation errors; retry network errors, 5xx and 429 up to 2 times. */
+/**
+ * Errors are recognised by shape and name, not `instanceof`: they come from axios and from other copies of the
+ * platform code (the host's auth, the app's @portal-poc/http), each bundled separately.
+ */
+const NEVER_RETRIED = new Set(['ResponseValidationError', 'PlatformInteractionRequiredError', 'PlatformScopeNotAllowedError']);
+
+type AxiosLikeError = { isAxiosError: true; code?: string; response?: { status: number } };
+
+const isAxiosLikeError = (error: unknown): error is AxiosLikeError =>
+  typeof error === 'object' && error !== null && (error as { isAxiosError?: unknown }).isAxiosError === true;
+
+/** Do not retry 4xx (401/403/404…), cancellations and validation errors; retry network errors, 5xx and 429 up to 2 times. */
 export const shouldRetryQuery = (failureCount: number, error: unknown): boolean => {
-  if (failureCount >= MAX_RETRIES) {
+  if (failureCount >= MAX_RETRIES || (error instanceof Error && NEVER_RETRIED.has(error.name))) {
     return false;
   }
-  if (
-    error instanceof ResponseValidationError ||
-    error instanceof PlatformInteractionRequiredError ||
-    error instanceof PlatformScopeNotAllowedError
-  ) {
+  if (!isAxiosLikeError(error) || error.code === 'ERR_CANCELED') {
     return false;
   }
-  if (error instanceof HttpError) {
-    return isTransientStatus(error.status);
-  }
-  // `fetch` rejects with TypeError on network failures.
-  return error instanceof TypeError;
+  // No response = the request never got an answer (network, timeout).
+  return error.response ? isTransientStatus(error.response.status) : true;
 };
 
 type PortalQueryClientOptions = {

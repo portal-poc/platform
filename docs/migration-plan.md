@@ -56,7 +56,7 @@ older BFF does not return (strict zod validation then fails the screen) and a BF
 a rollback still needs.
 
 **Now (cheap, no gates):**
-- The http client sends `X-Client-Version: <name>@<version>` (implemented in `createHttpClient`); BFFs log it.
+- The http client sends `X-Client-Version: <name>@<version>` (implemented in `@portal-poc/http`, `attachPlatformAuth`); BFFs log it.
 - BFFs expose their API version (response header or `/.well-known/api-version`).
 - Tolerant reader in zod schemas: no `.strict()`, new fields optional until every stand's BFF has them.
 

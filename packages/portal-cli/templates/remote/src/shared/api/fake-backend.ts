@@ -1,8 +1,9 @@
 import type { Item } from './contracts';
 
 /**
- * Placeholder backend: a fake `fetch` injected into the real http client (bearer + zod still run) on environments
- * with `"fakeBackend": true` in `public/config.json`. Delete this file and the flag once the BFF exists.
+ * Placeholder backend: a fake `fetch` behind the real axios client (its fetch adapter; the bearer token and zod
+ * parsing still run) on environments with `"fakeBackend": true` in `public/config.json`. Delete this file, the flag
+ * and its interceptor in `http.ts` once the BFF exists.
  */
 const items: Item[] = [
   { id: '1', title: 'First item' },

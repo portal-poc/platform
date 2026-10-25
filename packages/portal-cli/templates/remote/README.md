@@ -17,9 +17,10 @@ synced again. `portal-cli verify` (in CI) is the only permanent consistency chec
 `PORTAL_REMOTE___UPPER_NAME__=http://localhost:__PORT__/mf-manifest.json`, run `pnpm dev` here and there. Without
 `PORTAL_STAND=none` the other remotes come as deployed on that stand (start `pnpm infra` in `platform`).
 
-**Data**: `public/config.json` holds the BFF address and token scopes of every environment. Where `"fakeBackend":
-true` (local and dev3 at first) the http client answers from `shared/api/fake-backend.ts` instead; drop the flag per
-environment as the BFF appears. Rules: [`docs/react-and-data.md`](docs/react-and-data.md).
+**Data**: `shared/api/http.ts` exports `http`, an axios instance with this team's settings bound to the host's login
+(`@portal-poc/http`). `public/config.json` holds the BFF address and token scopes of every environment. Where
+`"fakeBackend": true` (local and dev3 at first) requests are answered by `shared/api/fake-backend.ts`; drop the flag
+per environment as the BFF appears. Rules: [`docs/react-and-data.md`](docs/react-and-data.md).
 
 **Version**: `package.json` holds the line `develop` builds (snapshots are `<version>-snapshot.<run>+<sha>`); set it
 to the release train's next version. Release versions come from `release/X.Y` branches and `vX.Y.Z` tags, not from

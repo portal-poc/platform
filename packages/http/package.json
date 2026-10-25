@@ -1,0 +1,49 @@
+{
+  "name": "@portal-poc/http",
+  "version": "1.0.0",
+  "description": "axios bound to the host's auth: bearer token per request, one retry after 401, host-driven login, correlation/client-version headers, zod-checked responses. No React.",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      }
+    },
+    "registry": "https://npm.pkg.github.com"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json",
+    "lint": "oxlint src && fallow dead-code",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@portal-poc/platform-contract": "workspace:^"
+  },
+  "peerDependencies": {
+    "axios": "^1.20.0",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@portal-poc/presets": "workspace:*",
+    "axios": "^1.20.0",
+    "fallow": "^3.35.0",
+    "oxlint": "^1.89.0",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5",
+    "zod": "^4.6.7"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/portal-poc/platform.git",
+    "directory": "packages/http"
+  }
+}

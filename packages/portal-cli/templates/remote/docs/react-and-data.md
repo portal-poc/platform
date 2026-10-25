@@ -1,5 +1,10 @@
 # Rules for React and data in this remote
 
+- One http client per app: the axios instance `http` in `shared/api/http.ts`, created at module level with the
+  team's settings and bound to the host's login by `attachPlatformAuth` (`@portal-poc/http`): bearer token per
+  request, one retry after 401, login only through the host. Import it anywhere; never call `fetch`/`axios` directly.
+  `RemoteRoot` binds the platform (`remotePlatform.bind`) before anything renders. Parse every body with
+  `parseResponse(schema)`.
 - One QueryClient per app: `getRemoteQueryClient(platform)` (`shared/api/query-client.ts`). Never use the host's.
 - Query keys come from the factory in `shared/api/query-keys.ts`: the remote's name first (`__NAME__`, readable in the
   host's devtools, where every remote's cache is listed), then the domain scope (`lists()`, `list(filters)`,

@@ -18,5 +18,13 @@
   "duplicates": {
     "mode": "mild",
     "minTokens": 50
-  }
+  },
+  "ignoreExports": [
+    {
+      "file": "src/shared/api/index.ts",
+      "exports": [
+        "http"
+      ]
+    }
+  ]
 }

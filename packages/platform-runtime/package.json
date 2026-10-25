@@ -1,7 +1,7 @@
 {
   "name": "@portal-poc/platform-runtime",
-  "version": "1.0.0",
-  "description": "Portal platform runtime: providers, auth adapters, http client, QueryClient factory, realtime, devtools, standalone harness, compat checks. Bundled into every application (not an MF singleton).",
+  "version": "2.0.0",
+  "description": "Portal platform runtime: providers, auth adapters, QueryClient factory, devtools, standalone harness, compat checks. Bundled into every application (not an MF singleton). HTTP: @portal-poc/http.",
   "type": "module",
   "sideEffects": false,
   "exports": {
@@ -38,8 +38,7 @@
     "@azure/msal-browser": "^5.0.0",
     "@tanstack/react-query": "^5.104.0",
     "react": "^19.3.0",
-    "react-dom": "^19.3.0",
-    "zod": "^4.0.0"
+    "react-dom": "^19.3.0"
   },
   "peerDependenciesMeta": {
     "@azure/msal-browser": {
@@ -59,7 +58,6 @@
     "react-dom": "^19.3.1",
     "typescript": "^7.0.2",
     "vitest": "^5.0.5",
-    "zod": "^4.6.7",
     "fallow": "^3.35.0"
   },
   "repository": {

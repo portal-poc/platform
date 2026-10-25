@@ -1,6 +1,4 @@
-import { use } from 'react';
 import { z } from 'zod';
-import { usePlatformEnv } from '@portal-poc/platform-runtime';
 
 export const REMOTE_NAME = '__NAME__';
 
@@ -16,7 +14,7 @@ const remoteConfigSchema = z.object({
   ),
 });
 
-export type RemoteEnvConfig = z.output<typeof remoteConfigSchema>['environments'][string];
+type RemoteEnvConfig = z.output<typeof remoteConfigSchema>['environments'][string];
 
 /**
  * Runtime config: built once, deployed to any stand. `config.json` ships inside the remote's immutable version folder
@@ -38,16 +36,14 @@ const loadEnvConfig = async (envName: string): Promise<RemoteEnvConfig> => {
   return envConfig;
 };
 
-/** One promise per environment name: `use()` needs the same promise on every render. */
 const envConfigs = new Map<string, Promise<RemoteEnvConfig>>();
 
-/** Suspends until the runtime config is loaded. */
-export const useRemoteEnvConfig = (): RemoteEnvConfig => {
-  const { name } = usePlatformEnv();
-  let promise = envConfigs.get(name);
+/** The config of one environment (`platform.env.name`), loaded once. */
+export const getRemoteEnvConfig = (envName: string): Promise<RemoteEnvConfig> => {
+  let promise = envConfigs.get(envName);
   if (!promise) {
-    promise = loadEnvConfig(name);
-    envConfigs.set(name, promise);
+    promise = loadEnvConfig(envName);
+    envConfigs.set(envName, promise);
   }
-  return use(promise);
+  return promise;
 };

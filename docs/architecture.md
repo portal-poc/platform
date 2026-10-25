@@ -13,7 +13,8 @@ meant to be split into separate repositories (polyrepo) later.
 | `apps/tasks-remote` | Remote A, FSD 2.1, equivalent to `portal-cli create remote tasks` + demo pages | tasks team repo |
 | `apps/legacy-remote` | React 18 remote, loaded through MF Bridge (isolated mode) | legacy team repo |
 | `packages/platform-contract` | `@portal-poc/platform-contract` — types only + `PLATFORM_CONTRACT_VERSION` | platform repo |
-| `packages/platform-runtime` | `@portal-poc/platform-runtime` — providers, auth adapters, http client, QueryClient factory, devtools, standalone, compat | platform repo |
+| `packages/platform-runtime` | `@portal-poc/platform-runtime` — providers, auth adapters, QueryClient factory, devtools, standalone, compat | platform repo |
+| `packages/http` | `@portal-poc/http` — each app's own axios instance bound to the host's login ([ADR 0022](adr/0022-http-axios-bound-to-host-auth.md)) | platform repo |
 | `packages/ds` | `@portal-poc/ds` — Joy UI wrapper + loading primitives (MF singleton) | DS repo |
 | `packages/mf-shared` | `@portal-poc/mf-shared` — integration-contract constants (exposes, singletons, ranges) + shared config helper | platform repo |
 | `packages/vite-config` | `@portal-poc/vite-config` — build preset: pinned Vite + MF plugin, MF section of the contract, React Compiler | platform repo |
@@ -58,8 +59,8 @@ Decided with the project owner before implementation:
   client, `RealtimeProvider` / `useInvalidateOnEvent`, mock broker, BFF realtime channels, scenarios 6–9.
   Cross-app bookmarks refresh uses the local event bus from the contract (`platform.events`, `bookmarks.changed`)
   plus `refetchOnWindowFocus` as a safety net.
-- **No mock backends**: each app's `shared/api` injects a fake `fetch` into the real `createHttpClient` (bearer + zod
-  still run) that answers with hard-coded data and a configurable delay. Bookmarks live in `localStorage` so the host
+- **No mock backends**: each app's `shared/api` puts a fake `fetch` behind its real axios client (axios' fetch adapter;
+  bearer + zod still run) that answers with hard-coded data and a configurable delay. Bookmarks live in `localStorage` so the host
   widget and the tasks remote see the same data.
 - **CLI asks which optional FSD layers to create** (`entities` / `features` / `widgets`) in addition to `app`, `pages`,
   `shared` — overrides "CLI does not create empty layers" from section 16.1.
