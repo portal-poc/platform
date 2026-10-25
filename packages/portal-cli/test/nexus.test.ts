@@ -1,5 +1,8 @@
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { pruneStale } from '../src/lib/nexus.ts';
+import { pruneStale, uploadDir } from '../src/lib/nexus.ts';
 
 const NEXUS = 'https://nexus.example';
 const HOUR = 60 * 60 * 1000;
@@ -54,5 +57,41 @@ describe('pruneStale', () => {
     // recent-c3.js: an open tab may still need it; tasks-legacy/ and legacy/ are other folders.
     expect(deleted).toEqual(['/dev3/tasks/assets/old-b2.js', '/dev3/tasks/index.html']);
     expect(count).toBe(2);
+  });
+});
+
+describe('uploadDir', () => {
+  let dir = '';
+
+  beforeEach(() => {
+    vi.stubEnv('PORTAL_NEXUS_USER', 'portal-deploy');
+    vi.stubEnv('PORTAL_NEXUS_PASSWORD', 'secret');
+    dir = mkdtempSync(join(tmpdir(), 'portal-upload-'));
+    mkdirSync(join(dir, 'assets'));
+    for (const file of ['mf-manifest.json', 'remoteEntry.js', 'assets/a-1.js', 'assets/b-2.js', 'config.json']) {
+      writeFileSync(join(dir, file), file);
+    }
+  });
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true });
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
+  it('uploads the unhashed entry after every chunk and the manifest last', async () => {
+    const order: string[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        order.push(url.replace('https://nexus.example/repository/portal-snapshots/dev3/tasks/', ''));
+        return new Response(null, { status: 201 });
+      }),
+    );
+
+    await uploadDir(dir, 'https://nexus.example/repository/portal-snapshots/dev3/tasks');
+
+    expect(order.slice(-2)).toEqual(['remoteEntry.js', 'mf-manifest.json']);
+    expect(order).toHaveLength(5);
   });
 });

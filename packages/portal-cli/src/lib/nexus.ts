@@ -28,11 +28,17 @@ export const uploadFile = async (url: string, body: Buffer | string): Promise<vo
 
 /**
  * Uploads a build folder to `<baseUrl>/`, the `last` files at the end in that order. For a remote that is
- * `mf-manifest.json`: until it is there a release version does not exist, and a snapshot keeps serving its previous
- * complete build (old chunks stay until `pruneStale`, so open tabs still find theirs). A host ends with
- * `compat.json` and `index.html` for the same reason. Returns the uploaded paths, relative to `baseUrl`.
+ * `remoteEntry.js`, then `mf-manifest.json`: until the manifest is there a release version does not exist, and a
+ * snapshot keeps serving its previous complete build (old chunks stay until `pruneStale`, so open tabs still find
+ * theirs). The entry has no hash and is overwritten in place, so it goes after every chunk it references: a page
+ * loaded mid-upload never gets an entry whose chunks are not there yet. A host ends with `compat.json` and
+ * `index.html` for the same reason. Returns the uploaded paths, relative to `baseUrl`.
  */
-export const uploadDir = async (dir: string, baseUrl: string, last: readonly string[] = ['mf-manifest.json']): Promise<string[]> => {
+export const uploadDir = async (
+  dir: string,
+  baseUrl: string,
+  last: readonly string[] = ['remoteEntry.js', 'mf-manifest.json'],
+): Promise<string[]> => {
   const files = filesOf(dir)
     .map((file) => file.split('\\').join('/'))
     .toSorted((a, b) => last.indexOf(a) - last.indexOf(b));
