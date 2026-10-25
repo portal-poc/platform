@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { PlatformLeaveGuard } from '@portal-poc/platform-contract';
 import { usePlatform } from '../provider/PlatformProvider';
 
@@ -42,7 +42,10 @@ export const useLeaveGuard = (when: boolean, options: LeaveGuardOptions = {}): L
   const { navigation } = usePlatform();
   const [asking, setAsking] = useState<Asking | null>(null);
   const optionsRef = useRef(options);
-  optionsRef.current = options;
+  // Before the guard effect: a registered guard always reads the options of the last committed render.
+  useLayoutEffect(() => {
+    optionsRef.current = options;
+  });
   const releaseRef = useRef<(() => void) | null>(null);
   const askingRef = useRef<Asking | null>(null);
   const [released, setReleased] = useState(false);
@@ -75,6 +78,8 @@ export const useLeaveGuard = (when: boolean, options: LeaveGuardOptions = {}): L
         ? {
             confirm: (pathname: string) =>
               new Promise<boolean>((resolve) => {
+                // A newer navigation (back while the dialog is open) replaces the question: the older one stays.
+                askingRef.current?.resolve(false);
                 askingRef.current = { pathname, resolve };
                 setAsking(askingRef.current);
               }),

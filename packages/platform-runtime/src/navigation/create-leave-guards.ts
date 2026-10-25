@@ -12,11 +12,16 @@ const handleBeforeUnload = (event: BeforeUnloadEvent) => {
   event.preventDefault();
 };
 
+export type LeaveGuards = PlatformNavigation & {
+  /** Any guard registered, whatever it allows: a reload would make the browser ask. */
+  hasGuards: () => boolean;
+};
+
 /**
  * The page's registry of leave guards: what `platform.navigation` is. One per page (the host's, or a standalone
  * app's), shared by every app on it, so that every router's blocker and every app ask the same guards.
  */
-export const createLeaveGuards = (options: LeaveGuardsOptions): PlatformNavigation => {
+export const createLeaveGuards = (options: LeaveGuardsOptions): LeaveGuards => {
   const guards = new Set<PlatformLeaveGuard>();
   let pending: { pathname: string; decision: Promise<boolean> } | null = null;
 
@@ -51,6 +56,7 @@ export const createLeaveGuards = (options: LeaveGuardsOptions): PlatformNavigati
   };
 
   return {
+    hasGuards: () => guards.size > 0,
     guard: (guard) => {
       guards.add(guard);
       syncBeforeUnload();

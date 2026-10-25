@@ -41,12 +41,15 @@ const readReloadedAt = (): number => {
   }
 };
 
+let canReload: () => boolean = () => true;
+
 /**
- * Reloads the page unless it already did so within the cooldown (no reload loops). Returns whether it reloads: the
- * caller then renders nothing and waits for the navigation instead of showing an error.
+ * Reloads the page unless it already did so within the cooldown (no reload loops), or the page must not reload now
+ * (`canReload`: e.g. a dirty form, where the browser would ask and the user could cancel — the caller would then wait
+ * for a reload that never comes). Returns whether it reloads: the caller then renders nothing instead of an error.
  */
 export const reloadForStaleBuild = (): boolean => {
-  if (Date.now() - readReloadedAt() < RELOAD_COOLDOWN_MS) {
+  if (!canReload() || Date.now() - readReloadedAt() < RELOAD_COOLDOWN_MS) {
     return false;
   }
   try {
@@ -79,11 +82,13 @@ const handleRejection = (event: PromiseRejectionEvent) => {
  * of the host or of any remote failed) and unhandled rejections with a chunk-load error. Loaders that catch their
  * errors (the host's remote loader, error boundaries) call `isStaleBuildError` + `reloadForStaleBuild` themselves.
  */
-export const installStaleBuildRecovery = (): (() => void) => {
+export const installStaleBuildRecovery = (options: { canReload?: () => boolean } = {}): (() => void) => {
+  canReload = options.canReload ?? (() => true);
   window.addEventListener('vite:preloadError', handlePreloadError);
   window.addEventListener('unhandledrejection', handleRejection);
   return () => {
     window.removeEventListener('vite:preloadError', handlePreloadError);
     window.removeEventListener('unhandledrejection', handleRejection);
+    canReload = () => true;
   };
 };

@@ -80,14 +80,14 @@ const FormPage = ({ dirty, options }: FormPageProps) => {
   );
 };
 
-/** A data router like the host's: the blocker in the layout, the app's page below. */
-const renderApp = (platform: PlatformContract, page: ReactNode) => {
+/** A data router like the host's (or, with a basename, a bridge app's own): the blocker on top, the page below. */
+const renderApp = (platform: PlatformContract, page: ReactNode, basename = '') => {
   const router = createMemoryRouter(
     [
       {
         element: (
           <PlatformProvider value={platform}>
-            <PlatformLeaveBlocker platform={platform} />
+            <PlatformLeaveBlocker platform={platform} basename={basename} />
             <Outlet />
           </PlatformProvider>
         ),
@@ -97,7 +97,7 @@ const renderApp = (platform: PlatformContract, page: ReactNode) => {
         ],
       },
     ],
-    { initialEntries: ['/form'] },
+    { initialEntries: [`${basename}/form`], ...(basename ? { basename } : {}) },
   );
   render(<RouterProvider router={router} />);
   return router;
@@ -149,5 +149,36 @@ describe('useLeaveGuard + PlatformLeaveBlocker', () => {
     expect(ask).not.toHaveBeenCalled();
     expect(router.state.location.pathname).toBe('/home');
     expect(setTitle).toHaveBeenLastCalledWith(null);
+  });
+
+  it('asks with full browser paths in a router with a basename (a bridge app), allows included', async () => {
+    const { navigation, ask } = createNavigation(true);
+    const allows = vi.fn(() => false);
+    const router = renderApp(platformWith(navigation), <FormPage dirty options={{ allows }} />, '/tasks');
+
+    await act(async () => screen.getByText('Home').click());
+
+    expect(allows).toHaveBeenCalledWith('/tasks/home');
+    expect(ask).toHaveBeenCalledWith(expect.anything(), '/tasks/home');
+    expect(router.state.location.pathname).toBe('/tasks/home');
+  });
+
+  it('answers "stay" to an older question when a newer navigation asks the same own dialog', async () => {
+    const { navigation } = createNavigation(true);
+    renderApp(platformWith(navigation), <FormPage dirty options={{ dialog: 'own' }} />);
+
+    let first: Promise<boolean> = Promise.resolve(true);
+    await act(async () => {
+      first = navigation.confirmLeave('/one');
+    });
+    let second: Promise<boolean> = Promise.resolve(false);
+    await act(async () => {
+      second = navigation.confirmLeave('/two');
+    });
+    await expect(first).resolves.toBe(false);
+    expect(screen.getByRole('dialog').textContent).toContain('Leave for /two?');
+
+    await act(async () => screen.getByText('Discard').click());
+    await expect(second).resolves.toBe(true);
   });
 });

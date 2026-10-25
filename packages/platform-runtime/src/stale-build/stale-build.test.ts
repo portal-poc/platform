@@ -55,4 +55,16 @@ describe('reloadForStaleBuild', () => {
     expect(reload).toHaveBeenCalledOnce();
     expect(event.defaultPrevented).toBe(true);
   });
+
+  it('does not reload while the page must stay (a leave guard), so the error is shown instead', () => {
+    let guarded = true;
+    const uninstall = installStaleBuildRecovery({ canReload: () => !guarded });
+
+    expect(reloadForStaleBuild()).toBe(false);
+    guarded = false;
+    expect(reloadForStaleBuild()).toBe(true);
+    uninstall();
+
+    expect(reload).toHaveBeenCalledOnce();
+  });
 });

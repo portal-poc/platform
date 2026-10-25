@@ -19,6 +19,7 @@ export const PlatformLeaveBlocker = ({ platform, basename = '' }: PlatformLeaveB
   const { navigation } = platform;
   const prefix = basename.replace(/\/$/, '');
 
+  // React Router strips the basename from what `shouldBlock` gets, but `blocker.location` keeps the full path.
   const blocker = useBlocker(
     ({ currentLocation, nextLocation }) =>
       navigation !== undefined &&
@@ -31,7 +32,7 @@ export const PlatformLeaveBlocker = ({ platform, basename = '' }: PlatformLeaveB
       return undefined;
     }
     let current = true;
-    void navigation.confirmLeave(`${prefix}${blocker.location.pathname}`).then((leave) => {
+    void navigation.confirmLeave(blocker.location.pathname).then((leave) => {
       if (current) {
         if (leave) {
           blocker.proceed();
@@ -43,7 +44,7 @@ export const PlatformLeaveBlocker = ({ platform, basename = '' }: PlatformLeaveB
     return () => {
       current = false;
     };
-  }, [blocker, navigation, prefix]);
+  }, [blocker, navigation]);
 
   return null;
 };
