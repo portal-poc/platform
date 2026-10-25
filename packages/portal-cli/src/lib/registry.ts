@@ -26,12 +26,17 @@ export type StandDefinition = { url: string; nexusUrl: string; snapshot?: boolea
 export const LATEST_RELEASE = 'latest-release';
 export const SNAPSHOT_VERSION = 'snapshot';
 
-/** Raw repositories: releases refuse redeploy (immutable versions), snapshots allow it (one folder per stand). */
+/**
+ * Raw repositories: releases refuse redeploy (immutable versions), snapshots allow it (one folder per stand), stands
+ * hold what each stand's web server serves (the host build and `/config.json`, both overwritten on deploy).
+ */
 const RELEASES_REPO = 'portal-releases';
 const SNAPSHOTS_REPO = 'portal-snapshots';
+const STANDS_REPO = 'portal-stands';
 
 export const releaseUrl = (nexusUrl: string, name: string, version: string): string => `${nexusUrl}/${RELEASES_REPO}/${name}/${version}`;
 export const snapshotUrl = (nexusUrl: string, stand: string, name: string): string => `${nexusUrl}/${SNAPSHOTS_REPO}/${stand}/${name}`;
+export const standFilesUrl = (nexusUrl: string, stand: string): string => `${nexusUrl}/${STANDS_REPO}/${stand}`;
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
 

@@ -11,6 +11,7 @@ export const NEXUS_PORT = 4400;
 export const REPOSITORIES: Record<string, { redeploy: boolean }> = {
   'portal-releases': { redeploy: false },
   'portal-snapshots': { redeploy: true },
+  'portal-stands': { redeploy: true },
 };
 
 export const standDir = (stand: string) => join(INFRA_DIR, 'stands', stand);

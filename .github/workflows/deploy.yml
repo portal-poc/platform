@@ -10,7 +10,8 @@ name: Deploy (central)
 # The CLI comes from this platform version, not from the ref being deployed: an old tag still deploys with today's
 # rules. The app's own scripts (build, verify) come from the ref.
 #
-# Secrets: PORTAL_REGISTRY_TOKEN (push to portal-poc/registry), PORTAL_NEXUS_USER / PORTAL_NEXUS_PASSWORD (upload).
+# Secrets: PORTAL_REGISTRY_SSH_KEY (a deploy key with write access to portal-poc/registry; a GitHub App token in real
+# life: PORTAL_REGISTRY_TOKEN), PORTAL_NEXUS_USER / PORTAL_NEXUS_PASSWORD (upload).
 on:
   workflow_call:
     inputs:
@@ -52,7 +53,9 @@ jobs:
         with:
           repository: portal-poc/registry
           path: .registry
-          token: ${{ secrets.PORTAL_REGISTRY_TOKEN }}
+          # A push with a deploy key (unlike GITHUB_TOKEN) triggers the registry's config deploy.
+          ssh-key: ${{ secrets.PORTAL_REGISTRY_SSH_KEY }}
+          token: ${{ secrets.PORTAL_REGISTRY_TOKEN || github.token }}
       - name: Deploy ${{ inputs.ref }} → ${{ inputs.stand }}
         run: |
           git config --global user.name "portal-deploy"

@@ -40,7 +40,7 @@ const readBody = async (request: IncomingMessage): Promise<Buffer> => {
 
 /**
  * Nexus raw hosted repository API: `GET|HEAD|PUT /repository/<repo>/<path>`. PUT needs Basic auth (the PoC accepts any
- * credentials); portal-releases answers a redeploy like Nexus with "Disable redeploy" does. Releases are cached
+ * credentials); portal-releases answers a redeploy like Nexus with "Disable redeploy" does (409). Releases are cached
  * forever, snapshots revalidate (overwritten in place; remoteEntry.js has no hash in its name).
  */
 const handleRepository = async (request: IncomingMessage, response: ServerResponse, repository: string, path: string) => {
@@ -56,7 +56,7 @@ const handleRepository = async (request: IncomingMessage, response: ServerRespon
       return;
     }
     if (!policy.redeploy && existsSync(file)) {
-      sendText(response, 400, `Repository does not allow updating assets: ${repository}`);
+      sendText(response, 409, `Repository does not allow updating assets: ${repository}`);
       return;
     }
     const body = await readBody(request);
@@ -144,8 +144,13 @@ createServer(handleNexus).listen(NEXUS_PORT, () => {
 });
 
 for (const [name, stand] of Object.entries(readStands())) {
-  const port = Number(new URL(stand.url).port);
-  createServer(createStandHandler(name)).listen(port, () => {
+  const { hostname, port } = new URL(stand.url);
+  // Hosted stands (https://<stand>.poc.ashirokov.dev) are served by the PoC server, not here; their configs still are
+  // (/stands/<stand>/config.json, for the host dev server).
+  if (hostname !== 'localhost') {
+    continue;
+  }
+  createServer(createStandHandler(name)).listen(Number(port), () => {
     console.log(`[infra] stand ${name.padEnd(5)} ${stand.url}`);
   });
 }

@@ -30,7 +30,7 @@ Portal micro-frontend platform (PoC, organisation [`portal-poc`](https://github.
 Release: bump versions → run the **Release packages** workflow (or push a `v*` tag). Versions are immutable.
 
 CI of every app repository calls the central reusable workflow
-[`app-ci.yml`](./.github/workflows/app-ci.yml) pinned to `@v1` (GitHub counterpart of an Azure DevOps template).
+[`app-ci.yml`](./.github/workflows/app-ci.yml) pinned to `@v2` (GitHub counterpart of an Azure DevOps template).
 Each `@portal-poc` package grants Read access to the app repositories (package settings → Manage Actions access).
 
 ## Run everything on one machine
@@ -47,7 +47,9 @@ Each `@portal-poc` package grants Read access to the app repositories (package s
    for repo in platform registry host tasks-remote legacy-remote; do gh repo clone portal-poc/$repo; done
    for repo in platform registry host tasks-remote legacy-remote; do (cd $repo && pnpm install); done
    ```
-3. **Infrastructure** (PoC Nexus :4400, stands dev3 :4501 / dev2 :4502 / dev1 :4503 / tst :4504) — keep running:
+3. **Infrastructure** is hosted ([ADR 0021](docs/adr/0021-hosted-poc-stands.md)): Nexus
+   https://nexus.poc.ashirokov.dev, stands https://dev3.poc.ashirokov.dev (dev2, dev1, tst). For the host dev server
+   keep the config stand-in running (it serves the stands' `/config.json` locally, after `pnpm deploy` in registry):
    ```sh
    cd platform && pnpm infra
    ```
@@ -59,12 +61,11 @@ Each `@portal-poc` package grants Read access to the app repositories (package s
    ```
    `PORTAL_STAND=none` = only your local remotes, no infra needed. Or a remote standalone:
    `cd tasks-remote && pnpm dev:standalone`.
-5. **Deploy flow** (manual: stand + ref, see [`docs/branching.md`](docs/branching.md)) — the same command the
-   remote's Deploy workflow runs:
-   ```sh
-   cd host && pnpm build && cd ../platform && for s in dev3 dev2 dev1 tst; do pnpm deploy:host $s; done
-   export PORTAL_REGISTRY_DIR=~/projects/portal-poc/registry PORTAL_NEXUS_USER=poc PORTAL_NEXUS_PASSWORD=poc
-   cd ../tasks-remote && git switch develop && pnpm dlx @portal-poc/cli@2 deploy --stand dev3      # snapshot
-   git switch release/1.5 && pnpm install && pnpm dlx @portal-poc/cli@2 deploy --stand dev1     # 1.5.3-rc.N
-   cd ../registry && pnpm deploy && open http://localhost:4503
-   ```
+5. **Deploy flow** (manual: stand + ref, see [`docs/branching.md`](docs/branching.md)) — in GitHub, Actions →
+   **Deploy** → Run workflow:
+   - `host`: stand + ref → the host build on that stand (after `registry check`);
+   - `tasks-remote` / `legacy-remote`: stand + ref → snapshot on dev3, a release on dev2 / dev1 (registry commit);
+   - `registry`: **Promote** dev1 → tst; every registry change is uploaded to the stands by **Config deploy**.
+
+   Then reload https://dev3.poc.ashirokov.dev (or dev2 / dev1 / tst). `pnpm dlx @portal-poc/cli@2 registry status`
+   in `registry` shows what runs where.

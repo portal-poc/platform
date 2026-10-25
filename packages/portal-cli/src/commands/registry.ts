@@ -1,16 +1,28 @@
-import { mkdirSync, writeFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
 import { SINGLETONS } from '@portal-poc/mf-shared';
 import { isValidTrackedBranch } from '../lib/branches.ts';
 import { gateEntry } from '../lib/gate.ts';
 import { readHostCompat, readJsonSource } from '../lib/host-compat.ts';
 import { toManifest } from '../lib/manifest.ts';
-import { readEntries, readStand, readStandNames, releaseUrl, SNAPSHOT_VERSION, snapshotUrl } from '../lib/registry.ts';
+import { uploadDir, uploadFile } from '../lib/nexus.ts';
+import {
+  readEntries,
+  readStand,
+  readStandNames,
+  releaseUrl,
+  SNAPSHOT_VERSION,
+  snapshotUrl,
+  standFilesUrl,
+} from '../lib/registry.ts';
 
 type RegistryOptions = { stand: string; registry: string };
 
-/** Host deploy gate (reverse direction): a new host must not break remotes already registered on the stand. */
-export const runRegistryCheck = async (options: RegistryOptions & { against?: string }): Promise<void> => {
+/**
+ * Host deploy gate (reverse direction): a new host must not break remotes already registered on the stand.
+ * Returns the number of remotes it would break.
+ */
+const checkRegistry = async (options: RegistryOptions & { against?: string }): Promise<number> => {
   const registryDir = resolve(options.registry);
   const stand = readStand(registryDir, options.stand);
   const hostCompat = await readHostCompat(options.against ?? `${stand.url}/compat.json`);
@@ -29,19 +41,59 @@ export const runRegistryCheck = async (options: RegistryOptions & { against?: st
   }
   if (failed > 0) {
     console.log(`\n✗ This host would break ${failed} remote(s) on "${options.stand}".`);
+  }
+  return failed;
+};
+
+export const runRegistryCheck = async (options: RegistryOptions & { against?: string }): Promise<void> => {
+  if ((await checkRegistry(options)) > 0) {
     process.exitCode = 1;
   }
 };
 
-/** Config deploy job: aggregates `registry/<stand>/*.json` into the stand's `/config.json` read by the host at startup. */
-export const runRegistryBuild = (options: RegistryOptions & { out: string }): void => {
+/**
+ * Host deploy job: the build passes the reverse gate against the remotes registered on the stand, then becomes the
+ * stand's host (`portal-stands/<stand>/host/`, compat.json and index.html last). A refused host leaves the stand as is.
+ */
+export const runHostDeploy = async (options: RegistryOptions & { dist: string }): Promise<void> => {
+  const stand = readStand(resolve(options.registry), options.stand);
+  const dist = resolve(options.dist);
+  const compat = join(dist, 'compat.json');
+  if (!existsSync(compat)) {
+    throw new Error(`${compat} not found — build the host first.`);
+  }
+  if ((await checkRegistry({ ...options, against: compat })) > 0) {
+    console.log('✗ Host not deployed: the stand keeps its current host.');
+    process.exitCode = 1;
+    return;
+  }
+  await uploadDir(dist, `${standFilesUrl(stand.nexusUrl, options.stand)}/host`, ['compat.json', 'index.html']);
+  console.log(`✔ Host deployed to "${options.stand}": ${stand.url}`);
+};
+
+/**
+ * Config deploy job: aggregates `registry/<stand>/*.json` into the stand's `/config.json` read by the host at startup —
+ * written to a file (`--out`) and/or uploaded as the stand's config (`--upload`, `portal-stands/<stand>/config.json`).
+ */
+export const runRegistryBuild = async (options: RegistryOptions & { out?: string; upload?: boolean }): Promise<void> => {
+  if (!options.out && !options.upload) {
+    throw new Error('Nothing to do: pass --out <file> and/or --upload.');
+  }
   const registryDir = resolve(options.registry);
-  readStand(registryDir, options.stand);
+  const stand = readStand(registryDir, options.stand);
   const config = { env: options.stand, remotes: readEntries(registryDir, options.stand) };
-  const out = resolve(options.out);
-  mkdirSync(dirname(out), { recursive: true });
-  writeFileSync(out, `${JSON.stringify(config, null, 2)}\n`);
-  console.log(`✔ ${options.stand} config: ${Object.keys(config.remotes).length} remote(s) → ${out}`);
+  const json = `${JSON.stringify(config, null, 2)}\n`;
+  const count = `${Object.keys(config.remotes).length} remote(s)`;
+  if (options.out) {
+    const out = resolve(options.out);
+    mkdirSync(dirname(out), { recursive: true });
+    writeFileSync(out, json);
+    console.log(`✔ ${options.stand} config: ${count} → ${out}`);
+  }
+  if (options.upload) {
+    await uploadFile(`${standFilesUrl(stand.nexusUrl, options.stand)}/config.json`, json);
+    console.log(`✔ ${options.stand} config: ${count} → ${stand.url}/config.json`);
+  }
 };
 
 const builtVersionOf = (manifest: unknown): string => {

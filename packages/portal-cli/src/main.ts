@@ -4,7 +4,7 @@ import { Argument, Command, Option } from 'commander';
 import { runAddSlice, SLICE_LAYERS } from './commands/add-slice.ts';
 import type { SliceLayer } from './commands/add-slice.ts';
 import { OPTIONAL_LAYERS, runCreateRemote } from './commands/create-remote.ts';
-import { runRegistryBuild, runRegistryCheck, runRegistryStatus, runRegistryValidate } from './commands/registry.ts';
+import { runHostDeploy, runRegistryBuild, runRegistryCheck, runRegistryStatus, runRegistryValidate } from './commands/registry.ts';
 import { runPromote, runStandSwitch } from './commands/promote.ts';
 import { runDeploy } from './commands/deploy.ts';
 import { runPublish, runRelease } from './commands/release.ts';
@@ -118,6 +118,16 @@ stand
   .option('--pr', 'open a registry pull request instead (gh)')
   .action(runStandSwitch);
 
+program
+  .command('host')
+  .description('Host repository pipeline')
+  .command('deploy')
+  .description("Gate a host build against the stand's registered remotes, then make it the stand's host")
+  .requiredOption('--stand <stand>', 'stand')
+  .addOption(registryOption())
+  .option('--dist <dir>', 'host build output', 'dist')
+  .action(runHostDeploy);
+
 const registry = program.command('registry').description('Remote registry: which version runs on which stand');
 
 registry
@@ -139,7 +149,8 @@ registry
   .description("Config deploy job: aggregate the stand's entries into the host /config.json")
   .requiredOption('--stand <stand>', 'stand')
   .addOption(registryOption())
-  .requiredOption('--out <file>', 'output file')
+  .option('--out <file>', 'write it to a file')
+  .option('--upload', "upload it as the stand's /config.json (Nexus portal-stands; PORTAL_NEXUS_USER/PASSWORD)")
   .action(runRegistryBuild);
 
 registry

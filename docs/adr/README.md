@@ -22,3 +22,4 @@ Format: Context → Decision → Consequences.
 - [0018 — Local development: standalone, or local host + local remotes](./0018-local-development-dx.md)
 - [0019 — Build tooling is a build-time singleton](./0019-build-tooling-singleton.md)
 - [0020 — Manual deploys, one snapshot stand, release stands per line](./0020-manual-deploys-and-snapshot-stand.md)
+- [0021 — The PoC runs on a real Nexus and hosted stands](./0021-hosted-poc-stands.md)

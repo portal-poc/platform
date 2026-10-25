@@ -16,13 +16,15 @@ registry: Promote dev1 → tst ──commit──►  (same artifact, gate again
 host repo: build → registry check (gate 2, reverse) → deploy host files → registry build
 ```
 
-Nexus: two raw hosted repositories, the PoC stand-in (`pnpm infra`, :4400) speaks the same API
+Nexus (hosted: `https://nexus.poc.ashirokov.dev`, [ADR 0021](./adr/0021-hosted-poc-stands.md)): raw hosted
+repositories; the offline stand-in (`pnpm infra`, :4400) speaks the same API
 (`GET|HEAD|PUT /repository/<repo>/<path>`, Basic auth for PUT):
 
 | Repository | Deployment policy | Cache | Content |
 |---|---|---|---|
-| `portal-releases` | Disable redeploy (PUT of an existing file → 400) | `immutable`, 1 year | `<remote>/<version>/` (+ `bridge/`) |
+| `portal-releases` | Disable redeploy (PUT of an existing file → 409) | `immutable`, 1 year | `<remote>/<version>/` (+ `bridge/`) |
 | `portal-snapshots` | Allow redeploy | `no-cache` (revalidate) | `<stand>/<remote>/` (+ `bridge/`), cleanup policy for old chunks |
+| `portal-stands` | Allow redeploy | set by the stand's nginx | `<stand>/host/` (host build), `<stand>/config.json` (registry) |
 
 ## Try it (PoC)
 

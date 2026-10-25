@@ -79,11 +79,10 @@ deploy` checks it **before building**.
 
 ## Not in the PoC
 
-- The PoC stands and Nexus are on localhost: the Deploy workflow has the real shape, but a GitHub runner cannot reach
-  them; the PoC runs the same `portal-cli deploy` locally. Real setup: `PORTAL_NEXUS_USER`/`PORTAL_NEXUS_PASSWORD`
-  and `PORTAL_REGISTRY_TOKEN` (a GitHub App) as organisation secrets, the deploy bot allowed to push to the
-  registry's main.
+- The stands and Nexus are hosted ([ADR 0021](./adr/0021-hosted-poc-stands.md)): the Deploy buttons really deploy.
+  The secrets are per repository (`PORTAL_NEXUS_USER`/`PORTAL_NEXUS_PASSWORD`, a registry deploy key); real setup:
+  organisation secrets and a GitHub App allowed to push to the registry's main.
 - Forward-merge PRs need "Allow GitHub Actions to create and approve pull requests" in the organisation settings.
 - Approvals per stand (e.g. tst) would be GitHub environments with required reviewers.
-- The host is deployed the same way in real life (Deploy → stand, `registry check` first); the PoC deploys one host
-  build to every stand with `pnpm deploy:host <stand>`.
+- The host has its own Deploy button (stand + ref, `deploy-host.yml`): `registry check` against the stand first, so a
+  host cannot break the remotes registered there.
