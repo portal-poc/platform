@@ -16,10 +16,11 @@ discovered while building this reference repo. Code that depends on an open deci
 
 ## Realtime
 
-- **(found)** Realtime is out of scope for this PoC (existing WebSocket pub/sub in the real project). When adapting:
-  decide how the existing pub/sub maps to "one connection per application" and "thin events → each app invalidates its
-  own keys" (section 12 of the requirements), and whether the local bus fast path stays.
-  The local bus stays either way for in-page signals; its events are described by the catalog (ADR 0023).
+- **(open, next)** The real project's pub/sub lives in the host and reaches remotes through `window`, with global
+  subscriptions; the backend plans granular subscriptions per BFF. To decide (migration phase A4): one socket per page
+  multiplexed by the host vs. one per BFF opened by the remote; the contract surface (`platform.realtime` vs. a package
+  like `@portal-poc/http`); subscriptions owned and closed by the app that opened them; "thin event → the app
+  invalidates its own keys". The local bus stays for in-page signals (ADR 0023).
 
 ## Build / Module Federation
 
@@ -36,6 +37,15 @@ discovered while building this reference repo. Code that depends on an open deci
 - **(from requirements)** Final home of generated API code (package from the specs repo is preferred). Out of scope
   for this PoC by decision of the project owner.
 
+## Auth
+
+- **(open)** Impersonation: the host adds a header next to the bearer token for every non-legacy request; design in
+  ADR 0022 (`platform.auth.getRequestHeaders`, full reload on change), not implemented. The BFF must authorize
+  impersonation from the token, never trust the header alone.
+- **(open)** Legacy apps (migration phase A6): the bridge app gets the host's token for its BFF's audience; the
+  legacy BFF exchanges it on-behalf-of for the legacy auth's token. Needs the legacy auth to accept the exchange
+  (app registration, consent) — a backend decision.
+
 ## Delivery
 
 - **(found)** Singleton provider: verified that MF keeps an already loaded singleton; the host now preloads all
@@ -49,6 +59,8 @@ discovered while building this reference repo. Code that depends on an open deci
 - **(resolved)** `portal-cli publish` uploads over the Nexus raw API (PUT with credentials); `portal-releases`
   refuses redeploy on the server side, `portal-snapshots` allows it for dev3 (ADR 0020). Old files of overwritten
   folders are deleted by the next deploy after a day; tabs on such a build reload once (ADR 0021).
+- **(found)** Host release lines: the host's `release/1.5`–`1.7` were cut from one commit (one host serves every
+  line today). When the host diverges per line, fixes follow the forward-merge rules like the remotes (ADR 0025).
 - **(found)** Event catalog ownership at scale: who approves a new event in `@portal-poc/events` and how stands are
   checked before an old event version is removed (today: by hand, ADR 0023).
 - **(found)** Remote frontend ↔ BFF compatibility is not enforced yet (BFFs deployed manually, no prod). Plan in
