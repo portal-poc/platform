@@ -19,7 +19,9 @@ blocker per router, and integrated remotes render their routes inside the host's
   leaves: a `lock` guard refuses it (the host shows a notice); otherwise every blocking guard is asked in turn — its
   own `confirm` (the app's dialog, may save first) or the host's dialog. While any guard exists, `beforeunload` makes
   the browser ask on reload / tab close (no custom dialog or lock is possible there). Concurrent decisions for the
-  same target are shared: back/forward reaches the host's router and a bridge app's router at once.
+  same target are shared: back/forward reaches the host's router and a bridge app's router at once (both pass the
+  full browser path). A newer question to a dialog answers the older one "stay". The stale-build reload (ADR 0021)
+  is skipped while a guard holds the page: the error with Retry shows instead of a reload the user might cancel.
 - **One blocker per router**: `PlatformLeaveBlocker` (`@portal-poc/platform-runtime/router`) is the only
   `useBlocker`. The host renders it in its layout; generated bridge and standalone entries render it inside their
   own routers. `useBlocker` / `unstable_usePrompt` from `react-router` are lint errors in apps (presets).
