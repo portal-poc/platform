@@ -5,7 +5,7 @@ import { isValidTrackedBranch, releaseLineProblem } from '../lib/branches.ts';
 import { gateEntry } from '../lib/gate.ts';
 import { readHostCompat, readJsonSource } from '../lib/host-compat.ts';
 import { toManifest } from '../lib/manifest.ts';
-import { uploadDir, uploadFile } from '../lib/nexus.ts';
+import { pruneStaleQuietly, uploadDir, uploadFile } from '../lib/nexus.ts';
 import {
   LATEST_RELEASE,
   readEntries,
@@ -68,8 +68,10 @@ export const runHostDeploy = async (options: RegistryOptions & { dist: string })
     process.exitCode = 1;
     return;
   }
-  await uploadDir(dist, `${standFilesUrl(stand.nexusUrl, options.stand)}/host`, ['compat.json', 'index.html']);
+  const hostUrl = `${standFilesUrl(stand.nexusUrl, options.stand)}/host`;
+  const files = await uploadDir(dist, hostUrl, ['compat.json', 'index.html']);
   console.log(`✔ Host deployed to "${options.stand}": ${stand.url}`);
+  await pruneStaleQuietly(hostUrl, files);
 };
 
 /**

@@ -4,5 +4,6 @@ export * from './devtools';
 export * from './events';
 export * from './provider';
 export * from './query';
+export * from './stale-build';
 export * from './standalone';
 export * from './telemetry';

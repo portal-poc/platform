@@ -90,7 +90,8 @@ const reactPlugins = async (compiler: boolean): Promise<PluginOption[]> => {
 export const createRemoteViteConfig = (options: RemoteViteOptions): UserConfigFnPromise => {
   const appRoot = fileURLToPath(new URL('.', options.configUrl)).replace(/\/$/, '');
   assertBuildTooling(appRoot);
-  // CI sets the release version (tag `v1.4.2` → 1.4.2, develop → 1.6.0-dev.57): package.json only holds the line.
+  // `portal-cli deploy` sets the version (`v1.4.2` → 1.4.2, release/1.4 → 1.4.3-rc.7, dev3 → 1.5.0-snapshot.12+8d55cff):
+  // package.json only holds the line.
   const appVersion = process.env['PORTAL_APP_VERSION'] || readJson(`${appRoot}/package.json`).version;
   const viteVersion = installedVersion(appRoot, 'vite');
   const exposesDir = options.exposesDir ?? 'src/app/exposes';

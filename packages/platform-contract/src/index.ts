@@ -53,7 +53,11 @@ export type PlatformAuth = {
 // ---------- env ----------
 
 export type PlatformEnv = {
-  name: 'local' | 'dev' | 'test' | 'uat' | 'prod' | (string & {});
+  /**
+   * The stand the host runs on (`env` of its `/config.json`: `dev3`, `dev2`, `dev1`, `tst`, …); `local` in a remote's
+   * standalone mode and when the host dev server has no stand underneath. Apps key their runtime config by it.
+   */
+  name: string;
   /** BFF addresses come from each remote's own runtime config; the host does not know them. */
   hostOrigin: string;
 };
@@ -61,24 +65,14 @@ export type PlatformEnv = {
 // ---------- local event bus (browser, between applications) ----------
 
 /**
- * Event map of the local bus. Extend it with declaration merging in applications:
- *
- * declare module '@portal-poc/platform-contract' {
- *   interface PlatformEventMap { 'tasks.something': { id: string } }
- * }
- *
- * It is an `interface` (not a `type`) precisely so that declaration merging works.
+ * In-page transport between applications (host ↔ remotes). It knows names, not payloads: which events exist and
+ * what they carry is the event catalog (`@portal-poc/events`), released on its own — a new event never needs a
+ * contract release. Publish and subscribe through the catalog's helpers: they validate payloads on both sides, since
+ * the publisher and the subscriber are deployed independently.
  */
-export interface PlatformEventMap {
-  'bookmarks.changed': { source: string; correlationId?: string };
-}
-
 export type PlatformEventBus = {
-  emit: <TName extends keyof PlatformEventMap>(name: TName, payload: PlatformEventMap[TName]) => void;
-  subscribe: <TName extends keyof PlatformEventMap>(
-    name: TName,
-    listener: (payload: PlatformEventMap[TName]) => void,
-  ) => () => void;
+  emit: (name: string, payload: unknown) => void;
+  subscribe: (name: string, listener: (payload: unknown) => void) => () => void;
 };
 
 // ---------- telemetry ----------

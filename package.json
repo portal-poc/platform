@@ -2,7 +2,7 @@
   "name": "platform",
   "private": true,
   "type": "module",
-  "description": "Portal platform: contract, runtime, design system, build preset, presets, CLI, PoC infrastructure, architecture docs.",
+  "description": "Portal platform: contract, runtime, HTTP client, event catalog, design system, build preset, presets, CLI, architecture docs.",
   "packageManager": "pnpm@12.15.0",
   "engines": {
     "node": ">=24.19.0"
@@ -16,9 +16,6 @@
     "typecheck": "pnpm -r typecheck",
     "lint": "pnpm -r lint",
     "test": "pnpm -r test",
-    "check": "pnpm typecheck && pnpm lint && pnpm test && pnpm build",
-    "infra": "pnpm --filter @portal-tools/infra start",
-    "infra:reset": "rm -rf .infra",
-    "deploy:host": "node tools/infra/src/deploy-host.ts"
+    "check": "pnpm typecheck && pnpm lint && pnpm test && pnpm build"
   }
 }

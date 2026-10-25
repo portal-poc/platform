@@ -1,7 +1,10 @@
-import type { PlatformEventBus, PlatformEventMap } from '@portal-poc/platform-contract';
+import type { PlatformEventBus } from '@portal-poc/platform-contract';
 
 type PlatformEventBusOptions = {
-  /** MAY: cross-tab delivery. Off by default: server-side realtime already covers other tabs. */
+  /**
+   * Cross-tab delivery. Off by default: other tabs catch up through `refetchOnWindowFocus`, and later through the
+   * backend's own notifications.
+   */
   broadcastChannelName?: string;
 };
 
@@ -14,8 +17,12 @@ const isBroadcastMessage = (value: unknown): value is BroadcastMessage =>
   typeof value === 'object' && value !== null && 'name' in value && typeof value.name === 'string' && 'payload' in value;
 
 /**
- * In-tab event bus on EventTarget/CustomEvent. Used as an optional fast path, never as the primary invalidation
- * mechanism (the backend is the source of truth about "data changed").
+ * In-tab event bus on EventTarget/CustomEvent: the transport behind `platform.events`. Payloads pass through as they
+ * are; the event catalog (`@portal-poc/events`) validates them at both ends.
+ *
+ * Today it is how one app tells another that shared data changed (tasks → the host's bookmarks widget). The backend
+ * stays the source of truth: an event only marks queries stale, the data is refetched. When the backend gets
+ * notifications of its own (pub/sub to the browser), they become the primary signal and the bus the in-tab fast path.
  */
 export const createPlatformEventBus = (options: PlatformEventBusOptions = {}): PlatformEventBus => {
   const target = new EventTarget();
@@ -43,14 +50,10 @@ export const createPlatformEventBus = (options: PlatformEventBusOptions = {}): P
     channel?.postMessage({ name, payload } satisfies BroadcastMessage);
   };
 
-  const subscribe: PlatformEventBus['subscribe'] = <TName extends keyof PlatformEventMap>(
-    name: TName,
-    listener: (payload: PlatformEventMap[TName]) => void,
-  ) => {
+  const subscribe: PlatformEventBus['subscribe'] = (name, listener) => {
     const handleEvent = (event: Event) => {
       if (event instanceof CustomEvent) {
-        // The bus is the only producer of events with this name, and `emit` is typed by PlatformEventMap.
-        listener(event.detail as PlatformEventMap[TName]);
+        listener(event.detail);
       }
     };
     target.addEventListener(name, handleEvent);

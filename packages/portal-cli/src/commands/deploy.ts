@@ -4,7 +4,7 @@ import { join, resolve } from 'node:path';
 import { assertCheckedOut, assertLineAccepted, currentRef, headSha, lineTags, releaseVersionOf, snapshotVersionOf } from '../lib/branches.ts';
 import { readHostCompat } from '../lib/host-compat.ts';
 import { toManifest } from '../lib/manifest.ts';
-import { uploadDir } from '../lib/nexus.ts';
+import { pruneStaleQuietly, uploadDir } from '../lib/nexus.ts';
 import { readEntry, readStand, SNAPSHOT_VERSION, snapshotUrl, writeEntry } from '../lib/registry.ts';
 import { saveRegistryChange } from '../lib/registry-change.ts';
 import { assertBuiltAs, assertReleaseStand, gateBuild, placementOf, runPublish, runRelease } from './release.ts';
@@ -52,11 +52,10 @@ const deploySnapshot = async (appDir: string, registryDir: string, options: Depl
   }
 
   const base = snapshotUrl(stand.nexusUrl, options.stand, name);
-  if (withBridge) {
-    await uploadDir(bridgeDist, `${base}/bridge`);
-  }
-  await uploadDir(join(appDir, 'dist'), base);
+  const bridgeFiles = withBridge ? await uploadDir(bridgeDist, `${base}/bridge`) : [];
+  const files = await uploadDir(join(appDir, 'dist'), base);
   console.log(`\n✔ ${options.stand}: ${name} ← ${version} (${base}/) — users get it on reload.`);
+  await pruneStaleQuietly(base, [...files, ...bridgeFiles.map((file) => `bridge/${file}`)]);
 
   const previous = readEntry(registryDir, options.stand, name);
   const path = writeEntry(registryDir, options.stand, name, {
