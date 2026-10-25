@@ -15,7 +15,7 @@ synced again. `portal-cli verify` (in CI) is the only permanent consistency chec
 
 **Inside the host**: in the host repository's `.env.development.local` add
 `PORTAL_REMOTE___UPPER_NAME__=http://localhost:__PORT__/mf-manifest.json`, run `pnpm dev` here and there. Without
-`PORTAL_STAND=none` the other remotes come as deployed on that stand (start `pnpm infra` in `platform`).
+`PORTAL_STAND=none` the other remotes come as deployed on that stand (the host dev server reads its `/config.json`).
 
 **Data**: `shared/api/http.ts` exports `http`, an axios instance with this team's settings bound to the host's login
 (`@portal-poc/http`). `public/config.json` holds the BFF address and token scopes of every environment. Where

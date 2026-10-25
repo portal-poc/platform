@@ -19,6 +19,7 @@ discovered while building this reference repo. Code that depends on an open deci
 - **(found)** Realtime is out of scope for this PoC (existing WebSocket pub/sub in the real project). When adapting:
   decide how the existing pub/sub maps to "one connection per application" and "thin events → each app invalidates its
   own keys" (section 12 of the requirements), and whether the local bus fast path stays.
+  The local bus stays either way for in-page signals; its events are described by the catalog (ADR 0023).
 
 ## Build / Module Federation
 
@@ -41,13 +42,15 @@ discovered while building this reference repo. Code that depends on an open deci
   contract singletons before remotes register (ADR 0001). If the host ever lazy-loads a large shared singleton, keep
   it in that preload or accept that the first loader's copy wins.
 
-- **(found)** Registry as a folder vs. its own repository vs. a small service — start as a folder in the host repo,
-  move out when PR volume grows.
-- **(resolved)** Registry writes from pipelines: the manual Deploy workflow commits to the registry's main with a bot
-  token (`--push`), `--pr` remains for changes that need an approval (ADR 0020). Needs the token/GitHub App.
+- **(resolved)** Registry is its own repository (`portal-poc/registry`); a small service only if PR volume grows.
+- **(resolved)** Registry writes from pipelines: the manual Deploy workflow commits to the registry's main (`--push`)
+  with a deploy key (`PORTAL_REGISTRY_SSH_KEY`), so its pushes trigger the Config deploy; `--pr` remains for changes
+  that need an approval (ADR 0020, 0021). Production: a GitHub App token instead of the key.
 - **(resolved)** `portal-cli publish` uploads over the Nexus raw API (PUT with credentials); `portal-releases`
-  refuses redeploy on the server side, `portal-snapshots` allows it for dev3 (ADR 0020). The PoC stand-in speaks the
-  same API.
+  refuses redeploy on the server side, `portal-snapshots` allows it for dev3 (ADR 0020). Old files of overwritten
+  folders are deleted by the next deploy after a day; tabs on such a build reload once (ADR 0021).
+- **(found)** Event catalog ownership at scale: who approves a new event in `@portal-poc/events` and how stands are
+  checked before an old event version is removed (today: by hand, ADR 0023).
 - **(found)** Remote frontend ↔ BFF compatibility is not enforced yet (BFFs deployed manually, no prod). Plan in
   `migration-plan.md` → "Backend track".
 - **(found)** Upgrading Vite / the MF plugin needs a transition window where the host's MF runtime loads manifests of

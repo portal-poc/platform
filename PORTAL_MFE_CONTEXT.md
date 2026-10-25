@@ -1,5 +1,10 @@
 # Portal MFE — полный контекст и требования для reference-монорепо
 
+> **Historical input, frozen.** This is the original requirements document the PoC was built from; it is not updated.
+> Where the PoC differs (React Router v8, axios via `@portal-poc/http` instead of `useHttpClient`, no realtime, stands
+> dev3 / dev2 / dev1 / tst instead of dev / test / uat / prod, the event catalog), see
+> [`docs/architecture.md`](./docs/architecture.md) → "Deviations" and [`docs/adr/`](./docs/adr).
+
 > Этот документ — исчерпывающий контекст для Claude Code. Задача: собрать **reference-монорепо** (хост, ремоут, платформенные пакеты, mock-бэкенды, CLI), которое демонстрирует все архитектурные решения ниже. Потом монорепо будет разделено на отдельные репозитории (polyrepo) и адаптировано под реальный код.
 >
 > Формат требований: **MUST** — обязательно, **SHOULD** — желательно, **MAY** — опционально, **MUST NOT** — запрещено. У каждого крупного решения есть «Почему», чтобы при адаптации не потерять мотивацию.

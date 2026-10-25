@@ -68,8 +68,8 @@ deploy` checks it **before building**.
   built with another version. Release versions are immutable: a fix is always a new rc or patch.
 - **Snapshots only where nobody needs history**: on dev3 the registry entry never changes, the build is identified by
   `metaData.portal.appVersion` in its manifest (the host's remotes panel and `pnpm status` show it). Chunks are only
-  added, never deleted (hashed names), and `mf-manifest.json` is uploaded last, so open tabs keep working; Nexus
-  cleanup policies remove old chunks. Nothing from a snapshot stand can be promoted.
+  kept for a day (hashed names; the next deploy deletes older ones), and `mf-manifest.json` is uploaded last, so open
+  tabs keep working; a tab older than that reloads once when a chunk is gone. Nothing from a snapshot stand can be promoted.
 - **The CLI comes from the platform**, not from the ref: `deploy.yml` runs `pnpm dlx @portal-poc/cli@2`, so an old
   tag deploys under today's rules; the app's own `build`/`verify` scripts come from the ref.
 - **Forward merges are automatic and visible** (`forward-merge.yml`): a fix cannot silently miss newer lines.

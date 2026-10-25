@@ -6,7 +6,7 @@ The real project already has WebSocket pub/sub.
 
 ## Decision
 
-Section 12 (per-app connection, thin events, invalidation on reconnect) is not implemented in this PoC. Cross-app bookmark refresh uses the local `platform.events` bus (`bookmarks.changed`) + `refetchOnWindowFocus`.
+Section 12 (per-app connection, thin events, invalidation on reconnect) is not implemented in this PoC. Cross-app bookmark refresh uses the local `platform.events` bus (`bookmarks.changed` from the event catalog, ADR 0023) + `refetchOnWindowFocus`.
 
 ## Consequences
 

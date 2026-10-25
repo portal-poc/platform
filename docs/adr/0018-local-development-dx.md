@@ -9,10 +9,11 @@ into deployed stands (URL overrides) add complexity and an attack surface.
 
 Two modes only:
 
-1. **Standalone** — `pnpm --filter tasks-remote dev:standalone`: the same `RemoteRoot` with its own mock platform,
+1. **Standalone** — `pnpm dev:standalone` in the remote: the same `RemoteRoot` with its own mock platform,
    router and devtools. The default loop.
 2. **Local host + the remotes you work on** — run the host repo locally and your remote's dev server. The host dev
-   server builds `/config.json` itself: the registry config of `PORTAL_STAND` (what is actually deployed there) with
+   server builds `/config.json` itself: the stand's own `/config.json` (`https://<stand>.poc.ashirokov.dev`, what is
+   actually deployed there) with
    the remotes listed as `PORTAL_REMOTE_<NAME>=<dev manifest URL>` in `.env.development.local` replaced by the local
    dev servers. Anything not overridden runs the version currently registered on that stand. A remote not registered
    on the stand (a new one, before its first release) is added from the env alone: route `/<name>`, scopes from its

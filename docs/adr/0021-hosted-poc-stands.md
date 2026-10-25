@@ -24,8 +24,11 @@ version on a stand), the PoC needs infrastructure reachable from CI and from a b
   (`portal-cli registry build --upload`) on each push to main and after a promotion.
 - **Registry writes from CI** use a deploy key with write access (`PORTAL_REGISTRY_SSH_KEY`): unlike `GITHUB_TOKEN`,
   its pushes trigger the config deploy. A GitHub App token (`PORTAL_REGISTRY_TOKEN`) is the production form.
-- **The localhost stand-in stays** for offline work (`pnpm infra` still serves stand configs to the host dev server);
-  its Nexus answers like the real one (409, `portal-stands`).
+- **No localhost stand-in**: the host dev server reads the hosted stand's `/config.json` directly
+  (`https://<stand>.poc.ashirokov.dev`, `PORTAL_STAND_URL` to override); `tools/infra` was removed.
+- **Overwritten folders are cleaned by the deploy**: after a snapshot or host upload `portal-cli` deletes the files of
+  earlier builds older than a day (`portal-deploy` may delete only in `portal-snapshots` and `portal-stands`); a tab
+  that still runs such a build reloads once when one of its chunks is gone (`installStaleBuildRecovery`).
 
 ## Consequences
 

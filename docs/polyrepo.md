@@ -1,6 +1,10 @@
-# Polyrepo dry run
+# Polyrepo dry run (historical)
 
-Claim: the monorepo is only a convenience. Proof: `tools/polyrepo` publishes every platform package to a local
+> Done: the PoC now lives in separate repositories ([`portal-poc`](https://github.com/portal-poc)), with packages on
+> GitHub Packages and artifacts on a hosted Nexus. `tools/polyrepo` and Verdaccio no longer exist; the commands below
+> are kept as the record of how the split was checked. The findings table still applies.
+
+Claim: the monorepo is only a convenience. Proof: `tools/polyrepo` published every platform package to a local
 registry (Verdaccio = Nexus stand-in) and builds each app as a separate repository outside the monorepo — no
 `workspace:` links, own `.npmrc` and lockfile — then generates a new remote with the **published** CLI.
 

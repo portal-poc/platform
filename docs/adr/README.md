@@ -24,3 +24,4 @@ Format: Context → Decision → Consequences.
 - [0020 — Manual deploys, one snapshot stand, release stands per line](./0020-manual-deploys-and-snapshot-stand.md)
 - [0021 — The PoC runs on a real Nexus and hosted stands](./0021-hosted-poc-stands.md)
 - [0022 — HTTP: each app's axios, bound to the host's login](./0022-http-axios-bound-to-host-auth.md)
+- [0023 — Cross-app events live in a catalog, not in the contract](./0023-event-catalog.md)

@@ -1,30 +1,37 @@
 # Architecture overview
 
-This PoC started as a **reference monorepo** and is now split into the repositories of the
-[`portal-poc`](https://github.com/portal-poc) organisation (paths like `apps/host` below = repository `host`). It demonstrates every architectural
-decision from [`PORTAL_MFE_CONTEXT.md`](../PORTAL_MFE_CONTEXT.md) (the full requirements document; read it first) and is
-meant to be split into separate repositories (polyrepo) later.
+The PoC of the portal micro-frontend platform, split into the repositories of the
+[`portal-poc`](https://github.com/portal-poc) organisation as the real teams would own them. It demonstrates the
+decisions taken on [`PORTAL_MFE_CONTEXT.md`](../PORTAL_MFE_CONTEXT.md) (the original requirements document; where the
+PoC deviates, the deviations below and the ADRs win).
 
 ## Map
 
-| Path | What | Polyrepo destination |
+| Repository / path | What | Owner in reality |
 |---|---|---|
-| `apps/host` | Host application (data router, MSAL/mock auth, remote loading, route-level view transitions, bookmarks widget, devtools toolbar, demo panel) | host repo |
-| `apps/tasks-remote` | Remote A, FSD 2.1, equivalent to `portal-cli create remote tasks` + demo pages | tasks team repo |
-| `apps/legacy-remote` | React 18 remote, loaded through MF Bridge (isolated mode) | legacy team repo |
-| `packages/platform-contract` | `@portal-poc/platform-contract` — types only + `PLATFORM_CONTRACT_VERSION` | platform repo |
-| `packages/platform-runtime` | `@portal-poc/platform-runtime` — providers, auth adapters, QueryClient factory, devtools, standalone, compat | platform repo |
-| `packages/http` | `@portal-poc/http` — each app's own axios instance bound to the host's login ([ADR 0022](adr/0022-http-axios-bound-to-host-auth.md)) | platform repo |
-| `packages/ds` | `@portal-poc/ds` — Joy UI wrapper + loading primitives (MF singleton) | DS repo |
-| `packages/mf-shared` | `@portal-poc/mf-shared` — integration-contract constants (exposes, singletons, ranges) + shared config helper | platform repo |
-| `packages/vite-config` | `@portal-poc/vite-config` — build preset: pinned Vite + MF plugin, MF section of the contract, React Compiler | platform repo |
-| `packages/presets` | `@portal-poc/presets` — optional tsconfig / oxlint (incl. React Compiler rules) / fallow / vitest / steiger presets | platform repo |
-| `packages/portal-cli` | `@portal-poc/cli` (command `portal-cli`) — `create remote`, `add <layer>`, `verify`, `deploy`, `publish`, `release`, `promote`, `stand switch`, `registry check|build|status|validate` | platform repo |
-| `registry/` | Which version of which remote runs on which stand (`<stand>/<remote>.json`, `stands.json`) | registry repo |
-| `tools/polyrepo` | Polyrepo dry run: Verdaccio (Nexus stand-in) + split every app into its own repo and check it ([`polyrepo.md`](./polyrepo.md)) | — |
-| `tools/infra` | PoC stand-ins: Nexus raw API (`portal-releases`, `portal-snapshots`) and stands (host + `/config.json` + `compat.json`) | — (infra) |
+| [`host`](https://github.com/portal-poc/host) | Host application (data router, MSAL/mock auth, remote loading with compatibility checks and bridge fallback, route-level view transitions, bookmarks widget, devtools toolbar, demo panel) | host team |
+| [`tasks-remote`](https://github.com/portal-poc/tasks-remote) | Remote "tasks", FSD 2.1, equivalent to `portal-cli create remote tasks` + demo pages | product team |
+| [`legacy-remote`](https://github.com/portal-poc/legacy-remote) | React 18 remote, loaded through MF Bridge (isolated mode) | another team |
+| [`registry`](https://github.com/portal-poc/registry) | Which version of which remote runs on which stand (`<stand>/<remote>.json`, `stands.json`); its Config deploy uploads each stand's `/config.json` | platform + teams (CODEOWNERS) |
+| `platform/packages/platform-contract` | `@portal-poc/platform-contract` — types only + `PLATFORM_CONTRACT_VERSION` | platform team |
+| `platform/packages/platform-runtime` | `@portal-poc/platform-runtime` — providers, auth adapters, QueryClient factory, event bus, devtools, standalone, compat, stale-tab reload | platform team |
+| `platform/packages/http` | `@portal-poc/http` — each app's own axios instance bound to the host's login ([ADR 0022](adr/0022-http-axios-bound-to-host-auth.md)) | platform team |
+| `platform/packages/events` | `@portal-poc/events` — the catalog of cross-app events on the local bus, validated publish/subscribe ([ADR 0023](adr/0023-event-catalog.md)) | platform team, events owned by their publishers |
+| `platform/packages/ds` | `@portal-poc/ds` — Joy UI wrapper + loading primitives (MF singleton) | DS team |
+| `platform/packages/mf-shared` | `@portal-poc/mf-shared` — integration-contract constants (exposes, singletons, ranges) + shared config helper | platform team |
+| `platform/packages/vite-config` | `@portal-poc/vite-config` — build preset: pinned Vite + MF plugin, MF section of the contract, React Compiler | platform team |
+| `platform/packages/presets` | `@portal-poc/presets` — optional tsconfig / oxlint (incl. React Compiler rules) / fallow / vitest / steiger presets | platform team |
+| `platform/packages/portal-cli` | `@portal-poc/cli` (command `portal-cli`) — scaffolding, verification, deploys, registry ([README](../packages/portal-cli/README.md)) | platform team |
+| `platform/.github/workflows` | Reusable workflows every app calls, pinned to `@v2`: `app-ci`, `deploy` (remotes), `deploy-host`, `forward-merge` | platform team |
 
-## Ports (local)
+## Infrastructure (hosted, [ADR 0021](adr/0021-hosted-poc-stands.md))
+
+| What | Where |
+|---|---|
+| Nexus (raw: `portal-releases`, `portal-snapshots`, `portal-stands`) | https://nexus.poc.ashirokov.dev |
+| Stands dev3 (snapshot) / dev2 / dev1 (release lines) / tst (promoted) | https://dev3.poc.ashirokov.dev, `dev2.`, `dev1.`, `tst.` |
+
+## Ports (local dev servers)
 
 | Service | Port |
 |---|---|
@@ -32,9 +39,6 @@ meant to be split into separate repositories (polyrepo) later.
 | tasks-remote | 5174 |
 | legacy-remote | 5175 |
 | generated remotes (default) | 5176 |
-| PoC Nexus | 4400 |
-| Verdaccio (polyrepo dry run) | 4873 |
-| stands dev3 / dev2 / dev1 / tst | 4501 / 4502 / 4503 / 4504 |
 
 ## Delivery
 
@@ -57,8 +61,8 @@ Decided with the project owner before implementation:
   mock BFFs keep their own types. Scenario 17 is therefore not implemented.
 - **No realtime** (section 12 is out of scope): the real project already has WebSocket pub/sub. Removed: realtime
   client, `RealtimeProvider` / `useInvalidateOnEvent`, mock broker, BFF realtime channels, scenarios 6–9.
-  Cross-app bookmarks refresh uses the local event bus from the contract (`platform.events`, `bookmarks.changed`)
-  plus `refetchOnWindowFocus` as a safety net.
+  Cross-app bookmarks refresh uses the local event bus (`platform.events`, event `bookmarks.changed` of the catalog
+  in `@portal-poc/events`) plus `refetchOnWindowFocus` for other tabs.
 - **No mock backends**: each app's `shared/api` puts a fake `fetch` behind its real axios client (axios' fetch adapter;
   bearer + zod still run) that answers with hard-coded data and a configurable delay. Bookmarks live in `localStorage` so the host
   widget and the tasks remote see the same data.
@@ -66,7 +70,7 @@ Decided with the project owner before implementation:
   `shared` — overrides "CLI does not create empty layers" from section 16.1.
 - Keep the code minimal: this is a PoC, not production code.
 - **Linting** = oxlint (code style + React Compiler rules, native port of eslint-plugin-react-hooks v7) + Steiger (FSD)
-  + **fallow** (unused files/exports/dependencies, duplication, FSD boundaries). All presets live in `@portal-poc/presets`;
+  + **fallow** (unused files/exports/dependencies, duplication). All presets live in `@portal-poc/presets`;
   apps extend them (`.oxlintrc.json`, `.fallowrc.json` with `extends: "npm:@portal-poc/presets/fallow/<kind>.json"`).
 - Optional parts implemented: `@portal-poc/presets`, bridge demo (`legacy-remote`). Not implemented: preload hover demo
   (the architecture is ready — section 13), Playwright e2e.

@@ -10,4 +10,4 @@ In polyrepo the host's `Provider` and the remote's `useContext` may reference di
 
 ## Consequences
 
-RemoteRoot does not know its mode. Additive evolution only (`getAccessToken` gained an optional `forceRefresh`; `PlatformEventMap` is an interface so declaration merging works).
+RemoteRoot does not know its mode. Additive evolution only (`getAccessToken` gained an optional `forceRefresh`). Domain events are not part of the contract: the bus only transports, the event catalog `@portal-poc/events` describes them (ADR 0023).

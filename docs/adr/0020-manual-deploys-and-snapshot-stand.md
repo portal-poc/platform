@@ -18,18 +18,19 @@ registry adds noise and Nexus garbage where nobody needs history.
   (never deployed to).
 - **Snapshot stand (dev3)**: the build overwrites `portal-snapshots/dev3/<remote>/` in Nexus (redeploy allowed); the
   registry entry is constant (`"version": "snapshot"`). The gate runs before the upload, `mf-manifest.json` is
-  uploaded last and old chunks are kept (cleanup policy), so open tabs survive. The build is identified by
+  uploaded last and old chunks are kept for a day (the next deploy deletes older ones), so open tabs survive; a tab
+  older than that reloads when a chunk is gone. The build is identified by
   `<package version>-snapshot.<run>+<sha>` in its manifest, shown by the host and `registry status`.
 - **Release stands (dev2, dev1)**: a tag `vX.Y.Z` is version `X.Y.Z` (published once, reused by later deploys and
   rollbacks); a branch `release/X.Y` builds `X.Y.<next>-rc.<run>`. Published to `portal-releases` (redeploy
   disabled), released by a registry commit.
 - **Registry writes are commits to main** by the deploy bot (the button press is the approval); hand edits and
   `stand switch` stay pull requests with CODEOWNERS; `tst` is filled by the registry's Promote workflow.
-- **Nexus raw API** (`PUT /repository/<repo>/<path>`) is the only publishing interface; the PoC stand-in speaks it.
+- **Nexus raw API** (`PUT /repository/<repo>/<path>`) is the only publishing interface.
 
 ## Consequences
 
 The team keeps its familiar "pick stand + branch → Deploy", developers can put any branch on dev3 without versions
 or registry changes, and the stands that testers and the business use keep immutable versions, gates and
 no-rebuild rollbacks. Cost: dev3 has no history (rollback = deploy another branch) and one more Nexus repository
-with a cleanup policy. ADR 0017 still applies to every stand except the snapshot one.
+cleaned by the deploys themselves. ADR 0017 still applies to every stand except the snapshot one.

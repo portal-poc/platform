@@ -28,6 +28,17 @@ remote could not use it at all.
 - A fake backend stays a fake `fetch`, put behind the real client through axios' fetch adapter (`adapter: 'fetch'`,
   `env.fetch`): tokens, headers and parsing run as in production.
 
+Interceptor order (axios runs request interceptors in reverse registration order, response interceptors in
+registration order): an app adds its own interceptors after `attachPlatformAuth`. Its request interceptors then run
+first and can set headers, `baseURL` or a correlation id that the platform keeps; its response interceptors see the
+response after the 401 retry, so they never handle an expired token.
+
+**Host-level headers** (e.g. the real project's impersonation header, sent next to the bearer token on every request
+with the main token) are the next additive step: an optional `platform.auth.getRequestHeaders(scopes)` in the
+contract, merged by the request interceptor next to `Authorization`. The host reloads the page on login and on an
+impersonation change, so the values are static per page and no cache handling is needed. The BFF authorizes
+impersonation from the token; it never trusts the header alone. Not implemented in the PoC.
+
 ## Consequences
 
 - `http.get('/tasks', { signal, params }).then(parseResponse(taskListSchema))` anywhere in the app; query and
