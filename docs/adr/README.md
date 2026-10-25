@@ -12,7 +12,7 @@ Format: Context → Decision → Consequences.
 - [0008 — ViewTransition: host owns routes](./0008-view-transitions.md)
 - [0009 — Devtools via mount functions](./0009-devtools.md)
 - [0010 — Realtime — out of scope](./0010-realtime.md)
-- [0011 — Preload: architecture ready, not implemented](./0011-preload.md)
+- [0011 — Preload on intent: the remote's code and its first data](./0011-preload.md)
 - [0012 — API contracts codegen — out of scope](./0012-api-contracts.md)
 - [0013 — FSD 2.1 pages first, Steiger, optional layers](./0013-fsd.md)
 - [0014 — CLI: template owned by teams, verify is the contract](./0014-cli.md)

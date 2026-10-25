@@ -1,13 +1,25 @@
-# ADR 0011: Preload: architecture ready, not implemented
+# ADR 0011: Preload on intent: the remote's code and its first data
 
 ## Context
 
-Prefetching remote data from the host would cut waterfalls later.
+Opening a remote section is a waterfall: manifest → compatibility checks → remote code → the page's first query →
+render. The time between the pointer resting on a link and the click is enough to run most of it.
 
 ## Decision
 
-`./preload` expose is reserved (stub, checked by verify); `query-client.ts` and `queryOptions` factories are separate modules; the QueryClient is created lazily and registers devtools at creation.
+- **The host decides when**: a pointer resting on a link to a remote section for 100 ms, keyboard focus or a touch
+  (`usePreloadIntent`: the host menu, the bookmarks widget). Never with `saveData`, never signed out, once per target
+  per 30 s.
+- **The host warms the code**: the same load `RemoteApp` renders from (manifest, gates, `RemoteRoot`). A hover never
+  triggers the stale-build reload: only a render may reload the page.
+- **The remote decides what**: `./preload` — `preload(platform, { path })`, `path` inside the remote. It mirrors its
+  routes and calls `prefetchQuery` on the QueryClient RemoteRoot uses. It never throws; a failed preload costs
+  nothing (the click loads as usual and shows any error there).
+- **One QueryClient**: `./preload` and `./RemoteRoot` import the same `shared/api` module; the MF build puts it in one
+  chunk (verified in `mf-manifest.json`: both exposes depend on the same `assets/api-*.js`), so prefetched data is
+  the data RemoteRoot reads. Bridge remotes get the code only: their QueryClient lives in their own build.
 
 ## Consequences
 
-Must verify on the MF build that `./preload` and `./RemoteRoot` share one `query-client` module instance.
+- A click on a section or a bookmark after a short hover renders from cache, without the remote's spinner.
+- Every remote keeps `./preload` in sync with its routes (template example; `verify` checks the expose exists).

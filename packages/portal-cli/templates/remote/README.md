@@ -35,6 +35,9 @@ const leave = useLeaveGuard(form.formState.isDirty, { message: 'The task is not 
 // Saved and navigating away yourself: leave.release() first.
 ```
 
+**Preload**: `src/app/exposes/preload.ts` prefetches the data of the page the user is about to open (the host calls
+it on hover / focus of a link to us, with the path inside this remote). Add a branch for every route that loads data.
+
 Never call React Router's `useBlocker` (lint error): a router supports one blocker and, inside the host, yours is the
 host's router. `src/app/exposes/RemoteBridge.tsx` and `src/app/standalone/main.tsx` already render
 `<PlatformLeaveBlocker>` for their own routers.

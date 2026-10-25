@@ -6,7 +6,7 @@ Open a stand — https://dev3.poc.ashirokov.dev (dev2, dev1; tst with `?demo=1`)
 host + local remote) are in [`delivery.md`](./delivery.md). The **Demo panel** (bottom-left) switches account,
 fake-BFF delay, token TTL, forced bridge mode and an incompatible contract. The **Devtools** button (bottom-right, on
 stands with `?devtools=1`) is the query devtools toolbar. Out of scope (see `architecture.md`): realtime scenarios 6–9,
-API-contract scenario 17, preload demo 18.
+API-contract scenario 17.
 
 | # | Scenario | Steps | Expected |
 |---|---|---|---|
@@ -27,6 +27,7 @@ API-contract scenario 17, preload demo 18.
 | 20 | Leaving a dirty form | Tasks → New task, type a title. Then: the host menu (Legacy), the "Portal" breadcrumb, "All tasks", browser back, reload. Submit while the BFF delay is 3000 ms and click the menu. | Every way out shows the tasks dialog (Save and leave / Discard / Stay); reload gets the browser's prompt. "Save and leave" saves, then continues to where you clicked. While saving, leaving is refused with a notice. Same in bridge mode (demo panel → force bridge). |
 | 21 | Leaving legacy (React 18, bridge) | Legacy → tick "I have unsaved changes". Click Home in the host menu, then "About", then "Back to host home". | The host's dialog each time (host menu, the remote's own link, `navigateToHost`); untick → nothing asks. |
 | 22 | Page titles | Open Tasks, a task, New task, Legacy → About, Home. | Tab title: "All tasks · Tasks · Portal", "<task> · Tasks · Portal", "New task · Tasks · Portal", "About · Legacy · Portal", "Portal". |
+| 18 | Preload on hover | Reload Home, demo panel → BFF delay 3000 ms. Rest the pointer on "Tasks" for a moment (or on a bookmark), wait 3 s, click. Compare with a quick click without resting. | After a rest: the list (or the task) renders at once, no spinner — code and data were loaded during the hover. Quick click: the usual spinner. Network tab: the manifest, chunks and the BFF call start on hover. |
 
 Directional route transitions: Home → Tasks slides forward, Tasks → Home slides back (types `nav-forward`/`nav-back`).
 Performance Tracks in Chrome DevTools show key changes as transitions, not blocking updates.

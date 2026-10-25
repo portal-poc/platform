@@ -72,5 +72,5 @@ Decided with the project owner before implementation:
 - **Linting** = oxlint (code style + React Compiler rules, native port of eslint-plugin-react-hooks v7) + Steiger (FSD)
   + **fallow** (unused files/exports/dependencies, duplication). All presets live in `@portal-poc/presets`;
   apps extend them (`.oxlintrc.json`, `.fallowrc.json` with `extends: "npm:@portal-poc/presets/fallow/<kind>.json"`).
-- Optional parts implemented: `@portal-poc/presets`, bridge demo (`legacy-remote`). Not implemented: preload hover demo
-  (the architecture is ready — section 13), Playwright e2e.
+- Optional parts implemented: `@portal-poc/presets`, bridge demo (`legacy-remote`), preload on hover (section 13,
+  [ADR 0011](adr/0011-preload.md)). Not implemented: Playwright e2e.
