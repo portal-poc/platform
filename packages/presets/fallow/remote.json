@@ -1,7 +1,4 @@
 {
-  "boundaries": {
-    "preset": "feature-sliced"
-  },
   "entry": [
     "src/app/exposes/*.{ts,tsx}",
     "src/app/standalone/main.tsx",

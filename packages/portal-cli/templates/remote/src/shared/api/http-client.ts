@@ -3,9 +3,11 @@ import type { HttpClient } from '@portal-poc/platform-runtime';
 import type { PlatformContract } from '@portal-poc/platform-contract';
 import { REMOTE_NAME, useRemoteEnvConfig } from '../config';
 import type { RemoteEnvConfig } from '../config';
-import { fakeBackendFetch } from './fake-backend';
 
 let cached: { platform: PlatformContract; http: HttpClient } | null = null;
+
+/** Loaded only where `fakeBackend` is set: environments with a BFF never download it. */
+const fakeBackendFetch: typeof fetch = async (input, init) => (await import('./fake-backend')).fakeBackendFetch(input, init);
 
 /** The remote builds its own client from `platform.auth` + its own BFF address (the host does not know it). */
 const getRemoteHttp = (platform: PlatformContract, config: RemoteEnvConfig): HttpClient => {
@@ -18,7 +20,7 @@ const getRemoteHttp = (platform: PlatformContract, config: RemoteEnvConfig): Htt
         auth: platform.auth,
         telemetry: platform.telemetry,
         clientVersion: `${REMOTE_NAME}@${PORTAL_APP_VERSION}`,
-        fetch: fakeBackendFetch, // PoC: hard-coded backend
+        ...(config.fakeBackend ? { fetch: fakeBackendFetch } : {}),
       }),
     };
   }

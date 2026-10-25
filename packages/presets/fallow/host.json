@@ -1,7 +1,4 @@
 {
-  "boundaries": {
-    "preset": "feature-sliced"
-  },
   "entry": [
     "src/app/main.tsx",
     "steiger.config.ts"

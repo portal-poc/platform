@@ -11,7 +11,7 @@
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.node.json",
     "lint": "oxlint . && steiger ./src && fallow dead-code",
     "analyze": "fallow",
-    "test": "vitest run --passWithNoTests",
+    "test": "vitest run",
     "verify": "portal-cli verify && portal-cli verify --dist dist-bridge --mode bridge"
   },
   "dependencies": {

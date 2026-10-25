@@ -15,5 +15,8 @@ export const createVitestConfig = (options: PortalVitestOptions = {}): ViteUserC
       include: ['src/**/*.test.{ts,tsx}', 'test/**/*.test.{ts,tsx}'],
       restoreMocks: true,
       unstubGlobals: true,
+      // @portal-poc libraries are published for bundlers (extensionless relative imports): run them through Vite
+      // like the app's own code, Node's ESM loader would reject them.
+      server: { deps: { inline: [/@portal-poc\//] } },
     },
   });

@@ -45,7 +45,8 @@ jobs:
           ssh-key: ${{ secrets.PORTAL_REGISTRY_SSH_KEY }}
           token: ${{ secrets.PORTAL_REGISTRY_TOKEN || github.token }}
       - name: Deploy ${{ inputs.ref }} → ${{ inputs.stand }}
-        run: pnpm dlx @portal-poc/cli@2 host deploy --stand "${{ inputs.stand }}" --registry .registry
+        run: pnpm dlx @portal-poc/cli@2 host deploy --stand "$STAND" --registry .registry
         env:
+          STAND: ${{ inputs.stand }}
           PORTAL_NEXUS_USER: ${{ secrets.PORTAL_NEXUS_USER }}
           PORTAL_NEXUS_PASSWORD: ${{ secrets.PORTAL_NEXUS_PASSWORD }}

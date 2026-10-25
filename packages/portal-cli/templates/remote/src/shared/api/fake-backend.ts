@@ -1,8 +1,8 @@
 import type { Item } from './contracts';
 
 /**
- * Placeholder backend: a fake `fetch` injected into the real http client (bearer + zod still run).
- * Replace with the real BFF by removing the `fetch` option in `http-client.ts`.
+ * Placeholder backend: a fake `fetch` injected into the real http client (bearer + zod still run) on environments
+ * with `"fakeBackend": true` in `public/config.json`. Delete this file and the flag once the BFF exists.
  */
 const items: Item[] = [
   { id: '1', title: 'First item' },

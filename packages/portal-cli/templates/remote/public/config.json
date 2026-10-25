@@ -4,13 +4,15 @@
       "bffBaseUrl": "https://__NAME__-bff.local/api",
       "scopes": [
         "api://__NAME__-bff/__TITLE__.ReadWrite"
-      ]
+      ],
+      "fakeBackend": true
     },
     "dev3": {
       "bffBaseUrl": "https://__NAME__-bff.dev3.bank.example/api",
       "scopes": [
         "api://__NAME__-bff/__TITLE__.ReadWrite"
-      ]
+      ],
+      "fakeBackend": true
     },
     "dev2": {
       "bffBaseUrl": "https://__NAME__-bff.dev2.bank.example/api",

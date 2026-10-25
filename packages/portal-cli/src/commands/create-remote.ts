@@ -71,6 +71,8 @@ const assertValidLayers = (layers: string[]) => {
   }
 };
 
+const DEFAULT_PORT = '5176';
+
 const replaceTokens = (text: string, tokens: Record<string, string>): string =>
   Object.entries(tokens).reduce((result, [token, value]) => result.replaceAll(token, value), text);
 
@@ -106,7 +108,8 @@ export const runCreateRemote = async (name: string, options: CreateRemoteOptions
   const tokens = {
     __NAME__: name,
     __TITLE__: toPascalCase(name),
-    __PORT__: options.port ?? '5176',
+    __UPPER_NAME__: name.toUpperCase(),
+    __PORT__: options.port ?? DEFAULT_PORT,
     __PORTAL_VERSION__: inWorkspace ? 'workspace:^' : '^1.0.0',
     __CLI_VERSION__: inWorkspace ? 'workspace:^' : `^${CLI_VERSION}`,
     __REGISTRY__: process.env['PORTAL_REGISTRY'] ?? 'https://npm.pkg.github.com',
@@ -134,5 +137,10 @@ export const runCreateRemote = async (name: string, options: CreateRemoteOptions
   console.log(`\n✔ Created remote "${name}" in ${targetDir}`);
   console.log(`  layers: app, pages, shared${answers.layers.length > 0 ? `, ${answers.layers.join(', ')}` : ''}`);
   console.log(`  configs: ${answers.usePresets ? 'inherited from @portal-poc/presets' : 'inlined'}; bridge entry: ${answers.withBridge ? 'yes' : 'stub'}`);
-  console.log('\nNext: pnpm install && pnpm dev   (then register the remote in the host config.json)');
+  const port = options.port ?? DEFAULT_PORT;
+  console.log(`
+Next:
+  pnpm install && pnpm dev:standalone      the remote alone at http://localhost:${port}
+  in the host: .env.development.local      PORTAL_REMOTE_${name.toUpperCase()}=http://localhost:${port}/mf-manifest.json
+  GitHub and the first deploy              README.md "First steps on GitHub"`);
 };

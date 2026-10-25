@@ -1,12 +1,17 @@
 # Rules for React and data in this remote
 
 - One QueryClient per app: `getRemoteQueryClient(platform)` (`shared/api/query-client.ts`). Never use the host's.
-- Query keys start with `__NAME__`, then the domain scope. Keys come only from `queryOptions` factories
-  (`shared/api/__NAME__-queries.ts`), so `setQueryData(options.queryKey, …)` is typed without `any`.
+- Query keys come from the factory in `shared/api/query-keys.ts`: the remote's name first (`__NAME__`, readable in the
+  host's devtools, where every remote's cache is listed), then the domain scope (`lists()`, `list(filters)`,
+  `details()`, `detail(id)`), so one prefix invalidates a whole family. Queries are `queryOptions` factories
+  (`shared/api/queries.ts`), so `setQueryData(options.queryKey, …)` is typed without `any`.
+- Responses are parsed with the zod schemas in `shared/api/contracts.ts` (trust boundary).
 - Changing a suspense query key (filter, page, selection) goes through `startTransition` or `useDeferredValue`.
 - Mutations: the button reads `mutation.isPending`. Use a transition only when a suspending update follows.
 - Create → redirect: put the response into the list cache before `navigate`, don't wait for invalidation.
   Busy flag = `mutation.isPending || navigation.state !== 'idle'`.
-- View transitions: only local ones (list items, shared elements prefixed `__NAME__-`). The host owns route-level transitions.
-- After a bookmark mutation, emit `bookmarks.changed` on `platform.events` so the host widget refreshes.
+- Cross-app signals (e.g. something the host shows changed) go through `platform.events`, never through shared state.
+- View transitions: only local ones (list items, shared elements), class names prefixed `__NAME__-`, 150–250 ms, off
+  under `prefers-reduced-motion`. Put the CSS next to the component that uses it; never global rules for
+  `::view-transition-*(*)` — in integrated mode they would apply to the host's route transitions too.
 - Code style: no `any`, no `useMemo`/`useCallback`/`memo` (React Compiler), arrow functions, braces on every `if`.

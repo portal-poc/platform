@@ -25,6 +25,14 @@ on:
         description: integrated | bridge (a remote that shares nothing, e.g. legacy)
         type: string
         default: integrated
+      base-path:
+        description: Route in the host, e.g. /billing (first deploy of the remote to this stand only)
+        type: string
+        default: ''
+      scopes:
+        description: Token scopes allowlist, comma-separated (first deploy to this stand only)
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -60,8 +68,15 @@ jobs:
         run: |
           git config --global user.name "portal-deploy"
           git config --global user.email "portal-deploy@users.noreply.github.com"
-          pnpm dlx @portal-poc/cli@2 deploy --stand "${{ inputs.stand }}" --ref "${{ inputs.ref }}" \
-            --mode "${{ inputs.mode }}" --registry .registry --push
+          pnpm dlx @portal-poc/cli@2 deploy --stand "$STAND" --ref "$REF" \
+            --mode "$MODE" --registry .registry --push \
+            ${BASE_PATH:+--base-path "$BASE_PATH"} ${SCOPES:+--scopes "$SCOPES"}
         env:
+          # Through env, not ${{ }} in the script: free-text inputs must not become shell code.
+          STAND: ${{ inputs.stand }}
+          REF: ${{ inputs.ref }}
+          MODE: ${{ inputs.mode }}
+          BASE_PATH: ${{ inputs.base-path }}
+          SCOPES: ${{ inputs.scopes }}
           PORTAL_NEXUS_USER: ${{ secrets.PORTAL_NEXUS_USER }}
           PORTAL_NEXUS_PASSWORD: ${{ secrets.PORTAL_NEXUS_PASSWORD }}

@@ -11,6 +11,12 @@ on:
       ref:
         description: Branch or tag (develop, feature/…, release/1.5, v1.5.2)
         default: develop
+      base-path:
+        description: First deploy to this stand only — route in the host, e.g. /__NAME__
+        required: false
+      scopes:
+        description: First deploy to this stand only — token scopes, comma-separated (as in public/config.json)
+        required: false
 
 permissions:
   contents: read
@@ -22,4 +28,6 @@ jobs:
     with:
       stand: ${{ inputs.stand }}
       ref: ${{ inputs.ref }}
+      base-path: ${{ inputs.base-path }}
+      scopes: ${{ inputs.scopes }}
     secrets: inherit

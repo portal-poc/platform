@@ -4,7 +4,6 @@ import { PlatformProvider, useClearCacheOnAccountChange, useMarkMounted } from '
 import { getRemoteQueryClient } from '@/shared/api';
 import { REMOTE_NAME } from '@/shared/config';
 import { RemoteRoutes } from '../routes/RemoteRoutes';
-import { RemoteStyles } from '../styles/RemoteStyles';
 
 export type RemoteRootProps = { platform: PlatformContract };
 
@@ -19,7 +18,6 @@ export const RemoteRoot = ({ platform }: RemoteRootProps) => {
   return (
     <PlatformProvider value={platform}>
       <QueryClientProvider client={getRemoteQueryClient(platform)}>
-        <RemoteStyles />
         <RemoteRoutes />
       </QueryClientProvider>
     </PlatformProvider>

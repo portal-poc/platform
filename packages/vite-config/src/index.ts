@@ -96,7 +96,7 @@ export const createRemoteViteConfig = (options: RemoteViteOptions): UserConfigFn
   const exposesDir = options.exposesDir ?? 'src/app/exposes';
   const sharedConfig = options.unsafeSharedOverride?.(createSharedConfig()) ?? createSharedConfig();
 
-  return defineConfig(async ({ mode }) => {
+  return defineConfig(async ({ command, mode }) => {
     const isBridgeVariant = mode === 'bridge';
     const base: UserConfig = {
       base: './',
@@ -104,7 +104,15 @@ export const createRemoteViteConfig = (options: RemoteViteOptions): UserConfigFn
       resolve: { alias: { '@': `${appRoot}/src` } },
       server: { port: options.port, origin: `http://localhost:${options.port}`, cors: true },
       preview: { port: options.port, cors: true },
-      build: { target: 'es2023', outDir: isBridgeVariant ? 'dist-bridge' : 'dist' },
+      build: {
+        target: 'es2023',
+        outDir: isBridgeVariant ? 'dist-bridge' : 'dist',
+        // The standalone app (index.html: mock auth, dev tooling) is for `vite dev` only: a release holds just
+        // remoteEntry + exposes, so nothing but the host can run it.
+        ...(command === 'build' ? { rolldownOptions: { input: {} } } : {}),
+        // The bridge variant bundles its own React, router and DS on purpose: big chunks are expected there.
+        ...(isBridgeVariant ? { chunkSizeWarningLimit: 2000 } : {}),
+      },
       plugins: [
         ...(await reactPlugins(options.compiler ?? true)),
         federation({

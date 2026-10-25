@@ -7,7 +7,6 @@ on:
 permissions:
   contents: read
   packages: read
-  pull-requests: write
 
 jobs:
   ci:
@@ -18,4 +17,7 @@ jobs:
   forward-merge:
     # A fix on release/X.Y must reach the newer lines and develop: opens the next forward-merge PR.
     if: startsWith(github.ref, 'refs/heads/release/')
+    permissions:
+      contents: read
+      pull-requests: write
     uses: portal-poc/platform/.github/workflows/forward-merge.yml@v2

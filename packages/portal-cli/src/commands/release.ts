@@ -104,7 +104,9 @@ export const placementOf = (previous: RegistryEntry | null, options: PlacementOp
   const basePath = options.basePath ?? previous?.basePath;
   const scopes = options.scopes ? parseList(options.scopes) : previous?.scopes;
   if (!basePath || !scopes) {
-    throw new Error(`First deploy of "${name}" to "${stand}": pass --base-path and --scopes (host team approval).`);
+    throw new Error(
+      `First deploy of "${name}" to "${stand}": pass --base-path and --scopes (host team approval; in the Deploy workflow: the "base-path" and "scopes" fields).`,
+    );
   }
   return { basePath, scopes, ...(previous?.title ? { title: previous.title } : {}) };
 };

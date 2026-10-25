@@ -24,6 +24,15 @@ const build = (appDir: string, version: string) => {
 };
 
 /**
+ * The route and scopes must be known before anything is uploaded: a first deploy without them would otherwise leave a
+ * published build that no registry entry points to. The MF name is known only after the build.
+ */
+const assertPlacement = (appDir: string, registryDir: string, options: DeployOptions) => {
+  const { name } = toManifest(JSON.parse(readFileSync(join(appDir, 'dist', 'mf-manifest.json'), 'utf8')));
+  placementOf(readEntry(registryDir, options.stand, name), options, name, options.stand);
+};
+
+/**
  * Snapshot stand: the gate runs BEFORE the upload (the upload is live at once), then the build overwrites the stand's
  * folder in portal-snapshots. The registry entry is constant; it is written only on the first deploy or when the
  * bridge variant appears/disappears.
@@ -85,6 +94,7 @@ export const runDeploy = async (options: DeployOptions): Promise<void> => {
     console.log(`portal-cli deploy — ${ref} → ${options.stand} as ${version} (snapshot: overwritten in place)\n`);
     build(appDir, version);
     assertBuiltAs(appDir, version);
+    assertPlacement(appDir, registryDir, options);
     await deploySnapshot(appDir, registryDir, options, version);
     return;
   }
@@ -95,6 +105,7 @@ export const runDeploy = async (options: DeployOptions): Promise<void> => {
   assertCheckedOut(appDir, ref);
   console.log(`portal-cli deploy — ${ref} → ${options.stand} as ${version} (immutable release)\n`);
   build(appDir, version);
+  assertPlacement(appDir, registryDir, options);
   await runPublish({ dir: appDir, nexusUrl: stand.nexusUrl, version, reuse: true });
   await runRelease({ ...options, dir: appDir, version });
 };
