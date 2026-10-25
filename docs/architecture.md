@@ -14,7 +14,7 @@ PoC deviates, the deviations below and the ADRs win).
 | [`legacy-remote`](https://github.com/portal-poc/legacy-remote) | React 18 remote, loaded through MF Bridge (isolated mode) | another team |
 | [`registry`](https://github.com/portal-poc/registry) | Which version of which remote runs on which stand (`<stand>/<remote>.json`, `stands.json`); its Config deploy uploads each stand's `/config.json` | platform + teams (CODEOWNERS) |
 | `platform/packages/platform-contract` | `@portal-poc/platform-contract` — types only + `PLATFORM_CONTRACT_VERSION` | platform team |
-| `platform/packages/platform-runtime` | `@portal-poc/platform-runtime` — providers, auth adapters, QueryClient factory, event bus, devtools, standalone, compat, stale-tab reload | platform team |
+| `platform/packages/platform-runtime` | `@portal-poc/platform-runtime` — providers, auth adapters, QueryClient factory, event bus, leave guards and page titles ([ADR 0024](adr/0024-leave-guards-and-page-titles.md)), devtools, standalone, compat, stale-tab reload | platform team |
 | `platform/packages/http` | `@portal-poc/http` — each app's own axios instance bound to the host's login ([ADR 0022](adr/0022-http-axios-bound-to-host-auth.md)) | platform team |
 | `platform/packages/events` | `@portal-poc/events` — the catalog of cross-app events on the local bus, validated publish/subscribe ([ADR 0023](adr/0023-event-catalog.md)) | platform team, events owned by their publishers |
 | `platform/packages/ds` | `@portal-poc/ds` — Joy UI wrapper + loading primitives (MF singleton) | DS team |
