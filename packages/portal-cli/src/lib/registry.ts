@@ -101,7 +101,8 @@ export const readEntries = (registryDir: string, stand: string): Record<string, 
   }
   return Object.fromEntries(
     readdirSync(dir)
-      .filter((file) => file.endsWith('.json'))
+      // `_host.json` is the stand's host, not a remote.
+      .filter((file) => file.endsWith('.json') && !file.startsWith('_'))
       .map((file) => {
         const name = file.replace(/\.json$/, '');
         return [name, toEntry(JSON.parse(readFileSync(join(dir, file), 'utf8')), join(dir, file))];
@@ -109,11 +110,47 @@ export const readEntries = (registryDir: string, stand: string): Record<string, 
   );
 };
 
-const serialize = (entry: RegistryEntry) => `${JSON.stringify(entry, null, 2)}\n`;
+const serialize = (entry: RegistryEntry | HostEntry) => `${JSON.stringify(entry, null, 2)}\n`;
 
 /** Writes the entry; null when the file already holds exactly this entry (nothing to commit). */
 export const writeEntry = (registryDir: string, stand: string, name: string, entry: RegistryEntry): string | null => {
   const path = entryPath(registryDir, stand, name);
+  if (existsSync(path) && readFileSync(path, 'utf8') === serialize(entry)) {
+    return null;
+  }
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, serialize(entry));
+  return path;
+};
+
+// ---------- the stand's host ----------
+
+/**
+ * `<stand>/_host.json`: which host build the stand serves. Release stands: an immutable version from
+ * `portal-releases/host/<version>/`, installed by the config deploy (`portal-cli host sync`); the snapshot stand:
+ * `snapshot` (the last host deploy overwrote it in place). No file: the stand keeps whatever host it has.
+ */
+export type HostEntry = { version: string; commit?: string };
+
+export const HOST_NAME = 'host';
+
+const hostEntryPath = (registryDir: string, stand: string) => join(registryDir, stand, '_host.json');
+
+export const readHostEntry = (registryDir: string, stand: string): HostEntry | null => {
+  const path = hostEntryPath(registryDir, stand);
+  if (!existsSync(path)) {
+    return null;
+  }
+  const value: unknown = JSON.parse(readFileSync(path, 'utf8'));
+  if (!isRecord(value) || typeof value['version'] !== 'string') {
+    throw new Error(`${path} is not a host entry ({ "version": … })`);
+  }
+  return { version: value['version'], ...(typeof value['commit'] === 'string' ? { commit: value['commit'] } : {}) };
+};
+
+/** Writes the host entry; null when the file already holds exactly this entry. */
+export const writeHostEntry = (registryDir: string, stand: string, entry: HostEntry): string | null => {
+  const path = hostEntryPath(registryDir, stand);
   if (existsSync(path) && readFileSync(path, 'utf8') === serialize(entry)) {
     return null;
   }

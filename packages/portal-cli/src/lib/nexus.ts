@@ -101,6 +101,34 @@ export const pruneStale = async (folderUrl: string, keep: readonly string[], gra
   return stale.length;
 };
 
+/** Files under `<folderUrl>/`, relative to it. */
+export const listFolder = async (folderUrl: string): Promise<string[]> => {
+  const { api, repository, folder } = parseFolderUrl(folderUrl);
+  return (await listAssets(api, repository))
+    .map((asset) => asset.path.replace(/^\//, ''))
+    .filter((path) => path.startsWith(`${folder}/`))
+    .map((path) => path.slice(folder.length + 1));
+};
+
+/**
+ * Copies a published folder to another one (an immutable host release onto a stand): every file, the `last` ones at
+ * the end, like `uploadDir`. Returns the copied paths.
+ */
+export const copyFolder = async (fromUrl: string, toUrl: string, last: readonly string[]): Promise<string[]> => {
+  const files = (await listFolder(fromUrl)).toSorted((a, b) => last.indexOf(a) - last.indexOf(b));
+  if (files.length === 0) {
+    throw new Error(`Nothing published at ${fromUrl}/`);
+  }
+  for (const file of files) {
+    const response = await fetch(`${fromUrl}/${file}`, { cache: 'no-store' });
+    if (!response.ok) {
+      throw new Error(`GET ${fromUrl}/${file} → HTTP ${response.status}`);
+    }
+    await uploadFile(`${toUrl}/${file}`, Buffer.from(await response.arrayBuffer()));
+  }
+  return files;
+};
+
 /** Cleanup is housekeeping: a failure is reported, the deploy itself has already succeeded. */
 export const pruneStaleQuietly = async (folderUrl: string, keep: readonly string[]): Promise<void> => {
   try {

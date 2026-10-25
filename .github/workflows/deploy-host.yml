@@ -1,11 +1,15 @@
 name: Deploy host (central)
-# The host repository's "Deploy" button: a developer picks the stand and the branch or tag. The build must pass the
-# reverse gate — every remote registered on that stand still works with it (`registry check`) — before it replaces the
-# stand's host; the stand's /config.json (the registry) is not touched. Any stand, tst included: promotion is about
-# remotes, the host is deployed to each stand explicitly.
+# The host repository's "Deploy" button: a developer picks the stand and the branch or tag. Same stand rules as the
+# remotes (registry stands.json), checked BEFORE the build (`portal-cli host deploy`):
+#   snapshot stand (dev3)        any branch → built as <version>-snapshot.<run>+<sha>, installed in place
+#   release stands (dev2, dev1)  release/X.Y → X.Y.<next>-rc.<run>, tag vX.Y.Z → X.Y.Z, of the stand's line only;
+#                                published once to portal-releases/host/<version>/; the registry commit
+#                                (<stand>/_host.json) is the release, the config deploy installs it
+#   tst                          refused: Promote in the registry brings dev1's host along
+# Every build passes the reverse gate first: each remote registered on the stand must still work with it.
 #
-# Secrets: PORTAL_REGISTRY_SSH_KEY or PORTAL_REGISTRY_TOKEN (read portal-poc/registry), PORTAL_NEXUS_USER /
-# PORTAL_NEXUS_PASSWORD (upload to portal-stands).
+# Secrets: PORTAL_REGISTRY_SSH_KEY (write portal-poc/registry; its pushes trigger the config deploy) or
+# PORTAL_REGISTRY_TOKEN, PORTAL_NEXUS_USER / PORTAL_NEXUS_PASSWORD (upload).
 on:
   workflow_call:
     inputs:
@@ -30,6 +34,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.ref }}
+          fetch-depth: 0 # tags and release branches decide versions and the newest line
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:
@@ -37,7 +42,6 @@ jobs:
       - name: Authenticate to GitHub Packages (@portal-poc)
         run: echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> ~/.npmrc
       - run: pnpm install --frozen-lockfile
-      - run: pnpm build
       - uses: actions/checkout@v7
         with:
           repository: portal-poc/registry
@@ -45,8 +49,13 @@ jobs:
           ssh-key: ${{ secrets.PORTAL_REGISTRY_SSH_KEY }}
           token: ${{ secrets.PORTAL_REGISTRY_TOKEN || github.token }}
       - name: Deploy ${{ inputs.ref }} → ${{ inputs.stand }}
-        run: pnpm dlx @portal-poc/cli@2 host deploy --stand "$STAND" --registry .registry
+        run: |
+          git config --global user.name "portal-deploy"
+          git config --global user.email "portal-deploy@users.noreply.github.com"
+          pnpm dlx @portal-poc/cli@2 host deploy --stand "$STAND" --ref "$REF" --registry .registry --push
         env:
+          # Through env, not ${{ }} in the script: inputs must not become shell code.
           STAND: ${{ inputs.stand }}
+          REF: ${{ inputs.ref }}
           PORTAL_NEXUS_USER: ${{ secrets.PORTAL_NEXUS_USER }}
           PORTAL_NEXUS_PASSWORD: ${{ secrets.PORTAL_NEXUS_PASSWORD }}

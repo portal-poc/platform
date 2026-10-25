@@ -31,9 +31,11 @@ clone of the registry (`PORTAL_REGISTRY_DIR`).
 | `deploy --stand <s> [--ref] [--base-path --scopes] [--push\|--pr]` | The remote's **Deploy** button. Snapshot stand: build → gate → overwrite `portal-snapshots/<s>/<name>/` → remove files of earlier builds older than a day. Release stand: `release/X.Y` → next `-rc.<run>`, `vX.Y.Z` → that version (published once, reused) → registry entry. Refusals (wrong line, tst, no route on a first deploy) happen before the build. |
 | `publish [--version] [--reuse]` | Upload a build (+ `dist-bridge/`) to `portal-releases/<name>/<version>/`; immutable. |
 | `release --stand <s> [--version]` | Point a release stand at a published version through the gate; rollback = an older version. |
-| `promote --from dev1 --to tst` | Copy the versions that passed one stand to the stand promoted from it (no rebuild). |
+| `promote --from dev1 --to tst` | Copy the versions that passed one stand to the stand promoted from it (no rebuild), the host included. |
 | `stand switch <s> --branch release/X.Y` | Move a release stand to another line (`stands.json`). |
-| `host deploy --stand <s> [--dist]` | The host's **Deploy**: reverse gate against the stand's remotes → upload to `portal-stands/<s>/host/` (`compat.json`, `index.html` last) → remove old files older than a day. |
+| `host deploy --stand <s> [--ref] [--push]` | The host's **Deploy**, same stand rules as remotes. Snapshot stand: build → reverse gate (every remote on the stand) → overwrite `portal-stands/<s>/host/` → remove old files. Release stand: `release/X.Y` → next rc, `vX.Y.Z` → that version; published once to `portal-releases/host/<version>/`, gated, `<s>/_host.json` written (the config deploy installs it). |
+| `host release --stand <s> --version <v>` | Point a release stand at a published host version through the reverse gate (rollback). |
+| `host sync --stand <s>` | Config deploy step: copy the host version the registry names onto the stand when it serves another one. |
 | `registry check --stand <s> [--against compat.json]` | Gate 2: every entry of the stand against its host's `compat.json`. |
 | `registry build --stand <s> [--out] [--upload]` | The stand's `/config.json` from the registry (Config deploy uploads it). |
 | `registry status` / `registry validate` | What runs where (dev3 shows the built snapshot) / offline check of entries, `stands.json` and release lines (registry CI). |

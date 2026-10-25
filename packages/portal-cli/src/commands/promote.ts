@@ -1,21 +1,42 @@
 import { resolve } from 'node:path';
 import { gateEntry } from '../lib/gate.ts';
 import { readHostCompat } from '../lib/host-compat.ts';
-import { LATEST_RELEASE, readEntries, readEntry, readStand, readStandNames, writeEntry, writeStandBranch } from '../lib/registry.ts';
+import {
+  HOST_NAME,
+  LATEST_RELEASE,
+  readEntries,
+  readEntry,
+  readHostEntry,
+  readStand,
+  readStandNames,
+  releaseUrl,
+  SNAPSHOT_VERSION,
+  writeEntry,
+  writeHostEntry,
+  writeStandBranch,
+} from '../lib/registry.ts';
 import type { RegistryEntry } from '../lib/registry.ts';
 import { saveRegistryChange } from '../lib/registry-change.ts';
 import type { ChangeMode } from '../lib/registry-change.ts';
 
 /**
  * Copies entries (the SAME immutable versions, nothing is rebuilt) from one stand to another through the singleton
- * gate of the target stand's host. Route, scopes and title stay the target's own when it already has them.
- * Returns the written files (empty: already up to date), or null when the gate blocked something (nothing written).
+ * gate of the target stand's host — its new host when the host moves too (the whole stand, not `--remote`: the
+ * source's versioned host comes along and every remote is checked against it). Route, scopes and title stay the
+ * target's own when it already has them. Returns the written files (empty: already up to date), or null when the
+ * gate blocked something (nothing written).
  */
 const copyEntries = async (registryDir: string, from: string, to: string, only?: string): Promise<string[] | null> => {
   if (readStand(registryDir, from).snapshot) {
     throw new Error(`"${from}" runs snapshots (rebuilt in place): nothing immutable to copy — deploy a release build instead.`);
   }
-  const hostCompat = await readHostCompat(`${readStand(registryDir, to).url}/compat.json`);
+  const target = readStand(registryDir, to);
+  const sourceHost = only ? null : readHostEntry(registryDir, from);
+  const targetHost = readHostEntry(registryDir, to);
+  const newHost = sourceHost && sourceHost.version !== SNAPSHOT_VERSION && sourceHost.version !== targetHost?.version ? sourceHost : null;
+  const hostCompat = await readHostCompat(
+    newHost ? `${releaseUrl(target.nexusUrl, HOST_NAME, newHost.version)}/compat.json` : `${target.url}/compat.json`,
+  );
   const source = Object.entries(readEntries(registryDir, from)).filter(([name]) => !only || name === only);
   if (source.length === 0) {
     throw new Error(`Nothing to copy: "${from}" has ${only ? `no "${only}"` : 'no remotes'}.`);
@@ -23,9 +44,13 @@ const copyEntries = async (registryDir: string, from: string, to: string, only?:
   const accepted: Array<[string, RegistryEntry]> = [];
   let blocked = 0;
   console.log(`${from} → ${to} (host ${hostCompat.hostVersion})`);
+  if (newHost) {
+    console.log(`  ✔ host ${targetHost?.version ?? '(unversioned)'} → ${newHost.version}`);
+  }
   for (const [name, entry] of source) {
     const current = readEntry(registryDir, to, name);
-    if (current?.version === entry.version) {
+    // With a new host, unchanged remotes are checked against it as well.
+    if (current?.version === entry.version && !newHost) {
       console.log(`  · ${name} ${entry.version} (unchanged)`);
       continue;
     }
@@ -47,7 +72,11 @@ const copyEntries = async (registryDir: string, from: string, to: string, only?:
     process.exitCode = 1;
     return null;
   }
-  return accepted.map(([name, entry]) => writeEntry(registryDir, to, name, entry)).filter((path) => path !== null);
+  const written = accepted.map(([name, entry]) => writeEntry(registryDir, to, name, entry));
+  if (newHost) {
+    written.push(writeHostEntry(registryDir, to, newHost));
+  }
+  return written.filter((path) => path !== null);
 };
 
 const finish = (registryDir: string, files: string[], title: string, mode: ChangeMode) => {

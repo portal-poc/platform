@@ -4,7 +4,8 @@ import { Argument, Command, Option } from 'commander';
 import { runAddSlice, SLICE_LAYERS } from './commands/add-slice.ts';
 import type { SliceLayer } from './commands/add-slice.ts';
 import { OPTIONAL_LAYERS, runCreateRemote } from './commands/create-remote.ts';
-import { runHostDeploy, runRegistryBuild, runRegistryCheck, runRegistryStatus, runRegistryValidate } from './commands/registry.ts';
+import { runHostDeploy, runHostRelease, runHostSync } from './commands/host.ts';
+import { runRegistryBuild, runRegistryCheck, runRegistryStatus, runRegistryValidate } from './commands/registry.ts';
 import { runPromote, runStandSwitch } from './commands/promote.ts';
 import { runDeploy } from './commands/deploy.ts';
 import { runPublish, runRelease } from './commands/release.ts';
@@ -118,15 +119,37 @@ stand
   .option('--pr', 'open a registry pull request instead (gh)')
   .action(runStandSwitch);
 
-program
-  .command('host')
-  .description('Host repository pipeline')
+const host = program.command('host').description('Host repository pipeline (same stand rules as remotes)');
+
+host
   .command('deploy')
-  .description("Gate a host build against the stand's registered remotes, then make it the stand's host")
+  .description('The host "Deploy" button: snapshot stand → build + install in place; release stand → publish once + registry entry')
+  .requiredOption('--stand <stand>', 'target stand (snapshot: any branch; release stand: release/X.Y or vX.Y.Z of its line)')
+  .addOption(registryOption())
+  .option('--dir <path>', 'host repository root', '.')
+  .option('--ref <ref>', 'branch or tag being deployed (default: the checked-out one)')
+  .option('--run <number>', 'build number for rc/snapshot versions (default: GITHUB_RUN_NUMBER, else a timestamp)')
+  .option('--push', 'commit the registry change to its main branch and push (CI)')
+  .option('--pr', 'open a registry pull request instead (gh)')
+  .action(runHostDeploy);
+
+host
+  .command('release')
+  .description('Point a release stand at a published host version through the reverse gate (rollback: an older one)')
+  .requiredOption('--stand <stand>', 'target release stand')
+  .requiredOption('--version <version>', 'published host version')
+  .addOption(registryOption())
+  .option('--dir <path>', 'host repository root (its release branches decide the newest line)', '.')
+  .option('--push', 'commit the registry change to its main branch and push (CI)')
+  .option('--pr', 'open a registry pull request instead (gh)')
+  .action(runHostRelease);
+
+host
+  .command('sync')
+  .description("Config deploy step: install the host version the registry names on the stand (release stands)")
   .requiredOption('--stand <stand>', 'stand')
   .addOption(registryOption())
-  .option('--dist <dir>', 'host build output', 'dist')
-  .action(runHostDeploy);
+  .action(runHostSync);
 
 const registry = program.command('registry').description('Remote registry: which version runs on which stand');
 

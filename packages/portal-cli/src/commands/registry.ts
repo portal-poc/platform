@@ -1,14 +1,15 @@
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
 import { SINGLETONS } from '@portal-poc/mf-shared';
 import { isValidTrackedBranch, releaseLineProblem } from '../lib/branches.ts';
 import { gateEntry } from '../lib/gate.ts';
 import { readHostCompat, readJsonSource } from '../lib/host-compat.ts';
 import { toManifest } from '../lib/manifest.ts';
-import { pruneStaleQuietly, uploadDir, uploadFile } from '../lib/nexus.ts';
+import { uploadFile } from '../lib/nexus.ts';
 import {
   LATEST_RELEASE,
   readEntries,
+  readHostEntry,
   readStand,
   readStandNames,
   releaseUrl,
@@ -23,7 +24,7 @@ type RegistryOptions = { stand: string; registry: string };
  * Host deploy gate (reverse direction): a new host must not break remotes already registered on the stand.
  * Returns the number of remotes it would break.
  */
-const checkRegistry = async (options: RegistryOptions & { against?: string }): Promise<number> => {
+export const checkRegistry = async (options: RegistryOptions & { against?: string }): Promise<number> => {
   const registryDir = resolve(options.registry);
   const stand = readStand(registryDir, options.stand);
   const hostCompat = await readHostCompat(options.against ?? `${stand.url}/compat.json`);
@@ -50,28 +51,6 @@ export const runRegistryCheck = async (options: RegistryOptions & { against?: st
   if ((await checkRegistry(options)) > 0) {
     process.exitCode = 1;
   }
-};
-
-/**
- * Host deploy job: the build passes the reverse gate against the remotes registered on the stand, then becomes the
- * stand's host (`portal-stands/<stand>/host/`, compat.json and index.html last). A refused host leaves the stand as is.
- */
-export const runHostDeploy = async (options: RegistryOptions & { dist: string }): Promise<void> => {
-  const stand = readStand(resolve(options.registry), options.stand);
-  const dist = resolve(options.dist);
-  const compat = join(dist, 'compat.json');
-  if (!existsSync(compat)) {
-    throw new Error(`${compat} not found — build the host first.`);
-  }
-  if ((await checkRegistry({ ...options, against: compat })) > 0) {
-    console.log('✗ Host not deployed: the stand keeps its current host.');
-    process.exitCode = 1;
-    return;
-  }
-  const hostUrl = `${standFilesUrl(stand.nexusUrl, options.stand)}/host`;
-  const files = await uploadDir(dist, hostUrl, ['compat.json', 'index.html']);
-  console.log(`✔ Host deployed to "${options.stand}": ${stand.url}`);
-  await pruneStaleQuietly(hostUrl, files);
 };
 
 /**
@@ -142,7 +121,10 @@ export const runRegistryStatus = async (options: { registry: string; stands?: st
   for (const stand of stands) {
     const compat = await readJsonSource(`${readStand(registryDir, stand).url}/compat.json`).catch(() => null);
     const { hostVersion, commit } = (compat ?? {}) as { hostVersion?: unknown; commit?: unknown };
-    console.log(`host on ${stand.padEnd(5)} ${compat ? `${String(hostVersion)} · ${shortCommit(commit)}` : 'unreachable'}`);
+    const entry = readHostEntry(registryDir, stand);
+    const pending =
+      entry && entry.version !== SNAPSHOT_VERSION && entry.version !== hostVersion ? ` (registry: ${entry.version}, not installed yet)` : '';
+    console.log(`host on ${stand.padEnd(5)} ${compat ? `${String(hostVersion)} · ${shortCommit(commit)}${pending}` : 'unreachable'}`);
   }
   console.log(`\nHost singletons supported by this platform version: ${Object.keys(SINGLETONS).join(', ')}`);
 };
@@ -188,6 +170,17 @@ export const runRegistryValidate = (options: { registry: string }): void => {
       }
       if (!entry.basePath.startsWith('/') || entry.scopes.length === 0) {
         problems.push(`${where}: basePath and scopes are required`);
+      }
+    }
+    const host = readHostEntry(registryDir, stand);
+    if (host) {
+      entries += 1;
+      if (definition.snapshot ? host.version !== SNAPSHOT_VERSION : !/^\d+\.\d+\.\d+/.test(host.version)) {
+        problems.push(`${stand}/_host.json: version "${host.version}" must be ${definition.snapshot ? `"${SNAPSHOT_VERSION}"` : 'semver'}`);
+      }
+      const lineProblem = definition.snapshot ? null : releaseLineProblem(definition, host.version, pinnedBranches);
+      if (lineProblem) {
+        problems.push(`${stand}/_host.json: ${lineProblem}`);
       }
     }
   }
