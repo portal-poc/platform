@@ -55,7 +55,10 @@ const copyEntries = async (registryDir: string, from: string, to: string, only?:
       continue;
     }
     const gate = await gateEntry(entry, hostCompat);
-    const change = `${name} ${current?.version ?? '(new)'} → ${entry.version}`;
+    const change =
+      current?.version === entry.version
+        ? `${name} ${entry.version} (unchanged, fits the new host)`
+        : `${name} ${current?.version ?? '(new)'} → ${entry.version}`;
     if (gate.status === 'blocked') {
       blocked += 1;
       console.log(`  ✗ ${change}: ${gate.detail}`);
