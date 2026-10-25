@@ -4,6 +4,7 @@ import { createBrowserRouter } from 'react-router';
 import { RouterProvider } from 'react-router/dom';
 import { DsProvider } from '@portal-poc/ds';
 import { createMockPlatformAuth, createStandalonePlatform, DevtoolsToolbar } from '@portal-poc/platform-runtime';
+import { PlatformLeaveBlocker } from '@portal-poc/platform-runtime/router';
 import { REMOTE_NAME } from '@/shared/config';
 import { RemoteRoot } from '../exposes/RemoteRoot';
 
@@ -14,7 +15,14 @@ const { platform, devtoolsRegistry } = createStandalonePlatform({
   auth: createMockPlatformAuth(),
 });
 
-const router = createBrowserRouter([{ path: '/*', element: <RemoteRoot platform={platform} /> }]);
+// Own router: the leave blocker inside it asks the guards (the standalone platform answers with window.confirm).
+const element = (
+  <>
+    <PlatformLeaveBlocker platform={platform} />
+    <RemoteRoot platform={platform} />
+  </>
+);
+const router = createBrowserRouter([{ path: '/*', element }]);
 
 const container = document.getElementById('root');
 if (!container) {

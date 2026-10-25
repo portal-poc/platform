@@ -3,6 +3,7 @@ import type { PlatformAuth, PlatformContract, PlatformEnv, PlatformLocale } from
 import { createDevtoolsRegistry } from '../devtools/create-devtools-registry';
 import type { DevtoolsRegistry } from '../devtools/create-devtools-registry';
 import { createPlatformEventBus } from '../events/create-platform-event-bus';
+import { createLeaveGuards } from '../navigation/create-leave-guards';
 import { createConsoleTelemetry } from '../telemetry/create-console-telemetry';
 
 type StandalonePlatformConfig = {
@@ -35,6 +36,16 @@ export const createStandalonePlatform = (config: StandalonePlatformConfig): Stan
     events: createPlatformEventBus(),
     telemetry: createConsoleTelemetry({ app: config.appName }),
     locale: createStaticLocale(config.language ?? 'en'),
+    // No host around: the browser's own dialogs, the app's name in the title.
+    navigation: createLeaveGuards({
+      ask: async (guard) => window.confirm(guard.message),
+      notifyLocked: (message) => window.alert(message),
+    }),
+    document: {
+      setTitle: (title) => {
+        document.title = title ? `${title} · ${config.appName}` : config.appName;
+      },
+    },
     ...(devtoolsRegistry ? { devtools: devtoolsRegistry } : {}),
   };
   return { platform, devtoolsRegistry };

@@ -24,6 +24,14 @@
               "memo"
             ],
             "message": "React Compiler memoizes automatically. Do not use useMemo/useCallback/memo."
+          },
+          {
+            "name": "react-router",
+            "importNames": [
+              "useBlocker",
+              "unstable_usePrompt"
+            ],
+            "message": "A router supports one blocker and integrated apps share the host's: use useLeaveGuard from @portal-poc/platform-runtime."
           }
         ]
       }

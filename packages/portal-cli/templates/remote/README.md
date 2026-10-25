@@ -22,6 +22,23 @@ synced again. `portal-cli verify` (in CI) is the only permanent consistency chec
 `"fakeBackend": true` (local and dev3 at first) requests are answered by `shared/api/fake-backend.ts`; drop the flag
 per environment as the BFF appears. Rules: [`docs/react-and-data.md`](docs/react-and-data.md).
 
+**Page titles and leaving a page** (`@portal-poc/platform-runtime`, the same in every mode):
+
+```tsx
+usePageTitle(task.title); // the host shows "<title> · <section> · Portal"
+
+// Ask before leaving while the form is dirty (the host's dialog):
+const leave = useLeaveGuard(form.formState.isDirty, { message: 'The task is not saved' });
+// …or your own dialog: { dialog: 'own' } → render it while leave.state === 'asking', answer leave.leave() / leave.stay()
+// (e.g. "Save and leave": await submit(); leave.leave()).
+// Refuse leaving while saving: useLeaveGuard(mutation.isPending, { lock: true, message: 'Saving…' })
+// Saved and navigating away yourself: leave.release() first.
+```
+
+Never call React Router's `useBlocker` (lint error): a router supports one blocker and, inside the host, yours is the
+host's router. `src/app/exposes/RemoteBridge.tsx` and `src/app/standalone/main.tsx` already render
+`<PlatformLeaveBlocker>` for their own routers.
+
 **Version**: `package.json` holds the line `develop` builds (snapshots are `<version>-snapshot.<run>+<sha>`); set it
 to the release train's next version. Release versions come from `release/X.Y` branches and `vX.Y.Z` tags, not from
 this file.

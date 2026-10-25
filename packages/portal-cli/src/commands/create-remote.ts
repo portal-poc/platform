@@ -112,7 +112,7 @@ export const runCreateRemote = async (name: string, options: CreateRemoteOptions
     __PORT__: options.port ?? DEFAULT_PORT,
     __PORTAL_VERSION__: inWorkspace ? 'workspace:^' : '^1.0.0',
     // 2.0: the http client moved to @portal-poc/http (axios).
-    __RUNTIME_VERSION__: inWorkspace ? 'workspace:^' : '^2.0.0',
+    __RUNTIME_VERSION__: inWorkspace ? 'workspace:^' : '^2.2.0',
     __CLI_VERSION__: inWorkspace ? 'workspace:^' : `^${CLI_VERSION}`,
     __REGISTRY__: process.env['PORTAL_REGISTRY'] ?? 'https://npm.pkg.github.com',
   };

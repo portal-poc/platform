@@ -1,12 +1,13 @@
 {
   "name": "@portal-poc/platform-runtime",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Portal platform runtime: providers, auth adapters, QueryClient factory, devtools, standalone harness, compat checks. Bundled into every application (not an MF singleton). HTTP: @portal-poc/http.",
   "type": "module",
   "sideEffects": false,
   "exports": {
     ".": "./src/index.ts",
-    "./msal": "./src/msal/index.ts"
+    "./msal": "./src/msal/index.ts",
+    "./router": "./src/router/index.ts"
   },
   "publishConfig": {
     "exports": {
@@ -17,6 +18,10 @@
       "./msal": {
         "types": "./dist/msal/index.d.ts",
         "import": "./dist/msal/index.js"
+      },
+      "./router": {
+        "types": "./dist/router/index.d.ts",
+        "import": "./dist/router/index.js"
       }
     },
     "registry": "https://npm.pkg.github.com"
@@ -38,10 +43,14 @@
     "@azure/msal-browser": "^5.0.0",
     "@tanstack/react-query": "^5.104.0",
     "react": "^19.3.0",
-    "react-dom": "^19.3.0"
+    "react-dom": "^19.3.0",
+    "react-router": "^8.5.0"
   },
   "peerDependenciesMeta": {
     "@azure/msal-browser": {
+      "optional": true
+    },
+    "react-router": {
       "optional": true
     }
   },
@@ -58,7 +67,8 @@
     "react-dom": "^19.3.1",
     "typescript": "^7.0.2",
     "vitest": "^5.0.5",
-    "fallow": "^3.35.0"
+    "fallow": "^3.35.0",
+    "react-router": "^8.5.0"
   },
   "repository": {
     "type": "git",
