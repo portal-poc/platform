@@ -30,6 +30,10 @@ deploy` checks it **before building**.
  tst: "Promote" in the registry repository copies what dev1 runs (same artifacts, no rebuild)
 ```
 
+The host follows the same rules ([ADR 0025](adr/0025-versioned-host.md)): its **Deploy** takes any branch to dev3,
+`release/X.Y` or `vX.Y.Z` of the stand's line to dev2 / dev1 (published once to `portal-releases/host/<version>/`,
+recorded in `<stand>/_host.json`, installed by the config deploy), and never tst — Promote brings dev1's host along.
+
 ## Day to day
 
 1. **Feature** — work on `feature/x`; to show it, **Deploy** `feature/x` → `dev3`. Merge to `develop`, **Deploy**

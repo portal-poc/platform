@@ -26,3 +26,4 @@ Format: Context → Decision → Consequences.
 - [0022 — HTTP: each app's axios, bound to the host's login](./0022-http-axios-bound-to-host-auth.md)
 - [0023 — Cross-app events live in a catalog, not in the contract](./0023-event-catalog.md)
 - [0024 — Leave guards and page titles go through the platform](./0024-leave-guards-and-page-titles.md)
+- [0025 — The host is versioned and rides the release train](./0025-versioned-host.md)

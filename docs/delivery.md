@@ -44,7 +44,7 @@ Everything starts from a button: GitHub → the repository → Actions → workf
 | Wrong line / stand | `develop` → dev2, anything → `tst`, `release/1.6` → dev1 | Refused before the build, with the way out in the log. |
 | Rollback | **Deploy** the previous tag to the stand | Back through the same gate, nothing rebuilt. |
 | Promote | `registry` → **Promote** (dev1 → tst) | tst gets exactly what dev1 runs. |
-| Host deploy | `host` → **Deploy**: stand + ref | Reverse gate against the remotes registered on the stand; refused hosts leave the stand as is. |
+| Host deploy | `host` → **Deploy**: `dev3` + any branch, `dev2`/`dev1` + `release/X.Y` or a tag | Same stand rules as remotes; reverse gate against the stand's remotes; release stands get an immutable `host@X.Y.Z(-rc.N)` through `<stand>/_host.json` (ADR 0025). Refused hosts leave the stand as is. |
 | First deploy of a new remote | **Deploy** with `base-path` and `scopes` | The registry entry is created with that route and allowlist; refused before upload without them. |
 | Incompatible build | `DEMO_REQUIRE_ROUTER=^9.0.0 pnpm build && pnpm verify` (locally, in `tasks-remote`) | Gate 1 fails. |
 | Gate 2 by hand | `pnpm check` in `registry` | Every entry checked against its stand's host `compat.json`. |
