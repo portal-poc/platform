@@ -11,7 +11,7 @@ Format: Context → Decision → Consequences.
 - [0007 — Transitions and mutations](./0007-transitions-and-mutations.md)
 - [0008 — ViewTransition: host owns routes](./0008-view-transitions.md)
 - [0009 — Devtools via mount functions](./0009-devtools.md)
-- [0010 — Realtime — out of scope](./0010-realtime.md)
+- [0010 — Realtime — out of scope](./0010-realtime.md) (superseded by 0026)
 - [0011 — Preload on intent: the remote's code and its first data](./0011-preload.md)
 - [0012 — API contracts codegen — out of scope](./0012-api-contracts.md)
 - [0013 — FSD 2.1 pages first, Steiger, optional layers](./0013-fsd.md)
@@ -27,3 +27,4 @@ Format: Context → Decision → Consequences.
 - [0023 — Cross-app events live in a catalog, not in the contract](./0023-event-catalog.md)
 - [0024 — Leave guards and page titles go through the platform](./0024-leave-guards-and-page-titles.md)
 - [0025 — The host is versioned and rides the release train](./0025-versioned-host.md)
+- [0026 — Realtime: each app's own socket to its BFF](./0026-realtime-per-app.md)

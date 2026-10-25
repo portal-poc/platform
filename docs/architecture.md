@@ -16,6 +16,7 @@ PoC deviates, the deviations below and the ADRs win).
 | `platform/packages/platform-contract` | `@portal-poc/platform-contract` — types only + `PLATFORM_CONTRACT_VERSION` | platform team |
 | `platform/packages/platform-runtime` | `@portal-poc/platform-runtime` — providers, auth adapters, QueryClient factory, event bus, leave guards and page titles ([ADR 0024](adr/0024-leave-guards-and-page-titles.md)), devtools, standalone, compat, stale-tab reload | platform team |
 | `platform/packages/http` | `@portal-poc/http` — each app's own axios instance bound to the host's login ([ADR 0022](adr/0022-http-axios-bound-to-host-auth.md)) | platform team |
+| `platform/packages/realtime` | `@portal-poc/realtime` — opt-in: an app's own WebSocket to its BFF, authorized by the host's login ([ADR 0026](adr/0026-realtime-per-app.md)) | platform team |
 | `platform/packages/events` | `@portal-poc/events` — the catalog of cross-app events on the local bus, validated publish/subscribe ([ADR 0023](adr/0023-event-catalog.md)) | platform team, events owned by their publishers |
 | `platform/packages/ds` | `@portal-poc/ds` — Joy UI wrapper + loading primitives (MF singleton) | DS team |
 | `platform/packages/mf-shared` | `@portal-poc/mf-shared` — integration-contract constants (exposes, singletons, ranges) + shared config helper | platform team |
@@ -59,10 +60,10 @@ Decided with the project owner before implementation:
 - **React Router v8** instead of v7 (see [`router-v8.md`](./router-v8.md)).
 - **No API-contracts codegen** (section 15 is out of scope): each app hand-writes zod schemas in its own `shared/api`;
   mock BFFs keep their own types. Scenario 17 is therefore not implemented.
-- **No realtime** (section 12 is out of scope): the real project already has WebSocket pub/sub. Removed: realtime
-  client, `RealtimeProvider` / `useInvalidateOnEvent`, mock broker, BFF realtime channels, scenarios 6–9.
-  Cross-app bookmarks refresh uses the local event bus (`platform.events`, event `bookmarks.changed` of the catalog
-  in `@portal-poc/events`) plus `refetchOnWindowFocus` for other tabs.
+- **Realtime per app** instead of section 12's provider: each app opens its own socket to its BFF
+  (`@portal-poc/realtime`, [ADR 0026](adr/0026-realtime-per-app.md)); tasks subscribes per page (`tasks`,
+  `task:<id>`) on a fake BFF socket. Cross-app bookmarks refresh uses the local event bus (`platform.events`, event
+  `bookmarks.changed` of the catalog in `@portal-poc/events`) plus `refetchOnWindowFocus` for other tabs.
 - **No mock backends**: each app's `shared/api` puts a fake `fetch` behind its real axios client (axios' fetch adapter;
   bearer + zod still run) that answers with hard-coded data and a configurable delay. Bookmarks live in `localStorage` so the host
   widget and the tasks remote see the same data.

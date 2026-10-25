@@ -35,6 +35,10 @@ const leave = useLeaveGuard(form.formState.isDirty, { message: 'The task is not 
 // Saved and navigating away yourself: leave.release() first.
 ```
 
+**Realtime** (opt-in): `@portal-poc/realtime` opens one socket to your BFF with the host's token, only while a page
+subscribes — `useRealtimeEvent(realtime, 'items', () => queryClient.invalidateQueries(...))`. See tasks-remote's
+`shared/api/realtime.ts`; another client is fine too, as long as it gets its token from `platform.auth`.
+
 **Preload**: `src/app/exposes/preload.ts` prefetches the data of the page the user is about to open (the host calls
 it on hover / focus of a link to us, with the path inside this remote). Add a branch for every route that loads data.
 

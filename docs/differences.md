@@ -11,7 +11,7 @@ What the PoC simplifies or does differently — so nobody mistakes a shortcut fo
 | Stands | dev3 (snapshot), dev2, dev1, tst; no prod | The same plus prod (promoted from tst) |
 | Auth | Mock auth by default (accounts in the demo panel); the MSAL adapter is implemented (`@portal-poc/platform-runtime/msal`) | MSAL; impersonation header next to the bearer token (not in the PoC yet, ADR 0022) |
 | Backends | No BFFs: each app puts a fake `fetch` behind its real axios client (tokens, headers, zod run as in production); tasks and bookmarks live in `localStorage` | One BFF per remote, host-bff |
-| Realtime | None; cross-app updates through the local event bus + `refetchOnWindowFocus` | WebSocket pub/sub (today in the host via `window`; target: per-remote subscriptions, migration phase A4) |
+| Realtime | Each app's socket to its BFF (`@portal-poc/realtime`); tasks-bff's socket is a fake in the browser speaking the protocol (pushes to every tab) | WebSocket pub/sub in the host via `window` today; target: per-BFF sockets owned by remotes (ADR 0026, phase A4) |
 | API types | Hand-written zod schemas per app | Generated from the backend specs repository |
 | TypeScript | `strict: true` | `strict` off |
 | React Router | v8 | v7 |

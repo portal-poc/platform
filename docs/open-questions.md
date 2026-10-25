@@ -16,11 +16,10 @@ discovered while building this reference repo. Code that depends on an open deci
 
 ## Realtime
 
-- **(open, next)** The real project's pub/sub lives in the host and reaches remotes through `window`, with global
-  subscriptions; the backend plans granular subscriptions per BFF. To decide (migration phase A4): one socket per page
-  multiplexed by the host vs. one per BFF opened by the remote; the contract surface (`platform.realtime` vs. a package
-  like `@portal-poc/http`); subscriptions owned and closed by the app that opened them; "thin event → the app
-  invalidates its own keys". The local bus stays for in-page signals (ADR 0023).
+- **(decided, ADR 0026)** One socket per BFF opened by the remote (`@portal-poc/realtime`, opt-in, not in the
+  contract), token in the first frame, topics owned by pages, thin events. **Open with the backend:** the frame
+  protocol and close codes of the real BFF sockets, topic naming and who authorizes a topic (the BFF, from the
+  token), how long the BFF keeps a subscription after a reconnect.
 
 ## Build / Module Federation
 

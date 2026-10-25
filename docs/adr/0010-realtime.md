@@ -1,5 +1,7 @@
 # ADR 0010: Realtime — out of scope
 
+> Superseded by [ADR 0026](./0026-realtime-per-app.md): each app opens its own socket to its BFF.
+
 ## Context
 
 The real project already has WebSocket pub/sub.

@@ -22,6 +22,7 @@ Portal micro-frontend platform (PoC, organisation [`portal-poc`](https://github.
 | `@portal-poc/platform-contract` | Types only + `PLATFORM_CONTRACT_VERSION` |
 | `@portal-poc/platform-runtime` | Provider, auth adapters, QueryClient factory, event bus, leave guards + page titles (`/router`: the router blocker), devtools, standalone, compat, stale-tab reload |
 | `@portal-poc/http` | axios bound to the host's login: `attachPlatformAuth`, `createPlatformBinding`, `parseResponse` (no React) |
+| `@portal-poc/realtime` | Opt-in: each app's WebSocket to its BFF with the host's token, page-owned topics, reconnect (`useRealtimeEvent`) |
 | `@portal-poc/events` | Event catalog of the local bus: owners, zod payloads, `publishEvent` / `subscribeEvent` (no React) |
 | `@portal-poc/ds` | Design system (MF singleton) + loading primitives |
 | `@portal-poc/mf-shared` | Integration contract constants: exposes, singletons, supported ranges, compat checks |

@@ -1,0 +1,50 @@
+{
+  "name": "@portal-poc/realtime",
+  "version": "1.0.0",
+  "description": "Realtime for one app: a WebSocket per BFF, authorized with the host's login (token on connect, refresh on expiry), subscriptions owned and closed by the app, reconnect with resubscribe. Opt-in platform utility; React hook included.",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      }
+    },
+    "registry": "https://npm.pkg.github.com"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json",
+    "lint": "oxlint src && fallow dead-code",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@portal-poc/platform-contract": "workspace:^"
+  },
+  "peerDependencies": {
+    "react": ">=18.3.0"
+  },
+  "devDependencies": {
+    "@portal-poc/presets": "workspace:*",
+    "fallow": "^3.35.0",
+    "oxlint": "^1.89.0",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5",
+    "react": "^19.3.1",
+    "@types/react": "^19.3.0",
+    "@testing-library/react": "^16.3.3",
+    "jsdom": "^30.1.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/portal-poc/platform.git",
+    "directory": "packages/realtime"
+  }
+}
