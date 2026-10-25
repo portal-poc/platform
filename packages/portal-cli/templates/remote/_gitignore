@@ -1,5 +1,12 @@
 node_modules/
 dist/
-.__mf__temp/
-*.tsbuildinfo
 dist-bridge/
+coverage/
+.vite/
+.__mf__temp/
+__mf__virtual/
+*.tsbuildinfo
+.env*.local
+.DS_Store
+*.log
+/tmp/
