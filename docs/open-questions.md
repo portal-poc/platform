@@ -41,9 +41,9 @@ discovered while building this reference repo. Code that depends on an open deci
 - **(open)** Impersonation: the host adds a header next to the bearer token for every non-legacy request; design in
   ADR 0022 (`platform.auth.getRequestHeaders`, full reload on change), not implemented. The BFF must authorize
   impersonation from the token, never trust the header alone.
-- **(open)** Legacy apps (migration phase A6): the bridge app gets the host's token for its BFF's audience; the
-  legacy BFF exchanges it on-behalf-of for the legacy auth's token. Needs the legacy auth to accept the exchange
-  (app registration, consent) — a backend decision.
+- **(decided, ADR 0027; open on the backend)** Legacy apps: the bridge app gets the host's token for its BFF's
+  audience; the legacy BFF exchanges it on-behalf-of for the legacy auth's token. Needs the legacy auth to accept the
+  exchange (trusted app registration, consent, portal user → legacy account mapping).
 
 ## Delivery
 

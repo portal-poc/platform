@@ -28,3 +28,4 @@ Format: Context → Decision → Consequences.
 - [0024 — Leave guards and page titles go through the platform](./0024-leave-guards-and-page-titles.md)
 - [0025 — The host is versioned and rides the release train](./0025-versioned-host.md)
 - [0026 — Realtime: each app's own socket to its BFF](./0026-realtime-per-app.md)
+- [0027 — Legacy apps keep their identity provider: the BFF exchanges the portal token](./0027-legacy-auth-token-exchange.md)

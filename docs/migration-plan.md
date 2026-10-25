@@ -18,7 +18,7 @@ brings it.
 | 8 | Deploys | By hand to any stand, no validation between host and remotes | Breakage found by users | Same manual Deploy button, but stand rules + three compatibility gates (ADR 0017) |
 | 9 | Host config | One JSON per stand **bundled into the host build** | Any config change = host rebuild + deploy | Host reads its stand's `/config.json` at runtime, built from the registry (ADR 0021) |
 | 10 | Host upgrades | Every remote follows by hand (copied code, shared singletons) | One upgrade stops every team | Contract versioning + singleton ranges + bridge builds for laggards (ADR 0001, 0002) |
-| 11 | Legacy apps | The legacy app had to be rebuilt on the remote stack and a second auth was brought into the host | Weeks of work per legacy app; two logins in one host | MF bridge with its own React/router (legacy runs React 18 in the PoC); auth: the host's token for the legacy BFF, exchanged server-side (phase A6) |
+| 11 | Legacy apps | The legacy app had to be rebuilt on the remote stack and a second auth was brought into the host | Weeks of work per legacy app; two logins in one host | MF bridge with its own React/router (legacy runs React 18 in the PoC); the host's token for the legacy BFF, exchanged on-behalf-of server-side (ADR 0027, phase A6) |
 
 ## Target (what the PoC shows)
 

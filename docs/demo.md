@@ -29,6 +29,7 @@ API-contract scenario 17.
 | 22 | Page titles | Open Tasks, a task, New task, Legacy → About, Home. | Tab title: "All tasks · Tasks · Portal", "<task> · Tasks · Portal", "New task · Tasks · Portal", "About · Legacy · Portal", "Portal". |
 | 18 | Preload on hover | Reload Home, demo panel → BFF delay 3000 ms. Rest the pointer on "Tasks" for a moment (or on a bookmark), wait 3 s, click. Compare with a quick click without resting. | After a rest: the list (or the task) renders at once, no spinner — code and data were loaded during the hover. Quick click: the usual spinner. Network tab: the manifest, chunks and the BFF call start on hover. |
 | 23 | Realtime per page | Open Tasks in two tabs. In tab A press "Simulate colleague's task"; watch tab B without touching it. Open a task, then go Home and wait 5 s. | Tab B's list updates by itself (server push). The chip next to "Tasks" shows `realtime: open · tasks`, on a task `task:<id>`; after leaving the section it turns `idle` — the socket is closed. |
+| 24 | Legacy with the portal login | Open Legacy (React 18, bridge). Then demo panel → switch to Bob, open Legacy again. | The card shows the portal user, the exchanged legacy account and its legacy token: one sign-in (the host's), the legacy BFF exchanged it on-behalf-of. After the switch: Bob's legacy account. |
 
 Directional route transitions: Home → Tasks slides forward, Tasks → Home slides back (types `nav-forward`/`nav-back`).
 Performance Tracks in Chrome DevTools show key changes as transitions, not blocking updates.
