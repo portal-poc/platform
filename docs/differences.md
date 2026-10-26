@@ -11,7 +11,7 @@ means it still has to be checked against the real setup.
 | Repositories and CI | GitHub organisation `portal-poc`; reusable GitHub workflows pinned by tag | Azure DevOps. **Target:** the same central pipelines as Azure DevOps templates |
 | Packages | GitHub Packages, scope `@portal-poc` | Platform code is copied, not published. **Target:** an internal npm scope (e.g. in Nexus), never proxied from npmjs |
 | Infrastructure | One small VPS: Nexus CE + nginx stands at `*.poc.ashirokov.dev` (ADR 0021) | Remote builds are uploaded to Nexus; the rest of the hosting is not known |
-| Registry writes from CI | A deploy key with write access | No registry today. **Target:** a service account / app identity for the pipeline |
+| Registry writes from CI | A deploy key with write access | Not known |
 | Auth | Mock auth by default (accounts in the demo panel); the MSAL adapter is implemented (`@portal-poc/platform-runtime/msal`) | MSAL in the host; an impersonation header next to the bearer token (not in the PoC yet, ADR 0022) |
 | Backends | No BFFs: each app puts a fake `fetch` behind its real axios client (tokens, headers, zod run as in production); tasks and bookmarks live in `localStorage` | One BFF per remote, plus the host's BFF |
 | API types | Hand-written zod schemas per app | Not known what is used today; the backend has talked about a shared OpenAPI specs repository |
