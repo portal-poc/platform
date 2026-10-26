@@ -10,15 +10,15 @@ Portal micro-frontend platform (PoC, organisation [`portal-poc`](https://github.
 
 ![Host, remotes, packages and backends in one browser page](./docs/diagrams/browser.svg)
 
-The full picture — every package, who uses it, the browser flow step by step, and the path from a commit to a
-stand: **[`docs/overview.md`](./docs/overview.md)**. Then, by role:
+Read it in the order you go through the system — stop at the step you need:
 
-| You are | Read in this order |
-|---|---|
-| Lead / architect | [overview](./docs/overview.md) → [migration-plan](./docs/migration-plan.md) (12 problems → PoC answers → phases) → [differences](./docs/differences.md) → [ADRs](./docs/adr) |
-| App developer | [overview](./docs/overview.md) → [tasks-remote README](https://github.com/portal-poc/tasks-remote#readme) (where each piece is used) → [playbook D1–D8](./docs/playbook.md#development) → package READMEs below |
-| Platform developer | [overview §2](./docs/overview.md#2-which-package-each-app-uses) → package READMEs → [migrations](./docs/migrations.md) → [central workflows](./.github/workflows/README.md) |
-| Release manager / QA | [playbook R1–R10](./docs/playbook.md#delivery) → [registry README](https://github.com/portal-poc/registry#readme) → [branching](./docs/branching.md) |
+| Step | Question | Read |
+|---|---|---|
+| **1. Understand** | Why this, and how does it fit together? | [overview](./docs/overview.md) (three diagrams: browser flow, package × app, commit → stand) · [migration-plan](./docs/migration-plan.md) (12 problems of today → PoC answers → phases) · [differences](./docs/differences.md) (PoC vs the real project) · [ADRs](./docs/adr) (why each decision) |
+| **2. Run** | Where can I see it live, and how do I run it locally? | stands: [dev3](https://dev3.poc.ashirokov.dev) (develop) · [dev2](https://dev2.poc.ashirokov.dev) (newest release) · [tst](https://tst.poc.ashirokov.dev) (business) · [run everything on one machine](#run-everything-on-one-machine) · [playbook D1–D3](./docs/playbook.md#d1-first-time-setup) (setup, a remote alone, a remote inside the host on top of any stand) · [host README](https://github.com/portal-poc/host#readme) |
+| **3. Build** | How do I write a remote or a feature? | [tasks-remote README](https://github.com/portal-poc/tasks-remote#readme) (where each platform piece is used) · [package READMEs](#packages-github-packages-portal-poc-scope) · [playbook D4–D5](./docs/playbook.md#d4-a-new-remote) (new remote, everyday tasks) |
+| **4. Ship** | How does it get to a stand — release, hotfix, promote, rollback? | [playbook R1–R10](./docs/playbook.md#delivery) (with marble diagrams) · [registry README](https://github.com/portal-poc/registry#readme) · [central workflows](./.github/workflows/README.md) · [branching](./docs/branching.md) · [when something goes wrong](./docs/playbook.md#when-something-goes-wrong) |
+| **5. Evolve** | How do I change the platform and bring apps along? | [playbook D6–D7](./docs/playbook.md#d6-change-a-platform-package) · [migrations](./docs/migrations.md) · [cli README](./packages/portal-cli/README.md) |
 
 ## Repositories
 
@@ -29,20 +29,6 @@ stand: **[`docs/overview.md`](./docs/overview.md)**. Then, by role:
 | [tasks-remote](https://github.com/portal-poc/tasks-remote) | Remote "tasks" (FSD 2.1) | product team |
 | [legacy-remote](https://github.com/portal-poc/legacy-remote) | React 18 remote via MF Bridge | another team |
 | [registry](https://github.com/portal-poc/registry) | Which remote version runs on which stand (release = PR) | platform + teams (CODEOWNERS) |
-
-## Documentation map
-
-| I want to… | Read |
-|---|---|
-| see how all packages, the host and the remotes interact | [`docs/overview.md`](./docs/overview.md) — three diagrams |
-| know what to do in a situation (new remote, local dev, release, hotfix, promote, rollback, upgrade) | [`docs/playbook.md`](./docs/playbook.md) — every scenario with marble diagrams |
-| use a package in my app | the package README (table below) |
-| understand the pipelines and what a repository needs | [`.github/workflows/README.md`](./.github/workflows/README.md) |
-| understand the stand rules and branches | [`docs/branching.md`](./docs/branching.md), [`docs/delivery.md`](./docs/delivery.md) |
-| change a package API apps use | [`docs/migrations.md`](./docs/migrations.md) |
-| know why something is the way it is | [`docs/adr/`](./docs/adr) |
-| run the host / see what it gives remotes | [host README](https://github.com/portal-poc/host#readme) |
-| see or change what runs on a stand | [registry README](https://github.com/portal-poc/registry#readme) |
 
 ## Packages (GitHub Packages, `@portal-poc` scope)
 
