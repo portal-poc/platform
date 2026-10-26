@@ -16,20 +16,33 @@ Portal micro-frontend platform (PoC, organisation [`portal-poc`](https://github.
 | [legacy-remote](https://github.com/portal-poc/legacy-remote) | React 18 remote via MF Bridge | another team |
 | [registry](https://github.com/portal-poc/registry) | Which remote version runs on which stand (release = PR) | platform + teams (CODEOWNERS) |
 
+## Documentation map
+
+| I want to… | Read |
+|---|---|
+| know what to do in a situation (new remote, local dev, release, hotfix, promote, rollback, upgrade) | [`docs/playbook.md`](./docs/playbook.md) — every scenario with marble diagrams |
+| use a package in my app | the package README (table below) |
+| understand the pipelines and what a repository needs | [`.github/workflows/README.md`](./.github/workflows/README.md) |
+| understand the stand rules and branches | [`docs/branching.md`](./docs/branching.md), [`docs/delivery.md`](./docs/delivery.md) |
+| change a package API apps use | [`docs/migrations.md`](./docs/migrations.md) |
+| know why something is the way it is | [`docs/adr/`](./docs/adr) |
+| run the host / see what it gives remotes | [host README](https://github.com/portal-poc/host#readme) |
+| see or change what runs on a stand | [registry README](https://github.com/portal-poc/registry#readme) |
+
 ## Packages (GitHub Packages, `@portal-poc` scope)
 
-| Package | Role |
-|---|---|
-| `@portal-poc/platform-contract` | Types only + `PLATFORM_CONTRACT_VERSION` |
-| `@portal-poc/platform-runtime` | Provider, auth adapters, QueryClient factory, event bus, leave guards + page titles (`/router`: the router blocker), devtools, standalone, compat, stale-tab reload |
-| `@portal-poc/http` | axios bound to the host's login: `attachPlatformAuth`, `createPlatformBinding`, `parseResponse` (no React) |
-| `@portal-poc/realtime` | Opt-in: each app's WebSocket to its BFF with the host's token, page-owned topics, reconnect (`useRealtimeEvent`) |
-| `@portal-poc/events` | Event catalog of the local bus: owners, zod payloads, `publishEvent` / `subscribeEvent` (no React) |
-| `@portal-poc/ds` | Design system (MF singleton) + loading primitives |
-| `@portal-poc/mf-shared` | Integration contract constants: exposes, singletons, supported ranges, compat checks |
-| `@portal-poc/vite-config` | Build preset: pinned Vite + MF plugin, MF section, React Compiler |
-| `@portal-poc/presets` | tsconfig, oxlint (incl. React Compiler rules), fallow, vitest, steiger |
-| `@portal-poc/cli` (`portal-cli`) | `create remote`, `add`, `verify`, `deploy`, `host deploy`, `promote`, `stand switch`, `registry …` ([README](./packages/portal-cli/README.md)) |
+| Package | Who uses it | What for | Docs |
+|---|---|---|---|
+| `@portal-poc/platform-contract` | everyone (types) | The host ↔ app agreement passed as a prop: auth, env, events, telemetry, locale, devtools, navigation, document, bridge | [README](./packages/platform-contract/README.md) |
+| `@portal-poc/platform-runtime` | every app, the host | Hooks over the contract (`usePlatform`, `useLeaveGuard`, `usePageTitle`), own QueryClient factory, standalone harness, devtools, stale-build reload, host-side builders | [README](./packages/platform-runtime/README.md) |
+| `@portal-poc/http` | every app with a BFF | axios bound to the host's login (token, 401 retry, interaction via host), zod-validated responses | [README](./packages/http/README.md) |
+| `@portal-poc/events` | apps that notify each other | Catalog of in-page events: owner + schema, validated `publishEvent` / `subscribeEvent` | [README](./packages/events/README.md) |
+| `@portal-poc/realtime` | apps whose BFF pushes (opt-in) | The app's own WebSocket to its BFF with the host's token, page-owned topics, reconnect + refetch | [README](./packages/realtime/README.md) |
+| `@portal-poc/ds` | every app (MF singleton) | Design system: theme, AsyncBoundary, loaders, AsyncButton, Joy re-exports | [README](./packages/ds/README.md) |
+| `@portal-poc/vite-config` | every app's `vite.config.ts` | Build preset: MF section from the contract, pinned tooling, version + commit in artifacts | [README](./packages/vite-config/README.md) |
+| `@portal-poc/presets` | every repository | tsconfig, oxlint (React Compiler rules, bans), fallow, Steiger, Vitest | [README](./packages/presets/README.md) |
+| `@portal-poc/mf-shared` | the preset, CLI, host (not apps) | MF contract as data: exposes, singletons, ranges, compat checks | [README](./packages/mf-shared/README.md) |
+| `@portal-poc/cli` (`portal-cli`) | developers, pipelines, release managers | create / add / verify / upgrade / migrate / deploy / promote / stand switch / registry | [README](./packages/portal-cli/README.md) |
 
 Release: bump versions → run the **Release packages** workflow (or push a `v*` tag). Versions are immutable.
 

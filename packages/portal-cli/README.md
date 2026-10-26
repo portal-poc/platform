@@ -5,6 +5,24 @@ Scoped on purpose: an unrelated public package named `portal-cli` exists on npmj
 Built on **commander** (commands, flags, `--help`) + **@inquirer/prompts** (questions), the same kind of base
 create-react-app / create-vite use.
 
+## Commands at a glance
+
+| Command | Who | What for |
+|---|---|---|
+| `create remote <name>` | developer | A new remote from the reference template (FSD, exposes, CI + Deploy, presets) |
+| `add <layer> <name>` | developer | A new FSD slice with its public index |
+| `verify` | CI (`pnpm verify`) | The built remote against the integration contract (exposes, singletons, contract, tooling) |
+| `upgrade` | developer (`pnpm upgrade:platform`) | Bump `@portal-poc/*`, apply their migrations, run the app's checks |
+| `migrate` | developer, CI (`--check`) | Apply / list the migrations of the installed packages |
+| `migration create <id>` | platform developer | Scaffold a migration in a package |
+| `deploy` / `publish` / `release` | Deploy pipeline / rollback | Remote to a stand under the stand rules and the gate |
+| `host deploy` / `host release` / `host sync` | host Deploy pipeline / Config deploy | The same for the host, with the reverse gate |
+| `promote --from dev1 --to tst` | release manager (registry Promote) | Copy accepted versions to the next stand (no rebuild) |
+| `stand switch <stand> --branch release/X.Y` | release manager | Move a release stand to another line |
+| `registry status \| validate \| check \| build` | anyone / registry CI / Config deploy | What runs where · offline check · gate · the stand's `/config.json` |
+
+Scenarios using them: [`docs/playbook.md`](../../docs/playbook.md).
+
 ## Scaffolding and checks (developers)
 
 ```sh
