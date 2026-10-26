@@ -1,4 +1,4 @@
-import type { Migration } from '@portal-poc/cli/migrations';
+import type { Migration } from '@portal-poc/cli/migration-kit';
 import { leaveGuardObject } from './leave-guard-object.js';
 
 /**

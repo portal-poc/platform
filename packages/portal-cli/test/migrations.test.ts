@@ -136,7 +136,12 @@ describe('portal-cli migrate on an app (the real runtime migration)', () => {
   const createApp = () => {
     const root = tempDir();
     writeFiles(root, {
-      'package.json': JSON.stringify({ name: 'js-remote', dependencies: { '@portal-poc/platform-runtime': '^2.3.0' } }),
+      'package.json': JSON.stringify({
+        name: 'js-remote',
+        dependencies: { '@portal-poc/platform-runtime': '^2.3.0' },
+        // The CLI's own authoring entry (migration-kit) must not be taken for a migrations module.
+        devDependencies: { '@portal-poc/cli': '^2.9.0' },
+      }),
       'src/pages/form/FormPage.jsx':
         "import { useLeaveGuard } from '@portal-poc/platform-runtime';\n\nexport const FormPage = ({ dirty }) => {\n  useLeaveGuard(dirty, { message: 'Not saved' });\n  return null;\n};\n",
       'src/pages/save/SavePage.tsx':
@@ -145,6 +150,7 @@ describe('portal-cli migrate on an app (the real runtime migration)', () => {
     });
     mkdirSync(join(root, 'node_modules/@portal-poc'), { recursive: true });
     symlinkSync(RUNTIME_DIR, join(root, 'node_modules/@portal-poc/platform-runtime'), 'dir');
+    symlinkSync(resolve(import.meta.dirname, '..'), join(root, 'node_modules/@portal-poc/cli'), 'dir');
     return root;
   };
 

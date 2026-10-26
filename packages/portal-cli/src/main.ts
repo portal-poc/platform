@@ -66,7 +66,7 @@ program
   .option('--dry-run', 'only show the version bumps')
   .option('--no-install', 'do not run the package manager install after bumping')
   .option('--no-checks', 'do not run the app\'s typecheck / lint / test scripts afterwards')
-  .option('--report <file>', 'write a Markdown report (the upgrade PR body)')
+  .option('--report <file>', 'write a Markdown report (e.g. for the PR description)')
   .action(runUpgrade);
 
 program

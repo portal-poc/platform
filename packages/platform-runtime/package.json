@@ -1,6 +1,6 @@
 {
   "name": "@portal-poc/platform-runtime",
-  "version": "2.3.0",
+  "version": "2.3.1",
   "description": "Portal platform runtime: providers, auth adapters, QueryClient factory, devtools, standalone harness, compat checks. Bundled into every application (not an MF singleton). HTTP: @portal-poc/http.",
   "type": "module",
   "sideEffects": false,

@@ -47,7 +47,7 @@ Fixtures are plain files outside `src/` (not type-checked or linted); imports in
 ## 3. Write `run`
 
 ```ts
-import type { Migration } from '@portal-poc/cli/migrations';   // type-only — see "Rules"
+import type { Migration } from '@portal-poc/cli/migration-kit';   // type-only — see "Rules"
 
 export const leaveGuardObject: Migration = {
   id: 'leave-guard-object',
@@ -67,7 +67,7 @@ export const leaveGuardObject: Migration = {
 };
 ```
 
-The context (`MigrationContext` in `@portal-poc/cli/migrations`):
+The context (`MigrationContext` in `@portal-poc/cli/migration-kit`):
 
 | | |
 |---|---|
@@ -86,7 +86,7 @@ to decide ambiguous cases, never as the only signal: fall back to syntax, then t
 
 - **Idempotent.** Already migrated code comes out unchanged. The generated test applies each fixture twice.
 - **Anchor on imports**, never on names: `findCalls` / `findImports`, not a text search.
-- **Type-only imports** from `@portal-poc/cli/migrations`. The migration is loaded from the app's
+- **Type-only imports** from `@portal-poc/cli/migration-kit`. The migration is loaded from the app's
   `node_modules/<your package>/dist/migrations`, where the CLI is not your package's dependency; ts-morph values come
   as `ctx.morph`. Relative imports inside `src/migrations` end in `.js` (Node loads the built files).
 - **Prefer `replace`** to ts-morph's own manipulation (`replaceWithText`, `addArgument`…): those re-indent inserted

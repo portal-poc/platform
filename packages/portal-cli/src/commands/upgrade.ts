@@ -103,7 +103,7 @@ export const renderUpgradeReport = (bumps: readonly Bump[], result: EngineResult
 
 /**
  * Bumps the app's @portal-poc packages (latest, or `--to`), installs, runs the migrations of every bumped package
- * from the version the app had, then the app's own checks. `--report` writes a Markdown summary (the upgrade PR body).
+ * from the version the app had, then the app's own checks. `--report` writes a Markdown summary (e.g. for the PR description).
  */
 export const runUpgrade = async (options: UpgradeOptions): Promise<void> => {
   const root = resolve(options.dir ?? '.');

@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { applyMigration, loadFixtures } from '@portal-poc/cli/migrations';
+import { applyMigration, loadFixtures } from '@portal-poc/cli/migration-kit';
 import { leaveGuardObject } from './leave-guard-object.js';
 
 // One input/output pair per situation, each in .tsx and .jsx (apps may be JS): migration-fixtures/leave-guard-object/.

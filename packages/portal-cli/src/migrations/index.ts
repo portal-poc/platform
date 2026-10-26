@@ -1,5 +1,5 @@
 /// <reference types="node" />
-// `@portal-poc/cli/migrations`: what platform packages need to write and test migrations for apps (docs/migrations.md).
+// `@portal-poc/cli/migration-kit`: what platform packages need to write and test migrations for apps (docs/migrations.md).
 // Migration modules import only TYPES from here (they are loaded from the app's node_modules, where the CLI is not
 // their dependency); tests use applyMigration / loadFixtures. One module on purpose: packages type-check it with their
 // own tsconfig, which allows `.ts` only in type imports.

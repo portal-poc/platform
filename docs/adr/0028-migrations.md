@@ -31,7 +31,7 @@ Apps may be written in TypeScript or JavaScript: that is the team's choice.
   - anchored on imports of the package (`ctx.findCalls(module, export)` handles aliases and namespace imports), so
     a local function with the same name is never touched;
   - idempotent: the test runs every fixture twice; this is also what makes `migrate` without `--from` safe;
-  - type-only imports from `@portal-poc/cli/migrations` (the module is loaded from the app's node_modules, where the
+  - type-only imports from `@portal-poc/cli/migration-kit` (the module is loaded from the app's node_modules, where the
     CLI is not the package's dependency); ts-morph values come as `ctx.morph`;
   - edits through `ctx.replace` (exact text, applied after `run`), `ctx.json` / `ctx.yaml` / `ctx.text`;
   - what cannot be decided safely goes to `ctx.manual(note, node)` — the developer sees file and line;

@@ -9,7 +9,7 @@ type MigrationCreateOptions = { dir?: string; version?: string };
 
 const toCamelCase = (id: string): string => id.replace(/-([a-z0-9])/g, (_, char: string) => char.toUpperCase());
 
-const migrationSource = (id: string, version: string, packageName: string) => `import type { Migration } from '@portal-poc/cli/migrations';
+const migrationSource = (id: string, version: string, packageName: string) => `import type { Migration } from '@portal-poc/cli/migration-kit';
 
 /**
  * TODO: what changed in ${packageName} ${version} and why apps have to follow. Keep it idempotent: code that is
@@ -36,7 +36,7 @@ export const ${toCamelCase(id)}: Migration = {
 
 const testSource = (id: string) => `// @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { applyMigration, loadFixtures } from '@portal-poc/cli/migrations';
+import { applyMigration, loadFixtures } from '@portal-poc/cli/migration-kit';
 import { ${toCamelCase(id)} } from './${id}.js';
 
 // One input/output pair per situation, each in .tsx and .jsx (apps may be JS): migration-fixtures/${id}/.
@@ -59,7 +59,7 @@ export const Example = () => {
 };
 `;
 
-const INDEX_HEADER = `import type { Migration } from '@portal-poc/cli/migrations';
+const INDEX_HEADER = `import type { Migration } from '@portal-poc/cli/migration-kit';
 
 /**
  * Run in apps by \`portal-cli upgrade\` (and \`migrate\`) after they bump this package, in version order.

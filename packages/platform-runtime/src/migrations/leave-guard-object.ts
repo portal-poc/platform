@@ -1,4 +1,4 @@
-import type { Migration, MigrationContext, Node } from '@portal-poc/cli/migrations';
+import type { Migration, MigrationContext, Node } from '@portal-poc/cli/migration-kit';
 
 const BOOLEAN_OPERATORS = new Set(['===', '!==', '==', '!=', '<', '<=', '>', '>=', 'instanceof', 'in']);
 

@@ -35,7 +35,7 @@ portal-cli migration create <id> [--version <x.y.z>] [--dir]     # platform deve
   some are left (the central app CI runs it as a warning).
 - Migrations live in the packages (`<package>/migrations`); this CLI runs them with ts-morph over every JS/TS file
   of the app (node_modules and build output excluded). Writing one: [`docs/migrations.md`](../../docs/migrations.md).
-  The authoring API and test helpers are `@portal-poc/cli/migrations`.
+  The authoring API and test helpers are `@portal-poc/cli/migration-kit`.
 
 ## Delivery (what the pipelines run)
 

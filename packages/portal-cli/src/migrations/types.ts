@@ -9,9 +9,9 @@ import type { Document } from 'yaml';
  * Rules (see docs/migrations.md):
  * - Idempotent: running it on already migrated code changes nothing (the CLI test helper checks it).
  * - Anchored on imports of the package (`ctx.findCalls`), never on names alone, so aliases and JS apps work.
- * - Type-only imports from `@portal-poc/cli/migrations`: the module is loaded from the app's node_modules, where the
+ * - Type-only imports from `@portal-poc/cli/migration-kit`: the module is loaded from the app's node_modules, where the
  *   CLI is not a dependency of your package. ts-morph values (guards, SyntaxKind) come as `ctx.morph`.
- * - What cannot be automated goes to `ctx.manual(...)`: it ends up in the report and the upgrade PR.
+ * - What cannot be automated goes to `ctx.manual(...)`: it ends up in the printed summary and the report.
  */
 export type Migration = {
   /** kebab-case, unique within the package (e.g. `leave-guard-object`). */
@@ -53,7 +53,7 @@ export type MigrationContext = {
   /** Creates or overwrites a non-code file (code files: `ctx.project.createSourceFile`). */
   write: (path: string, content: string) => void;
   exists: (path: string) => boolean;
-  /** A step a person has to do: listed in the report and the upgrade PR, with the file and line when `at` is given. */
+  /** A step a person has to do: listed in the summary and the report, with the file and line when `at` is given. */
   manual: (note: string, at?: Node) => void;
 };
 

@@ -1,13 +1,13 @@
 {
   "name": "@portal-poc/cli",
-  "version": "2.9.1",
+  "version": "2.9.2",
   "description": "Portal CLI: create remotes from the reference template, add FSD slices, verify the integration contract, deploy to stands, upgrade apps with migrations.",
   "type": "module",
   "bin": {
     "portal-cli": "./bin/portal-cli.js"
   },
   "exports": {
-    "./migrations": "./src/migrations/index.ts",
+    "./migration-kit": "./src/migrations/index.ts",
     "./package.json": "./package.json"
   },
   "files": [
@@ -45,7 +45,7 @@
     },
     "registry": "https://npm.pkg.github.com",
     "exports": {
-      "./migrations": {
+      "./migration-kit": {
         "types": "./dist/migrations/index.d.ts",
         "import": "./dist/migrations/index.js"
       },
