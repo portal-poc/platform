@@ -1,13 +1,14 @@
 {
   "name": "@portal-poc/platform-runtime",
-  "version": "2.2.1",
+  "version": "2.3.0",
   "description": "Portal platform runtime: providers, auth adapters, QueryClient factory, devtools, standalone harness, compat checks. Bundled into every application (not an MF singleton). HTTP: @portal-poc/http.",
   "type": "module",
   "sideEffects": false,
   "exports": {
     ".": "./src/index.ts",
     "./msal": "./src/msal/index.ts",
-    "./router": "./src/router/index.ts"
+    "./router": "./src/router/index.ts",
+    "./migrations": "./src/migrations/index.ts"
   },
   "publishConfig": {
     "exports": {
@@ -22,6 +23,10 @@
       "./router": {
         "types": "./dist/router/index.d.ts",
         "import": "./dist/router/index.js"
+      },
+      "./migrations": {
+        "types": "./dist/migrations/index.d.ts",
+        "import": "./dist/migrations/index.js"
       }
     },
     "registry": "https://npm.pkg.github.com"
@@ -68,7 +73,8 @@
     "typescript": "^7.0.2",
     "vitest": "^5.0.5",
     "fallow": "^3.35.0",
-    "react-router": "^8.5.0"
+    "react-router": "^8.5.0",
+    "@portal-poc/cli": "workspace:*"
   },
   "repository": {
     "type": "git",

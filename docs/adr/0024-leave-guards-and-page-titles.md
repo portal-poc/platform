@@ -25,8 +25,8 @@ blocker per router, and integrated remotes render their routes inside the host's
 - **One blocker per router**: `PlatformLeaveBlocker` (`@portal-poc/platform-runtime/router`) is the only
   `useBlocker`. The host renders it in its layout; generated bridge and standalone entries render it inside their
   own routers. `useBlocker` / `unstable_usePrompt` from `react-router` are lint errors in apps (presets).
-- **Apps** use `useLeaveGuard(when, { message, allows, lock, dialog: 'own' })` → `{ state, pathname, leave, stay,
-  release }` and `usePageTitle(title)`, identical in every mode. `release()` drops a guard before a navigation the
+- **Apps** use `useLeaveGuard({ when, message, allows, lock, dialog: 'own' })` → `{ state, pathname, leave, stay,
+  release }` (runtime 2.3; the positional `(when, options)` form is deprecated, migration `leave-guard-object`, ADR 0028) and `usePageTitle(title)`, identical in every mode. `release()` drops a guard before a navigation the
   app starts itself after saving. React 18 apps without the runtime call the contract directly (legacy: ~30 lines).
 - **Titles**: the host keeps one title per app and shows the one of the section on screen:
   `<page> · <section> · Portal`, the section title when the app set none.

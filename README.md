@@ -3,7 +3,8 @@
 Portal micro-frontend platform (PoC, organisation [`portal-poc`](https://github.com/portal-poc)). Original requirements:
 [`PORTAL_MFE_CONTEXT.md`](./PORTAL_MFE_CONTEXT.md) (deviations: architecture.md and the ADRs). Architecture and decisions: [`docs/`](./docs) (start with
 [`architecture.md`](./docs/architecture.md), [`delivery.md`](./docs/delivery.md),
-[`migration-plan.md`](./docs/migration-plan.md), [`adr/`](./docs/adr)).
+[`migration-plan.md`](./docs/migration-plan.md), [`adr/`](./docs/adr)). Changing a package API apps use:
+[`docs/migrations.md`](./docs/migrations.md).
 
 ## Repositories
 

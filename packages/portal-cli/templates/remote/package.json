@@ -12,7 +12,8 @@
     "lint": "oxlint . && steiger ./src && fallow dead-code",
     "analyze": "fallow",
     "test": "vitest run",
-    "verify": "portal-cli verify && portal-cli verify --dist dist-bridge --mode bridge"
+    "verify": "portal-cli verify && portal-cli verify --dist dist-bridge --mode bridge",
+    "upgrade:platform": "pnpm dlx @portal-poc/cli@2 upgrade"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

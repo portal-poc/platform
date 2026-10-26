@@ -8,6 +8,9 @@ import { runHostDeploy, runHostRelease, runHostSync } from './commands/host.ts';
 import { runRegistryBuild, runRegistryCheck, runRegistryStatus, runRegistryValidate } from './commands/registry.ts';
 import { runPromote, runStandSwitch } from './commands/promote.ts';
 import { runDeploy } from './commands/deploy.ts';
+import { runMigrate } from './commands/migrate.ts';
+import { runMigrationCreate } from './commands/migration-create.ts';
+import { runUpgrade } from './commands/upgrade.ts';
 import { runPublish, runRelease } from './commands/release.ts';
 import { runVerify } from './commands/verify.ts';
 
@@ -52,6 +55,41 @@ program
   .option('--against <compat>', "target host deployment's compat.json (URL or path) — exact version check")
   .addOption(new Option('--mode <mode>', 'integration mode the remote targets').choices(['integrated', 'bridge']).default('integrated'))
   .action(runVerify);
+
+const collect = (value: string, previous: string[] = []) => [...previous, value];
+
+program
+  .command('upgrade')
+  .description('Bump the app\'s @portal-poc packages, install, run their migrations and the app\'s checks')
+  .option('--dir <path>', 'app root', '.')
+  .option('--to <package@version>', 'target version of one package instead of the latest (repeatable)', collect)
+  .option('--dry-run', 'only show the version bumps')
+  .option('--no-install', 'do not run the package manager install after bumping')
+  .option('--no-checks', 'do not run the app\'s typecheck / lint / test scripts afterwards')
+  .option('--report <file>', 'write a Markdown report (the upgrade PR body)')
+  .action(runUpgrade);
+
+program
+  .command('migrate')
+  .description('Apply the migrations of the installed @portal-poc packages to the app (idempotent)')
+  .option('--dir <path>', 'app root', '.')
+  .option('--from <package@version>', 'only migrations newer than this version of a package (repeatable)', collect)
+  .option('--only <ids>', 'only these migration ids, comma-separated')
+  .option('--dry-run', 'print the patch, write nothing')
+  .option('--check', 'like --dry-run, and fail when something is left to migrate (CI)')
+  .action(runMigrate);
+
+const migration = program.command('migration').description('Authoring migrations in platform packages');
+
+migration
+  .command('create')
+  .description('Scaffold a migration: module, fixture test, TSX + JSX fixtures, registration, ./migrations export')
+  .argument('<id>', 'kebab-case id, unique in the package (e.g. leave-guard-object)')
+  .option('--dir <path>', 'platform package root', '.')
+  .option('--version <version>', 'the package release that needs it (default: the package version)')
+  .action((id: string, options: { dir?: string; version?: string }) => {
+    runMigrationCreate(id, options, version);
+  });
 
 const registryOption = () =>
   new Option('--registry <path>', 'local clone of the registry repository').env('PORTAL_REGISTRY_DIR').makeOptionMandatory();

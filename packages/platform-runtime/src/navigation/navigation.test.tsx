@@ -61,7 +61,7 @@ type FormPageProps = { dirty: boolean; options?: LeaveGuardOptions };
 
 const FormPage = ({ dirty, options }: FormPageProps) => {
   usePageTitle('New task');
-  const leave = useLeaveGuard(dirty, options);
+  const leave = useLeaveGuard({ when: dirty, ...options });
   return (
     <>
       <Link to="/home">Home</Link>
@@ -78,6 +78,11 @@ const FormPage = ({ dirty, options }: FormPageProps) => {
       )}
     </>
   );
+};
+
+const LegacyPage = () => {
+  useLeaveGuard(true, { message: 'Old call' });
+  return <Link to="/home">Home</Link>;
 };
 
 /** A data router like the host's (or, with a basename, a bridge app's own): the blocker on top, the page below. */
@@ -161,6 +166,16 @@ describe('useLeaveGuard + PlatformLeaveBlocker', () => {
     expect(allows).toHaveBeenCalledWith('/tasks/home');
     expect(ask).toHaveBeenCalledWith(expect.anything(), '/tasks/home');
     expect(router.state.location.pathname).toBe('/tasks/home');
+  });
+
+  it('still accepts the deprecated (when, options) signature until 3.0', async () => {
+    const { navigation, ask } = createNavigation(false);
+    const router = renderApp(platformWith(navigation), <LegacyPage />);
+
+    await act(async () => screen.getByText('Home').click());
+
+    expect(ask).toHaveBeenCalledWith(expect.objectContaining({ message: 'Old call' }), '/home');
+    expect(router.state.location.pathname).toBe('/form');
   });
 
   it('answers "stay" to an older question when a newer navigation asks the same own dialog', async () => {

@@ -32,4 +32,11 @@ jobs:
         run: pnpm run --if-present verify
       - name: Registry entries (portal-cli registry validate)
         run: pnpm run --if-present validate
+      # Migrations are applied by developers (`portal-cli upgrade` / `migrate`, ADR 0028): CI only points them out.
+      - name: Pending platform migrations (portal-cli migrate --check)
+        run: |
+          if ! pnpm dlx @portal-poc/cli@2 migrate --check > migrate-check.log 2>&1; then
+            cat migrate-check.log
+            echo "::warning title=Platform migrations pending::Run \`pnpm dlx @portal-poc/cli@2 migrate\` (or \`upgrade\`), review the diff and commit. Details in this step's log."
+          fi
 

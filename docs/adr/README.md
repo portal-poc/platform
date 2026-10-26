@@ -29,3 +29,4 @@ Format: Context → Decision → Consequences.
 - [0025 — The host is versioned and rides the release train](./0025-versioned-host.md)
 - [0026 — Realtime: each app's own socket to its BFF](./0026-realtime-per-app.md)
 - [0027 — Legacy apps keep their identity provider: the BFF exchanges the portal token](./0027-legacy-auth-token-exchange.md)
+- [0028 — Platform changes reach apps as migrations developers run](./0028-migrations.md)

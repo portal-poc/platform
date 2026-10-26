@@ -20,6 +20,23 @@ portal-cli verify [--dir .] [--mode integrated|bridge]
   contract (name, exposes, singletons and ranges, react-query not a singleton, contract version; warns about secrets
   and environment-specific `config.json`). It is the only permanent consistency mechanism — run it in CI.
 
+## Upgrades and migrations (developers, in apps)
+
+```sh
+pnpm dlx @portal-poc/cli@2 upgrade [--to <pkg@version>]… [--dry-run] [--no-install] [--no-checks] [--report <file>]
+portal-cli migrate [--from <pkg@version>]… [--only <ids>] [--dry-run | --check]
+portal-cli migration create <id> [--version <x.y.z>] [--dir]     # platform developers, in a package
+```
+
+- `upgrade` bumps the app's `@portal-poc/*` packages (keeping `^` / `~`), installs with the app's package manager,
+  runs the migrations of each bumped package from the version the app had, then the app's `typecheck` / `lint` /
+  `test`. Developers run it on a branch and review the diff; nothing opens PRs by itself (ADR 0028).
+- `migrate` applies the migrations of the installed packages without bumping (idempotent). `--check` fails when
+  some are left (the central app CI runs it as a warning).
+- Migrations live in the packages (`<package>/migrations`); this CLI runs them with ts-morph over every JS/TS file
+  of the app (node_modules and build output excluded). Writing one: [`docs/migrations.md`](../../docs/migrations.md).
+  The authoring API and test helpers are `@portal-poc/cli/migrations`.
+
 ## Delivery (what the pipelines run)
 
 The reusable workflows call `pnpm dlx @portal-poc/cli@2 …`: the CLI of the current platform, whatever ref is

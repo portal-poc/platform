@@ -1,10 +1,14 @@
 {
   "name": "@portal-poc/cli",
-  "version": "2.8.1",
-  "description": "Portal CLI: create remotes from the reference template, add FSD slices, verify the integration contract, deploy to stands.",
+  "version": "2.9.0",
+  "description": "Portal CLI: create remotes from the reference template, add FSD slices, verify the integration contract, deploy to stands, upgrade apps with migrations.",
   "type": "module",
   "bin": {
     "portal-cli": "./bin/portal-cli.js"
+  },
+  "exports": {
+    "./migrations": "./src/migrations/index.ts",
+    "./package.json": "./package.json"
   },
   "files": [
     "bin",
@@ -22,7 +26,10 @@
     "@portal-poc/mf-shared": "workspace:^",
     "@portal-poc/presets": "workspace:^",
     "commander": "^15.0.0",
-    "semver": "^7.8.5"
+    "diff": "^9.0.0",
+    "semver": "^7.8.5",
+    "ts-morph": "^28.0.0",
+    "yaml": "^2.9.1"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",
@@ -36,7 +43,14 @@
     "bin": {
       "portal-cli": "./dist/main.js"
     },
-    "registry": "https://npm.pkg.github.com"
+    "registry": "https://npm.pkg.github.com",
+    "exports": {
+      "./migrations": {
+        "types": "./dist/migrations/index.d.ts",
+        "import": "./dist/migrations/index.js"
+      },
+      "./package.json": "./package.json"
+    }
   },
   "repository": {
     "type": "git",

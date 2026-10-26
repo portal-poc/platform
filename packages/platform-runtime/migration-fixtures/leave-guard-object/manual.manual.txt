@@ -1,0 +1,2 @@
+useLeaveGuard with a spread or unexpected arguments: rewrite it as useLeaveGuard({ when, ...options }).
+useLeaveGuard(props.guard): the argument's type is unknown — if it is the condition, write useLeaveGuard({ when: props.guard }).

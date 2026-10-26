@@ -13,6 +13,11 @@ export type LeaveGuardOptions = {
   dialog?: 'host' | 'own';
 };
 
+export type LeaveGuardConfig = LeaveGuardOptions & {
+  /** Guard while true: a dirty form, a mutation in flight. */
+  when: boolean;
+};
+
 export type LeaveGuard = {
   /** `asking`: a navigation waits for your dialog (`dialog: 'own'` only). */
   state: 'idle' | 'asking';
@@ -26,6 +31,15 @@ export type LeaveGuard = {
 
 type Asking = { pathname: string; resolve: (leave: boolean) => void };
 
+type UseLeaveGuard = {
+  (config: LeaveGuardConfig): LeaveGuard;
+  /**
+   * @deprecated Since 2.3.0: pass one object — `useLeaveGuard({ when, ...options })`. `portal-cli migrate` rewrites
+   * these calls (migration `leave-guard-object`); this signature is removed in 3.0.
+   */
+  (when: boolean, options?: LeaveGuardOptions): LeaveGuard;
+};
+
 const DEFAULT_MESSAGE = 'You have unsaved changes.';
 
 const handleBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -33,12 +47,14 @@ const handleBeforeUnload = (event: BeforeUnloadEvent) => {
 };
 
 /**
- * "Do not leave this page yet" while `when` is true — the same in every mode (integrated, bridge, standalone): the
+ * "Do not leave this page yet" while `config.when` is true — the same in every mode (integrated, bridge, standalone): the
  * guard goes to `platform.navigation`, whose blockers sit in the host and in the generated entries of own routers.
  * Never call React Router's `useBlocker` yourself: a router supports one blocker, and integrated apps share the host's.
  * On a host without `navigation` (older than contract 1.2) it falls back to the browser's prompt on reload / close.
  */
-export const useLeaveGuard = (when: boolean, options: LeaveGuardOptions = {}): LeaveGuard => {
+export const useLeaveGuard: UseLeaveGuard = (configOrWhen: LeaveGuardConfig | boolean, legacyOptions?: LeaveGuardOptions) => {
+  const { when, ...options }: LeaveGuardConfig =
+    typeof configOrWhen === 'boolean' ? { ...legacyOptions, when: configOrWhen } : configOrWhen;
   const { navigation } = usePlatform();
   const [asking, setAsking] = useState<Asking | null>(null);
   const optionsRef = useRef(options);

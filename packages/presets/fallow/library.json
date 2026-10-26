@@ -1,5 +1,5 @@
 {
-  "ignorePatterns": ["dist/**"],
+  "ignorePatterns": ["dist/**", "migration-fixtures/**"],
   "rules": {
     "unused-files": "error",
     "unused-exports": "off",
