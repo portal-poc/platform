@@ -51,7 +51,7 @@ host's router. `src/app/exposes/RemoteBridge.tsx` and `src/app/standalone/main.t
 **Upgrading the platform** — when you decide, on a branch like any change:
 
 ```sh
-pnpm upgrade:platform              # = pnpm dlx @portal-poc/cli@2 upgrade: latest @portal-poc/*, install, migrations, checks
+pnpm upgrade:platform              # = pnpm dlx @portal-poc/cli@2 upgrade (fresh CLI): latest @portal-poc/*, install, migrations, checks
 git diff                           # review what the migrations changed; do the "manual steps" it printed
 pnpm exec portal-cli migrate --check   # after bumping versions by hand: what is left to apply (CI warns about it too)
 ```

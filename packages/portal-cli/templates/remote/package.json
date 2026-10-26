@@ -13,7 +13,7 @@
     "analyze": "fallow",
     "test": "vitest run",
     "verify": "portal-cli verify && portal-cli verify --dist dist-bridge --mode bridge",
-    "upgrade:platform": "pnpm dlx @portal-poc/cli@2 upgrade"
+    "upgrade:platform": "pnpm --config.dlx-cache-max-age=0 dlx @portal-poc/cli@2 upgrade"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

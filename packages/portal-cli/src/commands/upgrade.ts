@@ -130,7 +130,9 @@ export const runUpgrade = async (options: UpgradeOptions): Promise<void> => {
       return [];
     }
     const to = pinned.get(pkg.name) ?? latestVersion(root, manager, pkg.name);
-    return semver.gt(to, pkg.version) ? [{ name: pkg.name, from: startingVersion(range, pkg.version), to, range: bumpRange(range, to) }] : [];
+    const from = startingVersion(range, pkg.version);
+    // Also when only the committed range is behind (installed but never committed): package.json and lockfile agree again.
+    return semver.gt(to, from) ? [{ name: pkg.name, from, to, range: bumpRange(range, to) }] : [];
   });
 
   console.log(`portal-cli upgrade — ${manager}, ${installed.length} platform package(s)`);

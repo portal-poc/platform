@@ -31,6 +31,8 @@ portal-cli migration create <id> [--version <x.y.z>] [--dir]     # platform deve
 - `upgrade` bumps the app's `@portal-poc/*` packages (keeping `^` / `~`), installs with the app's package manager,
   runs the migrations of each bumped package from the version the app had, then the app's `typecheck` / `lint` /
   `test`. Developers run it on a branch and review the diff; nothing opens PRs by itself (ADR 0028).
+- `pnpm dlx` caches what `@2` resolved to for a day: `pnpm --config.dlx-cache-max-age=0 dlx …` (the template's
+  `pnpm upgrade:platform`) always runs the current CLI. The migrations themselves come with the installed packages.
 - `migrate` applies the migrations of the installed packages without bumping (idempotent). `--check` fails when
   some are left (the central app CI runs it as a warning).
 - Migrations live in the packages (`<package>/migrations`); this CLI runs them with ts-morph over every JS/TS file
