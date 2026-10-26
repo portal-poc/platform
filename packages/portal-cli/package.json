@@ -1,6 +1,6 @@
 {
   "name": "@portal-poc/cli",
-  "version": "2.9.0",
+  "version": "2.9.1",
   "description": "Portal CLI: create remotes from the reference template, add FSD slices, verify the integration contract, deploy to stands, upgrade apps with migrations.",
   "type": "module",
   "bin": {

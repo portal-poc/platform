@@ -96,7 +96,8 @@ const isMigration = (value: unknown): value is Migration =>
 
 /**
  * The file to import for a package's `./migrations`. A workspace package points it at its TypeScript source, which
- * Node cannot load (relative `.js` imports): its built entry (`publishConfig.exports`) is used when it exists.
+ * plain Node cannot load (relative `.js` imports): its built entry (`publishConfig.exports`) is used when it exists,
+ * the source otherwise (fine under vitest; under Node the import error says to build).
  */
 const migrationsEntry = (pkg: InstalledPackage): string | null => {
   const manifest = readJson(join(pkg.dir, 'package.json'));
@@ -107,10 +108,7 @@ const migrationsEntry = (pkg: InstalledPackage): string | null => {
   }
   const publishConfig = manifest['publishConfig'];
   const published = isRecord(publishConfig) && isRecord(publishConfig['exports']) ? exportTarget(publishConfig['exports']['./migrations']) : null;
-  if (!published || !existsSync(join(pkg.dir, published))) {
-    throw new Error(`${pkg.name}: ./migrations points to TypeScript sources — build the package first (pnpm build).`);
-  }
-  return published;
+  return published && existsSync(join(pkg.dir, published)) ? published : target;
 };
 
 /** The package's `./migrations` export (`{ migrations: Migration[] }`), or none. */
@@ -119,7 +117,13 @@ export const loadPackageMigrations = async (pkg: InstalledPackage): Promise<Migr
   if (!entry) {
     return [];
   }
-  const module: unknown = await import(pathToFileURL(join(pkg.dir, entry)).href);
+  let module: unknown;
+  try {
+    module = await import(pathToFileURL(join(pkg.dir, entry)).href);
+  } catch (error) {
+    const hint = entry.endsWith('.ts') ? ' (TypeScript sources: build the package first)' : '';
+    throw new Error(`${pkg.name}/migrations could not be loaded${hint}: ${error instanceof Error ? error.message : String(error)}`, { cause: error });
+  }
   const migrations = isRecord(module) ? module['migrations'] : undefined;
   if (!Array.isArray(migrations)) {
     throw new Error(`${pkg.name}/migrations must export \`migrations\` (an array).`);
