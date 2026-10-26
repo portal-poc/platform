@@ -4,7 +4,7 @@ import { join, resolve } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { runMigrate } from '../src/commands/migrate.ts';
 import { runMigrationCreate } from '../src/commands/migration-create.ts';
-import { bumpRange, renderUpgradeReport } from '../src/commands/upgrade.ts';
+import { bumpRange, renderUpgradeReport, startingVersion } from '../src/commands/upgrade.ts';
 import { planMigrations } from '../src/lib/migrations.ts';
 import { applyMigration } from '../src/migrations/index.ts';
 import type { Migration } from '../src/migrations/types.ts';
@@ -216,6 +216,12 @@ describe('portal-cli upgrade helpers', () => {
     expect(bumpRange('~1.0.0', '1.0.4')).toBe('~1.0.4');
     expect(bumpRange('1.0.0', '1.1.0')).toBe('1.1.0');
     expect(bumpRange('latest', '1.1.0')).toBe('^1.1.0');
+  });
+
+  it('starts migrations from the committed range when node_modules is ahead of it', () => {
+    expect(startingVersion('^2.2.1', '2.3.0')).toBe('2.2.1');
+    expect(startingVersion('^2.3.0', '2.3.0')).toBe('2.3.0');
+    expect(startingVersion('latest', '2.3.0')).toBe('2.3.0');
   });
 
   it('reports bumps, migrations, manual steps and failing checks for the PR / commit', () => {

@@ -53,6 +53,16 @@ export const bumpRange = (range: string, version: string): string => {
   return `${prefix ?? '^'}${version}`;
 };
 
+/**
+ * Where the app's migrations start: the lowest version its committed range allows, when that is below what
+ * node_modules holds (an earlier bump that was installed but never migrated or committed). Re-running a migration
+ * is harmless — they are idempotent — skipping one is not.
+ */
+export const startingVersion = (range: string, installed: string): string => {
+  const lowest = semver.validRange(range) ? semver.minVersion(range)?.version : undefined;
+  return lowest && semver.lt(lowest, installed) ? lowest : installed;
+};
+
 const writeBumps = (root: string, bumps: readonly Bump[]): void => {
   const path = join(root, 'package.json');
   const text = readFileSync(path, 'utf8');
@@ -120,7 +130,7 @@ export const runUpgrade = async (options: UpgradeOptions): Promise<void> => {
       return [];
     }
     const to = pinned.get(pkg.name) ?? latestVersion(root, manager, pkg.name);
-    return semver.gt(to, pkg.version) ? [{ name: pkg.name, from: pkg.version, to, range: bumpRange(range, to) }] : [];
+    return semver.gt(to, pkg.version) ? [{ name: pkg.name, from: startingVersion(range, pkg.version), to, range: bumpRange(range, to) }] : [];
   });
 
   console.log(`portal-cli upgrade — ${manager}, ${installed.length} platform package(s)`);
