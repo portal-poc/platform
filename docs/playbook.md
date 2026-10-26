@@ -9,7 +9,7 @@ Legend   ●  commit          ◆  tag            ▲  someone presses a button 
          ▶  stand serves it (next page load)  ✗  refused / blocked     ┄┄  automatic step
 ```
 
-Reference: [branching.md](branching.md) (stand rules), [delivery.md](delivery.md), [migrations.md](migrations.md),
+How the pieces fit: [overview.md](overview.md). Reference: [branching.md](branching.md) (stand rules), [delivery.md](delivery.md), [migrations.md](migrations.md),
 [central workflows](../.github/workflows/README.md), package READMEs under `packages/*/README.md`.
 
 | Stand | Who looks | Accepts | Artifact |

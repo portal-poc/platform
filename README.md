@@ -6,6 +6,43 @@ Portal micro-frontend platform (PoC, organisation [`portal-poc`](https://github.
 [`migration-plan.md`](./docs/migration-plan.md), [`adr/`](./docs/adr)). Changing a package API apps use:
 [`docs/migrations.md`](./docs/migrations.md).
 
+## Start here
+
+```mermaid
+flowchart LR
+  subgraph browser["One browser page"]
+    host["host<br/>login · router · loader · leave dialog · titles"]
+    remote["integrated remote<br/>own QueryClient · http · realtime"]
+    legacy["bridge remote<br/>own React, own router"]
+  end
+  pkgs["@portal-poc runtime packages<br/>contract · runtime · http · events · realtime · ds"]
+  tools["build + delivery<br/>vite-config · presets · cli · central workflows"]
+  nexus[("Nexus<br/>immutable versions")]
+  registry["registry<br/>what runs on each stand"]
+  bff[["each remote's own BFF"]]
+
+  host -- "platform prop = the contract" --> remote
+  host -- "platform prop" --> legacy
+  remote -- "own client, host's token" --> bff
+  legacy -- "host's token, exchanged" --> bff
+  host -- "stand /config.json" --> registry
+  host -- "remote manifests" --> nexus
+  pkgs -. "bundled into" .-> host
+  pkgs -. "bundled into" .-> remote
+  tools -. "build · verify · deploy" .-> nexus
+  tools -. "commit = release" .-> registry
+```
+
+The full picture — every package, who uses it, the browser flow step by step, and the path from a commit to a
+stand: **[`docs/overview.md`](./docs/overview.md)**. Then, by role:
+
+| You are | Read in this order |
+|---|---|
+| Lead / architect | [overview](./docs/overview.md) → [migration-plan](./docs/migration-plan.md) (12 problems → PoC answers → phases) → [differences](./docs/differences.md) → [ADRs](./docs/adr) |
+| App developer | [overview](./docs/overview.md) → [tasks-remote README](https://github.com/portal-poc/tasks-remote#readme) (where each piece is used) → [playbook D1–D8](./docs/playbook.md#development) → package READMEs below |
+| Platform developer | [overview §2](./docs/overview.md#2-which-package-each-app-uses) → package READMEs → [migrations](./docs/migrations.md) → [central workflows](./.github/workflows/README.md) |
+| Release manager / QA | [playbook R1–R10](./docs/playbook.md#delivery) → [registry README](https://github.com/portal-poc/registry#readme) → [branching](./docs/branching.md) |
+
 ## Repositories
 
 | Repository | What | Owner in reality |
@@ -20,6 +57,7 @@ Portal micro-frontend platform (PoC, organisation [`portal-poc`](https://github.
 
 | I want to… | Read |
 |---|---|
+| see how all packages, the host and the remotes interact | [`docs/overview.md`](./docs/overview.md) — three diagrams |
 | know what to do in a situation (new remote, local dev, release, hotfix, promote, rollback, upgrade) | [`docs/playbook.md`](./docs/playbook.md) — every scenario with marble diagrams |
 | use a package in my app | the package README (table below) |
 | understand the pipelines and what a repository needs | [`.github/workflows/README.md`](./.github/workflows/README.md) |
