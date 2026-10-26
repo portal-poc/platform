@@ -8,30 +8,7 @@ Portal micro-frontend platform (PoC, organisation [`portal-poc`](https://github.
 
 ## Start here
 
-```mermaid
-flowchart LR
-  subgraph browser["One browser page"]
-    host["host<br/>login · router · loader · leave dialog · titles"]
-    remote["integrated remote<br/>own QueryClient · http · realtime"]
-    legacy["bridge remote<br/>own React, own router"]
-  end
-  pkgs["@portal-poc runtime packages<br/>contract · runtime · http · events · realtime · ds"]
-  tools["build + delivery<br/>vite-config · presets · cli · central workflows"]
-  nexus[("Nexus<br/>immutable versions")]
-  registry["registry<br/>what runs on each stand"]
-  bff[["each remote's own BFF"]]
-
-  host -- "platform prop = the contract" --> remote
-  host -- "platform prop" --> legacy
-  remote -- "own client, host's token" --> bff
-  legacy -- "host's token, exchanged" --> bff
-  host -- "stand /config.json" --> registry
-  host -- "remote manifests" --> nexus
-  pkgs -. "bundled into" .-> host
-  pkgs -. "bundled into" .-> remote
-  tools -. "build · verify · deploy" .-> nexus
-  tools -. "commit = release" .-> registry
-```
+![Host, remotes, packages and backends in one browser page](./docs/diagrams/browser.svg)
 
 The full picture — every package, who uses it, the browser flow step by step, and the path from a commit to a
 stand: **[`docs/overview.md`](./docs/overview.md)**. Then, by role:
