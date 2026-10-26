@@ -2,8 +2,8 @@
 
 ## Context
 
-Bringing a legacy app into the real portal meant upgrading it to the remote stack, rebuilding its build, and adding
-a second auth to the host, which then signed users in twice. The MF bridge already lets a legacy app keep its own
+A precedent in the real portal: bringing a legacy app in meant adapting both sides — the portal to the legacy app
+(including its separate auth in the host) and the legacy app to the portal. The MF bridge already lets a legacy app keep its own
 React and router (ADR 0002, `legacy-remote` runs React 18). What remained was identity.
 
 ## Decision
