@@ -1,162 +1,162 @@
-# Portal MFE — полный контекст и требования для reference-монорепо
+# Portal MFE — full context and requirements for the reference monorepo
 
 > **Historical input, frozen.** This is the original requirements document the PoC was built from; it is not updated.
 > Where the PoC differs (React Router v8, axios via `@portal-poc/http` instead of `useHttpClient`, no realtime, stands
 > dev3 / dev2 / dev1 / tst instead of dev / test / uat / prod, the event catalog), see
 > [`docs/architecture.md`](./docs/architecture.md) → "Deviations" and [`docs/adr/`](./docs/adr).
 
-> Этот документ — исчерпывающий контекст для Claude Code. Задача: собрать **reference-монорепо** (хост, ремоут, платформенные пакеты, mock-бэкенды, CLI), которое демонстрирует все архитектурные решения ниже. Потом монорепо будет разделено на отдельные репозитории (polyrepo) и адаптировано под реальный код.
+> This document is the complete context for Claude Code. The task: build a **reference monorepo** (host, remote, platform packages, mock backends, CLI) that demonstrates every architectural decision below. The monorepo will later be split into separate repositories (polyrepo) and adapted to the real code.
 >
-> Формат требований: **MUST** — обязательно, **SHOULD** — желательно, **MAY** — опционально, **MUST NOT** — запрещено. У каждого крупного решения есть «Почему», чтобы при адаптации не потерять мотивацию.
+> Requirement levels: **MUST** — mandatory, **SHOULD** — desirable, **MAY** — optional, **MUST NOT** — forbidden. Every major decision has a "Why", so the motivation is not lost during adaptation.
 
 ---
 
-## 0. Как пользоваться этим документом (для Claude Code)
+## 0. How to use this document (for Claude Code)
 
-1. Прочитай документ целиком до начала работы. Решения связаны между собой: например, отказ от общего QueryClient влияет на devtools, realtime и preload.
-2. Работай по фазам из раздела 20. После каждой фазы прогоняй проверки из раздела 21.
-3. Если требование противоречит другому или неосуществимо с текущими версиями библиотек — **не выдумывай обходной путь молча**: оставь `TODO(decision)` в коде и запиши вопрос в `docs/open-questions.md`.
-4. Проверяй актуальные API библиотек по их документации (MF Vite-плагин, React 19.3 `ViewTransition`, TanStack Query v5, React Router v7, MUI Joy, hey-api). Версии в разделе 2 — целевые, но точные сигнатуры сверяй.
-5. Стиль кода из раздела 3 — обязателен для всего кода в репо.
-
----
-
-## 1. Контекст проекта
-
-### 1.1. Что есть сейчас (реальный проект, который будем адаптировать)
-
-- Портал на микрофронтендах: **Module Federation + Vite + React 19**, TypeScript, **pnpm**, **MUI Joy UI** (через дизайн-систему-обёртку), **TanStack Query v5**, **React Hook Form**, **zod** (валидация форм через resolver), **React Router** (не TanStack Router), **React Compiler** (поэтому `useMemo`/`useCallback`/`memo` запрещены правилом линтера), линтер **oxlint**, тесты **Vitest**, CI **Azure DevOps**, Node пинится через **Volta**.
-- Бэкенд: у хоста и у каждого ремоута **свой BFF** (Java). BFF получают **тот же bearer**, с которым авторизуется хост (MSAL / Entra ID). Java BFF обогащают данные из core-сервисов, на Java-стороне используется Temporal.
-- Авторизация: **MSAL `PublicClientApplication`** живёт в хосте. Сейчас http-клиент, привязанный к MSAL, приходит из хоста через React-контекст (`useHttpClient()`), а его методы `get/post/put/patch/delete` инжектятся в фабрики `queryOptions`/mutation options внутри хуков.
-- Сейчас **QueryClient — синглтон в хосте**, общий для ремоутов. Каждый ремоут вручную делает standalone-версию со своим QueryClient для разработки и для запуска вне хоста. Кросс-приложенческое обновление (например, букмарки) сделано хаками через общий QueryClient. **Это уходит** (см. раздел 9, 12).
-- React — MF-синглтон. MF Bridge пока не используется.
-- Приложение закрытое (внутреннее), за прокси с дополнительными проверками и многоуровневыми банковскими системами доступа. Фронтовое security-hardening ремоутов — **низкий приоритет сейчас** (см. 8.6).
-- Ремоуты должны жить в **отдельных репозиториях (polyrepo)**: банк не хочет всех в одном репо, будут ремоуты от команд из других кластеров. Каждый ремоут публикует статическую сборку (Nexus или аналог), хост грузит её в рантайме.
-- Команда утвердила **Feature-Sliced Design v2.1** (pages first): слои `app`, `pages`, `shared` — всегда; `entities`, `features`, `widgets` — по требованию.
-- Бэкенд хочет **shared-репо с OpenAPI-спеками**, из которого генерируются Java-классы и TS-типы + zod-схемы; фронтовая часть публикуется npm-пакетом (см. раздел 15).
-
-### 1.2. Цели reference-монорепо
-
-- MUST показать рабочий хост + минимум один ремоут в **интегрированном режиме** (общий React, общий роутер, transitions/Suspense/ViewTransition через границу хост→ремоут работают).
-- MUST показать **standalone-режим** ремоута тем же кодом `RemoteRoot`.
-- MUST показать **изолированный режим (MF Bridge)** как fallback (может быть фаза-опция, см. раздел 20).
-- MUST реализовать платформенные пакеты по контракту из этого документа.
-- MUST содержать mock-бэкенды (BFF хоста, BFF ремоута, брокер событий вместо Kafka, realtime-каналы) для сквозных сценариев.
-- MUST содержать CLI: генерация ремоута, добавление FSD-слайсов, `verify`.
-- MUST покрыть сценарии из раздела 19 (они же — приёмочные критерии).
-
-### 1.3. Не цели
-
-- MUST NOT реализовывать реальную интеграцию с Entra ID как обязательную для запуска демо: по умолчанию mock-auth, MSAL-адаптер — реализован, но включается конфигом.
-- MUST NOT делать общий кэш данных между приложениями.
-- MUST NOT делать префетч данных ремоута из хоста сейчас — но архитектура MUST оставлять эту возможность (раздел 13).
-- MUST NOT строить frontend-security-изоляцию ремоутов (iframe и т.п.).
+1. Read the whole document before starting. The decisions are connected: for example, dropping the shared QueryClient affects devtools, realtime and preload.
+2. Work through the phases in section 20. After each phase, run the checks from section 21.
+3. If a requirement contradicts another one or cannot be met with the current library versions, **do not silently invent a workaround**: leave a `TODO(decision)` in the code and record the question in `docs/open-questions.md`.
+4. Check the current library APIs against their documentation (MF Vite plugin, React 19.3 `ViewTransition`, TanStack Query v5, React Router v7, MUI Joy, hey-api). The versions in section 2 are targets, but verify the exact signatures.
+5. The code style in section 3 is mandatory for all code in the repo.
 
 ---
 
-## 2. Стек и версии (целевые)
+## 1. Project context
 
-| Что | Версия / выбор | Примечание |
+### 1.1. What exists today (the real project we will adapt to)
+
+- A micro-frontend portal: **Module Federation + Vite + React 19**, TypeScript, **pnpm**, **MUI Joy UI** (through a design-system wrapper), **TanStack Query v5**, **React Hook Form**, **zod** (form validation through a resolver), **React Router** (not TanStack Router), **React Compiler** (so `useMemo`/`useCallback`/`memo` are forbidden by a lint rule), the **oxlint** linter, **Vitest** tests, **Azure DevOps** CI, Node pinned with **Volta**.
+- Backend: the host and every remote have **their own BFF** (Java). The BFFs receive **the same bearer token** the host authenticates with (MSAL / Entra ID). The Java BFFs enrich data from core services; Temporal is used on the Java side.
+- Auth: the **MSAL `PublicClientApplication`** lives in the host. Today an http client bound to MSAL comes from the host through a React context (`useHttpClient()`), and its `get/post/put/patch/delete` methods are injected into `queryOptions`/mutation options factories inside hooks.
+- Today the **QueryClient is a singleton in the host**, shared by the remotes. Each remote hand-builds a standalone version with its own QueryClient for development and for running outside the host. Cross-app updates (e.g. bookmarks) are done with hacks through the shared QueryClient. **This goes away** (see sections 9, 12).
+- React is an MF singleton. MF Bridge is not used yet.
+- The application is closed (internal), behind a proxy with additional checks and multi-level bank access systems. Front-end security hardening of remotes is **a low priority for now** (see 8.6).
+- Remotes must live in **separate repositories (polyrepo)**: the bank does not want everyone in one repo, and there will be remotes from teams in other clusters. Each remote publishes a static build (Nexus or similar); the host loads it at runtime.
+- The team has approved **Feature-Sliced Design v2.1** (pages first): the `app`, `pages`, `shared` layers always; `entities`, `features`, `widgets` on demand.
+- The backend wants a **shared repo with OpenAPI specs** from which Java classes and TS types + zod schemas are generated; the front-end part is published as an npm package (see section 15).
+
+### 1.2. Goals of the reference monorepo
+
+- MUST show a working host + at least one remote in **integrated mode** (shared React, shared router; transitions/Suspense/ViewTransition work across the host→remote boundary).
+- MUST show the remote's **standalone mode** with the same `RemoteRoot` code.
+- MUST show **isolated mode (MF Bridge)** as a fallback (may be an optional phase, see section 20).
+- MUST implement the platform packages according to the contract in this document.
+- MUST contain mock backends (host BFF, remote BFF, an event broker instead of Kafka, realtime channels) for end-to-end scenarios.
+- MUST contain a CLI: remote generation, adding FSD slices, `verify`.
+- MUST cover the scenarios in section 19 (they are also the acceptance criteria).
+
+### 1.3. Non-goals
+
+- MUST NOT make a real Entra ID integration required to run the demo: mock auth by default; the MSAL adapter is implemented but enabled by configuration.
+- MUST NOT build a shared data cache between applications.
+- MUST NOT prefetch remote data from the host now — but the architecture MUST keep this possible (section 13).
+- MUST NOT build front-end security isolation of remotes (iframes etc.).
+
+---
+
+## 2. Stack and versions (targets)
+
+| What | Version / choice | Note |
 |---|---|---|
-| Node | LTS, пин через Volta в root `package.json` | если Volta недоступна (заблокированная машина, работа в WSL) — дублировать версию в `engines` и `.nvmrc` |
-| Пакетный менеджер | pnpm workspaces | `.npmrc` с плейсхолдером реестра Nexus |
-| React / React DOM | **19.3+** | `ViewTransition` стабилен с 19.3 (вышел 9 сентября 2026, без breaking changes относительно 19.2) |
-| React Compiler | включён | `useMemo`/`useCallback`/`memo` запрещены |
-| Сборка | Vite + `@module-federation/vite` | сверить актуальный плагин MF 2.0 для Vite |
-| MF Bridge | `@module-federation/bridge-react` | только для изолированного режима |
-| Роутинг | React Router v7, **data router** (`createBrowserRouter`) | data router нужен для `useNavigation`, `lazy`, `loader` (будущий preload) |
-| UI | MUI Joy через пакет `@portal/ds` | emotion — синглтон |
-| Данные | TanStack Query v5 | **не** MF-синглтон |
-| Формы | React Hook Form + zod resolver | |
-| Валидация | zod (целевой мажор указать явно, генерация под него) | |
-| Кодоген API | hey-api (в репо `api-contracts`) | types + zod, без http-клиента |
-| Тесты | Vitest + Testing Library; e2e — Playwright (MAY) | |
-| Линт | oxlint + Steiger (FSD) | |
-| Mock-бэкенды | Node.js + Express (или Fastify), TypeScript | |
-| TS | `strict: true` в reference-монорепо | в реальном проекте strict сейчас выключен — пометить в docs как отличие |
+| Node | LTS, pinned through Volta in the root `package.json` | if Volta is unavailable (locked-down machine, work in WSL) — duplicate the version in `engines` and `.nvmrc` |
+| Package manager | pnpm workspaces | `.npmrc` with a Nexus registry placeholder |
+| React / React DOM | **19.3+** | `ViewTransition` is stable since 19.3 (released September 9, 2026, no breaking changes relative to 19.2) |
+| React Compiler | enabled | `useMemo`/`useCallback`/`memo` are forbidden |
+| Build | Vite + `@module-federation/vite` | check the current MF 2.0 plugin for Vite |
+| MF Bridge | `@module-federation/bridge-react` | isolated mode only |
+| Routing | React Router v7, **data router** (`createBrowserRouter`) | the data router is needed for `useNavigation`, `lazy`, `loader` (future preload) |
+| UI | MUI Joy through the `@portal/ds` package | emotion is a singleton |
+| Data | TanStack Query v5 | **not** an MF singleton |
+| Forms | React Hook Form + zod resolver | |
+| Validation | zod (state the target major explicitly; generation targets it) | |
+| API codegen | hey-api (in the `api-contracts` repo) | types + zod, no http client |
+| Tests | Vitest + Testing Library; e2e — Playwright (MAY) | |
+| Lint | oxlint + Steiger (FSD) | |
+| Mock backends | Node.js + Express (or Fastify), TypeScript | |
+| TS | `strict: true` in the reference monorepo | strict is currently off in the real project — mark it as a difference in the docs |
 
 ---
 
-## 3. Стиль кода (MUST для всего кода в репо)
+## 3. Code style (MUST for all code in the repo)
 
-- MUST NOT использовать `any`. Использовать дженерики библиотек для вывода типов (RHF field paths, `queryOptions` + DataTag для `setQueryData`, и т.д.). Где тип неизвестен — `unknown` + сужение.
-- MUST выносить логику в именованные функции, а не писать её инлайном (обработчики, мапперы, предикаты, селекторы).
-- MUST всегда ставить фигурные скобки вокруг тела `if`. Никаких однострочных `if (x) return y;`.
-- MUST использовать стрелочные функции вместо `function`-деклараций (компоненты тоже: `export const Foo = () => ...`).
-- MUST NOT использовать `useMemo`, `useCallback`, `React.memo` — работает React Compiler. Правило в oxlint (`no-restricted-imports` или аналог).
-- RHF: SHOULD использовать `useWatch`/`useFormState`/`useController` вместо `watch()` (совместимость с React Compiler).
-- Компонентные файлы — PascalCase, остальные — kebab-case.
-- Публичные API пакетов и FSD-слайсов — только через `index.ts`.
+- MUST NOT use `any`. Use library generics for type inference (RHF field paths, `queryOptions` + DataTag for `setQueryData`, etc.). Where a type is unknown — `unknown` + narrowing.
+- MUST move logic into named functions instead of writing it inline (handlers, mappers, predicates, selectors).
+- MUST always put braces around an `if` body. No one-line `if (x) return y;`.
+- MUST use arrow functions instead of `function` declarations (components too: `export const Foo = () => ...`).
+- MUST NOT use `useMemo`, `useCallback`, `React.memo` — React Compiler does the work. A rule in oxlint (`no-restricted-imports` or similar).
+- RHF: SHOULD use `useWatch`/`useFormState`/`useController` instead of `watch()` (React Compiler compatibility).
+- Component files — PascalCase, everything else — kebab-case.
+- Public APIs of packages and FSD slices — only through `index.ts`.
 
 ---
 
-## 4. Структура монорепо
+## 4. Monorepo structure
 
 ```
 portal-reference/
-├─ package.json                 # pnpm workspaces, volta, общие скрипты
+├─ package.json                 # pnpm workspaces, volta, shared scripts
 ├─ pnpm-workspace.yaml
 ├─ .npmrc                       # registry=<NEXUS_PLACEHOLDER>
 ├─ docs/
-│  ├─ architecture.md           # краткий обзор + ссылки на этот документ
-│  ├─ adr/                      # ADR по ключевым решениям (раздел 22)
+│  ├─ architecture.md           # short overview + links to this document
+│  ├─ adr/                      # ADRs for the key decisions (section 22)
 │  └─ open-questions.md
 ├─ apps/
-│  ├─ host/                     # хост-приложение
-│  ├─ tasks-remote/             # ремоут A (FSD 2.1), сгенерирован из шаблона CLI
-│  └─ legacy-remote/            # (опц.) ремоут на другой версии React для bridge-демо
+│  ├─ host/                     # the host application
+│  ├─ tasks-remote/             # remote A (FSD 2.1), generated from the CLI template
+│  └─ legacy-remote/            # (opt.) a remote on another React version for the bridge demo
 ├─ packages/
-│  ├─ platform-contract/        # @portal/platform-contract — только типы контракта
-│  ├─ platform-runtime/         # @portal/platform-runtime — провайдеры, фабрики, хуки, devtools, realtime
-│  ├─ ds/                       # @portal/ds — дизайн-система (Joy) + примитивы загрузки
-│  ├─ mf-shared/                # @portal/mf-shared — (опц.) хелпер shared-конфига + константы exposes
-│  ├─ presets/                  # @portal/presets — (опц.) tsconfig/oxlint/vitest/steiger пресеты
+│  ├─ platform-contract/        # @portal/platform-contract — contract types only
+│  ├─ platform-runtime/         # @portal/platform-runtime — providers, factories, hooks, devtools, realtime
+│  ├─ ds/                       # @portal/ds — design system (Joy) + loading primitives
+│  ├─ mf-shared/                # @portal/mf-shared — (opt.) shared-config helper + exposes constants
+│  ├─ presets/                  # @portal/presets — (opt.) tsconfig/oxlint/vitest/steiger presets
 │  └─ portal-cli/               # portal-cli — create / add / verify
-├─ api-contracts/               # симуляция shared-репо бэкенда с OpenAPI-спеками
+├─ api-contracts/               # simulation of the backend's shared repo with OpenAPI specs
 │  ├─ specs/
 │  │  ├─ host-bff.yaml
 │  │  └─ tasks-bff.yaml
 │  ├─ packages/
-│  │  ├─ host-bff-api/          # @portal-api/host-bff  (сгенерировано: types + zod)
-│  │  └─ tasks-bff-api/         # @portal-api/tasks-bff (сгенерировано: types + zod)
-│  └─ scripts/                  # генерация, lint спек, oasdiff
+│  │  ├─ host-bff-api/          # @portal-api/host-bff  (generated: types + zod)
+│  │  └─ tasks-bff-api/         # @portal-api/tasks-bff (generated: types + zod)
+│  └─ scripts/                  # generation, spec lint, oasdiff
 └─ mock-backend/
-   ├─ broker/                   # in-memory брокер событий вместо Kafka
-   ├─ host-bff/                 # BFF хоста: букмарки-агрегат, realtime-канал хоста
-   └─ tasks-bff/                # BFF ремоута: задачи, букмарки ремоута, realtime-канал ремоута
+   ├─ broker/                   # in-memory event broker instead of Kafka
+   ├─ host-bff/                 # the host's BFF: bookmarks aggregate, the host's realtime channel
+   └─ tasks-bff/                # the remote's BFF: tasks, the remote's bookmarks, the remote's realtime channel
 ```
 
-Правила:
-- MUST: `apps/*` зависят от `packages/*` и `api-contracts/packages/*` через `workspace:*`, но **код приложений не должен знать, что он в монорепо**: никаких относительных импортов между приложениями, только пакеты. Это нужно, чтобы потом разрезать на polyrepo без переписывания.
-- MUST: `apps/tasks-remote` должен быть **эквивалентен выходу `portal-cli create remote tasks`** (раздел 16). Идеально — сгенерирован им и затем дополнен демо-фичами.
-- MUST: каждый `apps/*` собирается и запускается независимо (`pnpm --filter <app> dev|build|preview`).
+Rules:
+- MUST: `apps/*` depend on `packages/*` and `api-contracts/packages/*` through `workspace:*`, but **application code must not know it lives in a monorepo**: no relative imports between applications, only packages. This is needed to split into a polyrepo later without rewriting.
+- MUST: `apps/tasks-remote` must be **equivalent to the output of `portal-cli create remote tasks`** (section 16). Ideally generated by it and then extended with demo features.
+- MUST: every `apps/*` builds and runs independently (`pnpm --filter <app> dev|build|preview`).
 
 ---
 
-## 5. Уровни доставки кода (кто что владеет)
+## 5. Code delivery levels (who owns what)
 
-| Уровень | Что | Доставка | Ремоут может менять? |
+| Level | What | Delivery | Can a remote change it? |
 |---|---|---|---|
-| Runtime-синглтоны | `react`, `react-dom`, `react-router`, `@emotion/react`, `@emotion/styled`, `@mui/joy`, `@portal/ds` | MF shared, `singleton: true`, диапазон версий | Нет, только в пределах диапазона |
-| Версионируемые пакеты (бандлятся в каждое приложение) | `@portal/platform-contract` (типы), `@portal/platform-runtime`, TanStack Query, RHF, zod | npm, своя версия у каждого приложения | Версию — да |
-| API-контракт | `@portal-api/<bff>` (types + zod) | npm из shared-репо бэкенда | Версию — да; может писать типы руками |
-| Контракт интеграции | имя ремоута, имена и сигнатуры exposes, список shared-синглтонов и диапазоны, версия `platform-contract` | шаблон CLI + `portal-cli verify` + рантайм-проверка хоста | Нет |
-| Внутренние конфиги | tsconfig, oxlint, Steiger, Vitest, остальной Vite, пайплайн | шаблон CLI (генерируется один раз), пресеты — по желанию | Да, как угодно |
+| Runtime singletons | `react`, `react-dom`, `react-router`, `@emotion/react`, `@emotion/styled`, `@mui/joy`, `@portal/ds` | MF shared, `singleton: true`, version range | No, only within the range |
+| Versioned packages (bundled into every app) | `@portal/platform-contract` (types), `@portal/platform-runtime`, TanStack Query, RHF, zod | npm, each app has its own version | The version — yes |
+| API contract | `@portal-api/<bff>` (types + zod) | npm from the backend's shared repo | The version — yes; may write types by hand |
+| Integration contract | the remote's name, expose names and signatures, the list of shared singletons and their ranges, the `platform-contract` version | CLI template + `portal-cli verify` + the host's runtime check | No |
+| Internal configs | tsconfig, oxlint, Steiger, Vitest, the rest of Vite, the pipeline | CLI template (generated once), presets — optional | Yes, freely |
 
-**Почему:** синглтоном делаем только то, где **идентичность объекта** должна совпадать между деревом хоста и деревом ремоута (React-контексты: роутер, тема emotion/Joy, DS). Всё, что можно передать значением — через контракт пропсами. Всё, что должно быть одинаковым, но не требует общей идентичности — версионируемые пакеты. Это минимизирует навязывание стека другим командам.
+**Why:** we make a singleton only where **object identity** must match between the host's tree and the remote's tree (React contexts: router, emotion/Joy theme, DS). Everything that can be passed as a value goes through the contract as props. Everything that must be the same but does not need shared identity is a versioned package. This minimizes imposing a stack on other teams.
 
-Отдельное напряжение: DS-синглтон означает, что все на одном мажоре DS. Ослабление: тема Joy на CSS-переменных, чтобы визуальная согласованность держалась на токенах (записать в `open-questions.md`).
+A separate tension: a DS singleton means everyone is on one DS major. Mitigation: a Joy theme on CSS variables, so visual consistency rests on tokens (record it in `open-questions.md`).
 
 ---
 
-## 6. Пакет `@portal/platform-contract` (только типы)
+## 6. The `@portal/platform-contract` package (types only)
 
-MUST содержать **только типы и одну константу версии контракта** (никакого другого рантайм-кода, ноль зависимостей от TanStack Query/MSAL/React). Это единственное, о чём обязаны договориться все команды.
+MUST contain **only types and one contract-version constant** (no other runtime code, zero dependencies on TanStack Query/MSAL/React). It is the only thing all teams must agree on.
 
 ```ts
 // packages/platform-contract/src/index.ts
 
-export const PLATFORM_CONTRACT_VERSION = 1 as const; // единственная константа; допустимо как const-тип
+export const PLATFORM_CONTRACT_VERSION = 1 as const; // the only constant; acceptable as a const type
 export type PlatformContractVersion = typeof PLATFORM_CONTRACT_VERSION;
 
 export type PlatformContract = {
@@ -167,7 +167,7 @@ export type PlatformContract = {
   telemetry: PlatformTelemetry;
   locale: PlatformLocale;
   devtools?: PlatformDevtools;
-  bridge?: PlatformBridgeOptions; // только для изолированного режима (MF Bridge)
+  bridge?: PlatformBridgeOptions; // isolated mode (MF Bridge) only
 };
 
 // ---------- auth ----------
@@ -186,25 +186,25 @@ export type PlatformAuthEvent =
   | { type: 'token-refresh-failed'; reason: string };
 
 export type PlatformAuth = {
-  /** Возвращает access token под scopes. Scopes проверяются по allowlist ремоута. Никогда не запускает интерактив сама. */
+  /** Returns an access token for the scopes. Scopes are checked against the remote's allowlist. Never starts interaction itself. */
   getAccessToken: (scopes: readonly string[]) => Promise<string>;
   getAccount: () => PlatformAccount | null;
   subscribe: (listener: (event: PlatformAuthEvent) => void) => () => void;
-  /** Просит хост провести интерактивный логин/consent (redirect). Ремоут сам redirect/popup НЕ делает. */
+  /** Asks the host to run interactive login/consent (redirect). A remote does NOT do redirect/popup itself. */
   requestInteraction: (scopes: readonly string[]) => Promise<void>;
 };
 
 // ---------- env ----------
 export type PlatformEnv = {
   name: 'local' | 'dev' | 'test' | 'uat' | 'prod' | (string & {});
-  /** Адреса конкретных BFF ремоут берёт из своего runtime-конфига; хост их не знает. */
+  /** A remote takes the addresses of specific BFFs from its own runtime config; the host does not know them. */
   hostOrigin: string;
 };
 
-// ---------- локальная шина событий (браузер, между приложениями) ----------
+// ---------- local event bus (browser, between applications) ----------
 export type PlatformEventMap = {
   'bookmarks.changed': { source: string; correlationId?: string };
-  // расширяется через declaration merging в приложениях
+  // extended through declaration merging in applications
 };
 
 export type PlatformEventBus = {
@@ -228,47 +228,47 @@ export type PlatformLocale = {
 };
 
 // ---------- devtools ----------
-/** Ремоут монтирует СВОИ devtools в DOM-контейнер хоста. Хост не получает QueryClient. */
+/** A remote mounts ITS OWN devtools into a host DOM container. The host does not receive a QueryClient. */
 export type MountDevtoolsPanel = (container: HTMLElement) => () => void;
 
 export type PlatformDevtools = {
-  /** Регистрирует панель (вызывается при создании QueryClient ремоута). Возвращает функцию снятия регистрации. */
+  /** Registers a panel (called when the remote's QueryClient is created). Returns an unregister function. */
   registerPanel: (name: string, mount: MountDevtoolsPanel) => () => void;
-  /** Помечает, что роуты приложения сейчас смонтированы (для автовыбора). Возвращает функцию «размонтирован». */
+  /** Marks that the application's routes are mounted right now (for auto-selection). Returns an "unmounted" function. */
   markMounted: (name: string) => () => void;
 };
 
-// ---------- bridge (изолированный режим) ----------
+// ---------- bridge (isolated mode) ----------
 export type PlatformBridgeOptions = {
   basename: string;
   navigateToHost: (path: string) => void;
 };
 ```
 
-Требования:
-- MUST NOT включать `realtime` в контракт: у каждого приложения своё соединение к своему BFF (раздел 12).
-- MUST NOT включать http-клиент в контракт: ремоут собирает его сам из `auth.getAccessToken` и адреса своего BFF (хост не должен знать адреса BFF ремоутов).
-- MUST NOT включать QueryClient/типы TanStack в контракт.
-- Эволюция контракта: SHOULD только аддитивные изменения; ломающее изменение → бамп `PLATFORM_CONTRACT_VERSION`, хост поддерживает диапазон версий (раздел 17).
+Requirements:
+- MUST NOT include `realtime` in the contract: each application has its own connection to its own BFF (section 12).
+- MUST NOT include an http client in the contract: a remote builds it itself from `auth.getAccessToken` and the address of its BFF (the host must not know the remotes' BFF addresses).
+- MUST NOT include a QueryClient or TanStack types in the contract.
+- Contract evolution: SHOULD be additive only; a breaking change → bump `PLATFORM_CONTRACT_VERSION`, the host supports a range of versions (section 17).
 
 ---
 
-## 7. Пакет `@portal/platform-runtime`
+## 7. The `@portal/platform-runtime` package
 
-Бандлится в каждое приложение (НЕ синглтон). Контекст `PlatformProvider` **не обязан** быть синглтоном, потому что ремоут всегда сам оборачивает себя провайдером из пропсов (раздел 10.3).
+Bundled into every application (NOT a singleton). The `PlatformProvider` context **does not have to** be a singleton, because a remote always wraps itself in a provider built from its props (section 10.3).
 
-### 7.1. Состав (публичный API)
+### 7.1. Contents (public API)
 
 ```
 @portal/platform-runtime
 ├─ provider/      PlatformProvider, usePlatform, usePlatformAuth, usePlatformEvents, ...
-├─ auth/          createRemoteAuth (allowlist), createMsalPlatformAuth (адаптер MSAL),
-│                 createMockPlatformAuth (для локалки/демо), useClearCacheOnAccountChange
+├─ auth/          createRemoteAuth (allowlist), createMsalPlatformAuth (MSAL adapter),
+│                 createMockPlatformAuth (for local work/demo), useClearCacheOnAccountChange
 ├─ http/          createHttpClient
-├─ query/         createPortalQueryClient (фабрика с общими дефолтами)
+├─ query/         createPortalQueryClient (a factory with shared defaults)
 ├─ realtime/      createRealtimeClient, RealtimeProvider, useInvalidateOnEvent, useRealtimeStatus
 ├─ events/        createPlatformEventBus
-├─ telemetry/     createConsoleTelemetry (демо)
+├─ telemetry/     createConsoleTelemetry (demo)
 ├─ devtools/      createDevtoolsRegistry, DevtoolsToolbar, createQueryDevtoolsMount, useMarkMounted
 ├─ standalone/    createStandalonePlatform
 └─ compat/        isSameReactInstance, isContractVersionSupported
@@ -276,9 +276,9 @@ export type PlatformBridgeOptions = {
 
 ### 7.2. `createPortalQueryClient`
 
-- MUST быть **фабрикой**, а не инстансом.
-- Дефолты (SHOULD, обсуждаемо): разумный `staleTime` (например 30 с), `retry` — не ретраить 401/403/404 и ошибки zod-валидации, ретраить сетевые/5xx до 2 раз; `refetchOnWindowFocus: true` (страховка для пропущенных realtime-событий); общий `onError` в `QueryCache`/`MutationCache` → `telemetry.logError`.
-- Принимает опции для переопределения.
+- MUST be a **factory**, not an instance.
+- Defaults (SHOULD, open to discussion): a sensible `staleTime` (e.g. 30 s); `retry` — do not retry 401/403/404 and zod validation errors, retry network errors/5xx up to 2 times; `refetchOnWindowFocus: true` (a safety net for missed realtime events); a shared `onError` in `QueryCache`/`MutationCache` → `telemetry.logError`.
+- Accepts options to override them.
 
 ### 7.3. `createHttpClient`
 
@@ -289,76 +289,76 @@ type HttpClientOptions = {
   auth: PlatformAuth;
   telemetry?: PlatformTelemetry;
 };
-// возвращает { get, post, put, patch, delete } с дженериками и обязательной zod-схемой ответа:
+// returns { get, post, put, patch, delete } with generics and a required zod schema for the response:
 // get: <TSchema extends z.ZodType>(path: string, schema: TSchema, init?: RequestOptions) => Promise<z.infer<TSchema>>
 ```
-- MUST добавлять `Authorization: Bearer <token>` из `auth.getAccessToken(scopes)`.
-- MUST валидировать ответ zod-схемой (ответы с бэкенда — граница доверия).
-- MUST на 401 один раз повторить запрос после повторного получения токена; если снова 401 и это `InteractionRequired` — вызвать `auth.requestInteraction(scopes)`.
-- MUST поддерживать `X-Correlation-Id` (генерировать на мутации, раздел 12.5).
-- MUST поддерживать `AbortSignal` (TanStack передаёт `signal` в `queryFn`).
-- Методы инжектятся в фабрики `queryOptions`/mutation options внутри хуков (сохраняем текущую конвенцию проекта).
+- MUST add `Authorization: Bearer <token>` from `auth.getAccessToken(scopes)`.
+- MUST validate the response with the zod schema (backend responses are a trust boundary).
+- MUST, on 401, retry the request once after getting the token again; if it is 401 again and `InteractionRequired` — call `auth.requestInteraction(scopes)`.
+- MUST support `X-Correlation-Id` (generated on mutations, section 12.5).
+- MUST support `AbortSignal` (TanStack passes `signal` to `queryFn`).
+- The methods are injected into `queryOptions`/mutation options factories inside hooks (keeping the project's current convention).
 
-### 7.4. Auth-адаптеры
+### 7.4. Auth adapters
 
-- `createMsalPlatformAuth(pca)` — реализация `PlatformAuth` поверх **одного** `PublicClientApplication`. `subscribe` — обёртка над `pca.addEventCallback`/`removeEventCallback` с маппингом в `PlatformAuthEvent`. `getAccessToken` — `acquireTokenSilent` с активным аккаунтом. `requestInteraction` — централизованный `acquireTokenRedirect` (в хосте одна точка интерактива).
-- `createRemoteAuth(baseAuth, remoteName, allowedScopes)` — обёртка для каждого ремоута: проверяет scopes по allowlist, бросает ошибку при запрещённом scope; на `InteractionRequiredAuthError` не делает интерактив, а пробрасывает в `requestInteraction`.
-- `createMockPlatformAuth({ account, tokenTtlMs })` — фейковые токены (непрозрачная строка с exp), события login/logout/account-changed по кнопке в демо-панели. Используется по умолчанию в демо.
-- `useClearCacheOnAccountChange(platform, getQueryClient)` — на `logout`/`account-changed` делает `queryClient.clear()`.
+- `createMsalPlatformAuth(pca)` — a `PlatformAuth` implementation on top of **one** `PublicClientApplication`. `subscribe` wraps `pca.addEventCallback`/`removeEventCallback`, mapping to `PlatformAuthEvent`. `getAccessToken` — `acquireTokenSilent` with the active account. `requestInteraction` — a centralized `acquireTokenRedirect` (one interaction point in the host).
+- `createRemoteAuth(baseAuth, remoteName, allowedScopes)` — a wrapper per remote: checks scopes against the allowlist, throws on a forbidden scope; on `InteractionRequiredAuthError` it does not run interaction itself but forwards to `requestInteraction`.
+- `createMockPlatformAuth({ account, tokenTtlMs })` — fake tokens (an opaque string with exp), login/logout/account-changed events from a button in the demo panel. Used by default in the demo.
+- `useClearCacheOnAccountChange(platform, getQueryClient)` — calls `queryClient.clear()` on `logout`/`account-changed`.
 
-Правила MSAL (MUST, задокументировать в `docs/adr`):
-- Один `PublicClientApplication` на одну app registration на странице. Второй инстанс с тем же clientId → `interaction_in_progress` и сломанные redirect.
-- Интерактивный логин — **только хост**.
-- Токены MUST NOT попадать в URL (query string) ни в http, ни в realtime.
+MSAL rules (MUST, document in `docs/adr`):
+- One `PublicClientApplication` per app registration on the page. A second instance with the same clientId → `interaction_in_progress` and broken redirects.
+- Interactive login — **the host only**.
+- Tokens MUST NOT end up in a URL (query string), neither in http nor in realtime.
 
-Ремоуты, которым «нужна своя авторизация» (реальная проблема: часть ремоутов интегрирована задним числом и использует авторизацию, отличную от глобальной хоста). Задокументировать как три случая:
-1. **Тот же тенант, другой API.** Отдельная авторизация не нужна: хост получает токен под scopes их API через `getAccessToken`; app registration хоста выдаются права на их API (admin consent). Это MUST быть путём по умолчанию.
-2. **Отдельная app registration у команды.** Предпочтительно свести к случаю 1. Если нельзя — второй PCA с **другим** clientId допустим только в тихом режиме: `ssoSilent` с `loginHint` из аккаунта хоста, никаких redirect/popup со стороны ремоута. `ssoSilent` использует скрытый iframe → проверить при блокировке сторонних cookies в браузере банка. В демо — MAY пример адаптера `createSecondaryMsalAuth`, выключенный по умолчанию.
-3. **Другой IdP / другой кластер.** Задача бэкенда: фронт отдаёт токен хоста, BFF ремоута обменивает его через On-Behalf-Of. Это убирает «зоопарк» авторизаций из браузера. Долгосрочно для банка — обсудить BFF, держащий токены (cookie-сессия), чтобы токенов в браузере не было вовсе.
+Remotes that "need their own auth" (a real problem: some remotes were integrated after the fact and use auth different from the host's global one). Document three cases:
+1. **Same tenant, another API.** No separate auth is needed: the host gets a token for their API's scopes through `getAccessToken`; the host's app registration is granted permissions to their API (admin consent). This MUST be the default path.
+2. **A team's own app registration.** Preferably reduce it to case 1. If impossible — a second PCA with a **different** clientId is acceptable only in silent mode: `ssoSilent` with a `loginHint` from the host's account, no redirect/popup from the remote. `ssoSilent` uses a hidden iframe → check it with third-party cookies blocked in the bank's browser. In the demo — MAY an example `createSecondaryMsalAuth` adapter, off by default.
+3. **Another IdP / another cluster.** A backend task: the front end hands over the host's token, the remote's BFF exchanges it through On-Behalf-Of. This removes the "zoo" of auth flows from the browser. Long term for the bank — discuss a BFF that holds the tokens (cookie session), so there are no tokens in the browser at all.
 
-Источник правды по правам — бэкенд (пример: эндпоинт разрешённых действий `process-actions`). Access gates в UI — для удобства, не для защиты; реализуются suspense-запросами прав внутри приложения и используют тот же отложенный фоллбэк.
+The source of truth for permissions is the backend (example: the allowed-actions endpoint `process-actions`). Access gates in the UI are for convenience, not protection; they are implemented with suspense queries for permissions inside the application and use the same delayed fallback.
 
 ### 7.5. `createPlatformEventBus`
 
-- Реализация `PlatformEventBus` на `EventTarget`/`CustomEvent` внутри вкладки. MAY опция `BroadcastChannel` для межвкладочной доставки (выключена по умолчанию: межвкладочное покрывает серверный realtime).
-- Используется как **опциональный быстрый путь** (раздел 12.5), не как основной механизм инвалидации.
+- A `PlatformEventBus` implementation on `EventTarget`/`CustomEvent` within a tab. MAY a `BroadcastChannel` option for cross-tab delivery (off by default: server realtime covers cross-tab).
+- Used as an **optional fast path** (section 12.5), not as the main invalidation mechanism.
 
-### 7.6. Realtime (раздел 12 — подробно)
+### 7.6. Realtime (section 12 — in detail)
 
 `createRealtimeClient({ url, auth, scopes, telemetry, transport })`, `RealtimeProvider`, `useInvalidateOnEvent(topic, queryKeyOrPredicate, options)`, `useRealtimeStatus()`.
 
-### 7.7. Devtools (раздел 11 — подробно)
+### 7.7. Devtools (section 11 — in detail)
 
 `createDevtoolsRegistry()`, `DevtoolsToolbar`, `createQueryDevtoolsMount(queryClient)`.
 
 ### 7.8. `createStandalonePlatform(config)`
 
-Собирает полный `PlatformContract` для standalone-режима ремоута: свой PCA (или mock-auth по конфигу), свой event bus, своя телеметрия, свой devtools-реестр. MUST возвращать тот же тип, что даёт хост, чтобы `RemoteRoot` не знал, где он запущен.
+Builds a full `PlatformContract` for the remote's standalone mode: its own PCA (or mock auth per config), its own event bus, its own telemetry, its own devtools registry. MUST return the same type the host provides, so `RemoteRoot` does not know where it runs.
 
 ### 7.9. `compat`
 
-- `isSameReactInstance(remoteCreateElement)` — сравнение **по ссылке** функции `createElement` хоста и ремоута. MUST NOT сравнивать строку `React.version` (одинаковая версия ≠ один инстанс).
+- `isSameReactInstance(remoteCreateElement)` — compares the host's and the remote's `createElement` functions **by reference**. MUST NOT compare the `React.version` string (the same version ≠ the same instance).
 - `isContractVersionSupported(version, supportedRange)`.
 
 ---
 
-## 8. Пакет `@portal/ds` (дизайн-система + примитивы загрузки)
+## 8. The `@portal/ds` package (design system + loading primitives)
 
-MF-синглтон. Обёртка над MUI Joy + токены + примитивы загрузки. Здесь же фиксируются все правила индикации загрузки.
+An MF singleton. A wrapper around MUI Joy + tokens + loading primitives. All loading-indication rules are fixed here as well.
 
-### 8.1. Принципы паттерна загрузки
+### 8.1. Principles of the loading pattern
 
-- До **300 мс** — никакого лоадера.
-- После 300 мс — индикатор на месте действия (кнопка) или спиннер фоллбэка.
-- После **2 с** — блокирующий оверлей региона.
-- Индикация задерживается **CSS-средствами**, а не JS-таймерами, везде, где это возможно: ноль ререндеров, анимация только `opacity`/`transform` (компоризитор), работает и в Suspense-фоллбэках (у которых нет boolean для задержки).
-- `minDuration` (защита от мигания) в CSS эмулируется коротким fade-in: если контент пришёл сразу после порога, спиннер успевает проявиться лишь на несколько процентов прозрачности.
-- React 19 троттлит раскрытие Suspense-контента после коммита фоллбэка (~300 мс, `FALLBACK_THROTTLE_MS`, в dev и prod; `act()` его обходит, поэтому в unit-тестах не видно). Следствие: при задержке спиннера ≥ 300 мс быстрые загрузки спиннер не покажут никогда. Задокументировать в ADR.
-- MUST уважать `prefers-reduced-motion`.
+- Up to **300 ms** — no loader at all.
+- After 300 ms — an indicator at the place of the action (a button) or the fallback spinner.
+- After **2 s** — a blocking overlay over the region.
+- Indication is delayed **with CSS**, not with JS timers, wherever possible: zero re-renders, only `opacity`/`transform` are animated (the compositor), and it works in Suspense fallbacks too (which have no boolean to delay on).
+- `minDuration` (protection against flashing) is emulated in CSS with a short fade-in: if the content arrives right after the threshold, the spinner only reaches a few percent of opacity.
+- React 19 throttles revealing Suspense content after a fallback commits (~300 ms, `FALLBACK_THROTTLE_MS`, in dev and prod; `act()` bypasses it, so unit tests do not show it). Consequence: with a spinner delay ≥ 300 ms, fast loads will never show the spinner. Document it in an ADR.
+- MUST respect `prefers-reduced-motion`.
 
 ### 8.2. `Spinner`
 
-- Проп `delay` (мс), по умолчанию **300**; записывается в CSS-переменную `--spinner-delay`. `delay={0}` — без задержки (когда задержка решена снаружи, например в кнопке).
+- A `delay` prop (ms), **300** by default; written to the `--spinner-delay` CSS variable. `delay={0}` — no delay (when the delay is handled outside, e.g. in a button).
 - CSS:
   ```css
   .spinner {
@@ -369,11 +369,11 @@ MF-синглтон. Обёртка над MUI Joy + токены + примит
   }
   @keyframes spinner-in { from { opacity: 0; } to { opacity: 1; } }
   ```
-- MUST использоваться как дефолтный фоллбэк Suspense во всём портале (хост и ремоуты), чтобы «матрёшка» лоадеров хоста и ремоута выглядела как один лоадер.
+- MUST be used as the default Suspense fallback across the portal (host and remotes), so the nested loaders of the host and the remote look like one loader.
 
-### 8.3. `PendingRegion` + `AsyncButton` (стадии без лишних рендеров)
+### 8.3. `PendingRegion` + `AsyncButton` (stages without extra renders)
 
-- `PendingRegion({ isPending, children })` ставит **один** атрибут `data-pending` и `aria-busy`; все стадии разводит CSS асимметричными `transition-delay` (задержка на входе, без задержки на выходе).
+- `PendingRegion({ isPending, children })` sets **one** `data-pending` attribute and `aria-busy`; CSS separates all stages with asymmetric `transition-delay` (a delay on enter, none on exit).
   ```css
   .btn-spinner { opacity: 0; transition: opacity 120ms; }
   [data-pending] .btn-spinner { opacity: 1; transition-delay: 300ms; }
@@ -381,64 +381,64 @@ MF-синглтон. Обёртка над MUI Joy + токены + примит
   .pending-overlay { opacity: 0; visibility: hidden; transition: opacity 150ms, visibility 0s 150ms; }
   [data-pending] .pending-overlay { opacity: 1; visibility: visible; transition: opacity 200ms 2s, visibility 0s 2s; }
   ```
-- `AsyncButton({ isPending, ... })`: MUST быть `disabled` **сразу** по `isPending` (защита от двойного сабмита в первые 300 мс), визуальный спиннер — через 300 мс. Спиннер в том же grid-слое, что и лейбл → ширина кнопки не прыгает.
-- Пороги — CSS-переменные (`--pending-button-delay: 300ms`, `--pending-overlay-delay: 2s`), переопределяемые.
-- Объявление «всё ещё загружается» для скринридеров: **единственное место**, где нужен JS — `aria-live`-регион, который включается через `useSpinDelay(isPending, { delay: 2000 })` (пакет `spin-delay`) или эквивалент.
+- `AsyncButton({ isPending, ... })`: MUST be `disabled` **immediately** on `isPending` (protection against a double submit in the first 300 ms); the visual spinner comes after 300 ms. The spinner sits in the same grid cell as the label → the button's width does not jump.
+- The thresholds are CSS variables (`--pending-button-delay: 300ms`, `--pending-overlay-delay: 2s`) and can be overridden.
+- The "still loading" announcement for screen readers is **the only place** that needs JS: an `aria-live` region switched on through `useSpinDelay(isPending, { delay: 2000 })` (the `spin-delay` package) or an equivalent.
 
-### 8.4. `useLoadingStage` (JS-вариант, когда стадия нужна логике)
+### 8.4. `useLoadingStage` (the JS variant, when logic needs the stage)
 
-Для случаев, когда стадия влияет на логику/текст/аналитику (а не только на визуал):
+For cases where the stage affects logic/text/analytics (not just visuals):
 ```ts
 type LoadingStage = 'idle' | 'button' | 'blocking';
-// реализация: два useSpinDelay с разными delay поверх одного isPending, ssr: false
+// implementation: two useSpinDelay with different delays over one isPending, ssr: false
 ```
-SHOULD использоваться редко; по умолчанию — CSS.
+SHOULD be used rarely; CSS by default.
 
 ### 8.5. `AsyncBoundary`
 
-Generic async boundary: `QueryErrorResetBoundary` + `ErrorBoundary` (react-error-boundary) + `Suspense` с `Spinner`-фоллбэком по умолчанию. Пропы для кастомного фоллбэка/ошибки. Ошибки рендерятся через DS `Alert` (в реальном проекте `Alert` принимает `title` пропом).
+A generic async boundary: `QueryErrorResetBoundary` + `ErrorBoundary` (react-error-boundary) + `Suspense` with a `Spinner` fallback by default. Props for a custom fallback/error. Errors are rendered through the DS `Alert` (in the real project `Alert` takes `title` as a prop).
 
-### 8.6. Безопасность (принятый риск)
+### 8.6. Security (accepted risk)
 
-Задокументировать в ADR: ремоуты исполняются в том же origin и JS-реалме; allowlist scopes защищает от ошибок, не от злого умысла. Сейчас — **осознанно принятый риск** (закрытое приложение, прокси, многоуровневый доступ, контролируемый Nexus). Минимум, который MUST быть: CSP с allowlist источников ремоутов (`script-src`/`connect-src`) в конфиге хоста.
-
----
-
-## 9. QueryClient: у каждого приложения свой
-
-**Решение:** общий QueryClient не нужен — хост и каждый ремоут ходят только в свой BFF; shared-кэш данных не нужен. Каждый ремоут **всегда** владеет своим QueryClient, в любом режиме.
-
-- MUST: `getRemoteQueryClient(platform)` — ленивый **модульный синглтон** в `shared/api/query-client.ts` ремоута. Создаётся при первом обращении (не в теле `RemoteRoot`), через `createPortalQueryClient()`.
-- MUST: при создании клиента ремоут регистрирует свою devtools-панель (`platform.devtools?.registerPanel`) — раздел 11.
-- MUST: `useClearCacheOnAccountChange` в `RemoteRoot`.
-- MUST: query keys начинаются с неймспейса приложения, затем доменный scope (`['tasks', 'list', filters]`, `['tasks', 'detail', taskId]`). После разделения кэшей это не обязательно для корректности, но MUST сохраняться ради читаемости в devtools.
-- MUST: ключи — из фабрик `queryOptions(...)`, чтобы `setQueryData(options.queryKey, ...)` выводил тип через DataTag без `any`.
-- MUST: отдельный `QueryClientProvider` ремоута внутри дерева хоста не ломает transitions/Suspense/ViewTransition — им нужен общий корень React, а не общий кэш. Проверить в демо.
+Document in an ADR: remotes run in the same origin and JS realm; the scope allowlist protects against mistakes, not against malice. For now — a **consciously accepted risk** (closed application, proxy, multi-level access, controlled Nexus). The minimum that MUST exist: a CSP with an allowlist of remote sources (`script-src`/`connect-src`) in the host's config.
 
 ---
 
-## 10. Module Federation: режимы интеграции
+## 9. QueryClient: every application has its own
+
+**Decision:** a shared QueryClient is not needed — the host and every remote only call their own BFF; a shared data cache is not needed. Every remote **always** owns its QueryClient, in every mode.
+
+- MUST: `getRemoteQueryClient(platform)` — a lazy **module-level singleton** in the remote's `shared/api/query-client.ts`. Created on first access (not in the body of `RemoteRoot`), through `createPortalQueryClient()`.
+- MUST: when the client is created, the remote registers its devtools panel (`platform.devtools?.registerPanel`) — section 11.
+- MUST: `useClearCacheOnAccountChange` in `RemoteRoot`.
+- MUST: query keys start with the application's namespace, then a domain scope (`['tasks', 'list', filters]`, `['tasks', 'detail', taskId]`). With separate caches this is no longer required for correctness, but MUST be kept for readability in devtools.
+- MUST: keys come from `queryOptions(...)` factories, so `setQueryData(options.queryKey, ...)` infers the type through DataTag without `any`.
+- MUST: a remote's own `QueryClientProvider` inside the host's tree does not break transitions/Suspense/ViewTransition — they need a shared React root, not a shared cache. Verify it in the demo.
+
+---
+
+## 10. Module Federation: integration modes
 
 ### 10.1. Shared
 
-- MUST синглтоны: `react`, `react-dom` (диапазон, например `^19.3.0`), `react-router` (+ `react-router-dom`, если используется), `@emotion/react`, `@emotion/styled`, `@mui/joy`, `@portal/ds`.
-  - **Почему `react-router`:** ремоут в интегрированном режиме рендерит свои `<Routes>` внутри роутера хоста; без общего объекта контекста `useNavigate` ремоута не видит роутер.
-  - **Почему emotion/Joy:** тема Joy держится на контексте emotion; две копии → две темы и дубли стилей.
-- MUST NOT синглтоны: `@tanstack/react-query`, `react-hook-form`, `zod`, `@portal/platform-runtime`. MAY: `@tanstack/react-query` как shared **без** singleton для дедупликации совпадающих версий — оптимизация, не требование.
-- Нюанс MF (задокументировать): `singleton: true` при несовпадении версии обычно не подключает собственную копию ремоута — даёт предупреждение и использует общий инстанс; `strictVersion: true` → ошибка. Поэтому «шарить, если совместимо, иначе своя копия» конфигом не гарантируется → **решаем рантайм-проверкой** (10.4). Поведение конкретного Vite-плагина MF проверить на стенде и записать в docs.
+- MUST be singletons: `react`, `react-dom` (a range, e.g. `^19.3.0`), `react-router` (+ `react-router-dom` if used), `@emotion/react`, `@emotion/styled`, `@mui/joy`, `@portal/ds`.
+  - **Why `react-router`:** in integrated mode a remote renders its `<Routes>` inside the host's router; without a shared context object the remote's `useNavigate` does not see the router.
+  - **Why emotion/Joy:** the Joy theme lives in the emotion context; two copies → two themes and duplicated styles.
+- MUST NOT be singletons: `@tanstack/react-query`, `react-hook-form`, `zod`, `@portal/platform-runtime`. MAY: `@tanstack/react-query` as shared **without** singleton to deduplicate matching versions — an optimization, not a requirement.
+- An MF nuance (document it): with a version mismatch, `singleton: true` usually does not load the remote's own copy — it warns and uses the shared instance; `strictVersion: true` → an error. So "share if compatible, otherwise use an own copy" is not guaranteed by configuration → **we solve it with a runtime check** (10.4). Verify the behavior of the specific MF Vite plugin on a stand and write it down in the docs.
 
-### 10.2. Exposes ремоута (часть контракта интеграции)
+### 10.2. The remote's exposes (part of the integration contract)
 
-| Expose | Что | Режим |
+| Expose | What | Mode |
 |---|---|---|
-| `./RemoteRoot` | компонент `RemoteRoot({ platform })` | интегрированный (общий React) |
-| `./RemoteBridge` | `createBridgeComponent({ rootComponent: RemoteRoot })` | изолированный |
-| `./runtime` | `export const remoteCreateElement = createElement; export const contractVersion = ...` | проверка совместимости |
-| `./preload` | заглушка `preload(platform, params)` | будущее (раздел 13) |
+| `./RemoteRoot` | the `RemoteRoot({ platform })` component | integrated (shared React) |
+| `./RemoteBridge` | `createBridgeComponent({ rootComponent: RemoteRoot })` | isolated |
+| `./runtime` | `export const remoteCreateElement = createElement; export const contractVersion = ...` | compatibility check |
+| `./preload` | a `preload(platform, params)` stub | future (section 13) |
 
-MUST: имена exposes фиксированы (константы в `@portal/mf-shared` или в шаблоне CLI) и проверяются `portal-cli verify`.
+MUST: expose names are fixed (constants in `@portal/mf-shared` or in the CLI template) and checked by `portal-cli verify`.
 
-### 10.3. `RemoteRoot` — одинаковый для всех режимов
+### 10.3. `RemoteRoot` — the same in every mode
 
 ```tsx
 type RemoteRootProps = { platform: PlatformContract };
@@ -459,11 +459,11 @@ export const RemoteRoot = ({ platform }: RemoteRootProps) => {
 };
 ```
 
-- MUST: контракт **всегда** приходит пропом во входную точку; ремоут **сам** поднимает `PlatformProvider` и всё остальное. Не полагаться на контекст хоста (в polyrepo `Provider` хоста и `useContext` ремоута могут ссылаться на разные объекты контекста → `undefined`).
-- MUST: ремоут не знает, в каком режиме запущен. Разница только в том, кто собрал `platform` (хост или `createStandalonePlatform`) и кто дал роутер.
-- Роутинг ремоута: в интегрированном режиме — `<Routes>` под роутом хоста `tasks/*`; в standalone — свой `createBrowserRouter`, оборачивающий те же роуты; в bridge — свой роутер с `platform.bridge.basename`.
+- MUST: the contract **always** arrives as a prop at the entry point; the remote sets up `PlatformProvider` and everything else **itself**. Do not rely on the host's context (in a polyrepo the host's `Provider` and the remote's `useContext` may refer to different context objects → `undefined`).
+- MUST: the remote does not know which mode it runs in. The only difference is who built `platform` (the host or `createStandalonePlatform`) and who provided the router.
+- Remote routing: in integrated mode — `<Routes>` under the host's `tasks/*` route; in standalone — its own `createBrowserRouter` wrapping the same routes; in bridge — its own router with `platform.bridge.basename`.
 
-### 10.4. Выбор режима в хосте (dual entry + проверка идентичности)
+### 10.4. Choosing the mode in the host (dual entry + identity check)
 
 ```ts
 const isSameReactInstance = async (): Promise<boolean> => {
@@ -473,33 +473,33 @@ const isSameReactInstance = async (): Promise<boolean> => {
 
 const loadTasksEntry = async () => {
   if (await isSameReactInstance()) {
-    return import('tasks/RemoteRoot');      // интегрированный режим
+    return import('tasks/RemoteRoot');      // integrated mode
   }
-  return import('tasks/RemoteBridge');      // изолированный режим
+  return import('tasks/RemoteBridge');      // isolated mode
 };
 ```
-- MUST: один компонент хоста `<RemoteApp name="tasks" />`, который прячет разницу сигнатур (bridge-ветка через `createRemoteAppComponent` с тем же лоадером).
-- MUST: также проверять `contractVersion` (раздел 17). Несовместимо → понятная ошибка в `AsyncBoundary`, а не белый экран.
-- Политика: команды в диапазоне `^19.3` автоматически получают интегрированный режим; остальные — изолированный. Никого не заставляем, совместимость поощряется лучшей интеграцией.
+- MUST: one host component `<RemoteApp name="tasks" />` that hides the signature difference (the bridge branch through `createRemoteAppComponent` with the same loader).
+- MUST: also check `contractVersion` (section 17). Incompatible → a clear error in `AsyncBoundary`, not a white screen.
+- Policy: teams within the `^19.3` range automatically get integrated mode; the rest get isolated mode. Nobody is forced; compatibility is rewarded with better integration.
 
-### 10.5. Ограничения изолированного режима (bridge) — задокументировать
+### 10.5. Limitations of isolated mode (bridge) — document them
 
-- Bridge рендерит ремоут в **собственный корень** (`createRoot(info.dom)`). Даже при общем инстансе React — это другое дерево.
-- Не пересекают границу: transitions (`isPending` хоста не ждёт данных ремоута), Suspense (фоллбэк хоста остаётся на стороне хоста, у ремоута свой boundary), React-контекст, ViewTransition хоста (анимирует только контейнер; ремоут рендерится асинхронно после коммита хоста).
-- На документ одновременно может идти **один** view transition; новый прерывает текущий → хост и ремоут могут сбивать анимации друг друга.
-- Bridge проксирует `react-router-dom` через alias в конфиге сборки → всё равно привязка к роутеру; проверить совместимость с Vite-плагином MF.
-- Bridge — **исключение и только уровня роута** (легаси на другой версии React, другой фреймворк, купленный продукт). Всё, что встраивается внутрь страниц хоста (виджеты, формы, списки), — только интегрированный режим.
-- Вес: каждая лишняя версия React — ещё один `react-dom-client` (~90+ КБ gzip).
+- Bridge renders the remote into **its own root** (`createRoot(info.dom)`). Even with a shared React instance, it is a different tree.
+- These do not cross the boundary: transitions (the host's `isPending` does not wait for the remote's data), Suspense (the host's fallback stays on the host side, the remote has its own boundary), React context, the host's ViewTransition (it animates only the container; the remote renders asynchronously after the host's commit).
+- Only **one** view transition can run per document at a time; a new one interrupts the current one → the host and the remote may interrupt each other's animations.
+- Bridge proxies `react-router-dom` through an alias in the build config → still tied to the router; check compatibility with the MF Vite plugin.
+- Bridge is **an exception and route-level only** (legacy on another React version, another framework, a bought product). Everything embedded inside the host's pages (widgets, forms, lists) is integrated mode only.
+- Weight: every extra React version is another `react-dom-client` (~90+ KB gzip).
 
 ---
 
-## 11. Devtools TanStack Query в мульти-клиентной среде
+## 11. TanStack Query devtools in a multi-client environment
 
-**Решение:** хост **не получает** QueryClient ремоутов. Ремоут регистрирует **функцию монтирования** своих devtools; хост даёт только DOM-контейнер и переключатель.
+**Decision:** the host **does not receive** the remotes' QueryClients. A remote registers a **mount function** for its devtools; the host provides only a DOM container and a switcher.
 
-**Почему:** передача клиента наверх связывает версии (devtools хоста другой версии + клиент ремоута другой версии) и даёт хосту управление чужим кэшем (кнопки refetch/reset/remove в devtools).
+**Why:** passing the client up couples versions (the host's devtools of one version + the remote's client of another) and gives the host control over someone else's cache (the refetch/reset/remove buttons in devtools).
 
-### 11.1. Ремоут
+### 11.1. Remote
 
 ```ts
 // shared/api/query-client.ts
@@ -519,124 +519,124 @@ export const getRemoteQueryClient = (platform: PlatformContract): QueryClient =>
 };
 ```
 
-`createQueryDevtoolsMount(client)` (в `platform-runtime`):
-- MUST динамически импортировать devtools внутри `mount` (в prod-бандле это отдельный чанк, грузится только при открытии панели).
-- Рендерит `ReactQueryDevtoolsPanel client={client}` в **отдельный корень** внутри контейнера (интеграция с деревом хоста не нужна) — или ванильный `TanstackQueryDevtoolsPanel` из `@tanstack/query-devtools` с `mount/unmount` (сверить параметры конструктора).
-- MUST передавать `shadowDOMTarget` (контейнер с shadow root) — изоляция стилей разных версий devtools.
-- Регистрация происходит **при создании QueryClient**, а не при монтировании роута (иначе не видно данных, загруженных до монтирования, например будущим preload).
+`createQueryDevtoolsMount(client)` (in `platform-runtime`):
+- MUST import the devtools dynamically inside `mount` (in the prod bundle it is a separate chunk, loaded only when the panel opens).
+- Renders `ReactQueryDevtoolsPanel client={client}` into a **separate root** inside the container (no integration with the host's tree is needed) — or the vanilla `TanstackQueryDevtoolsPanel` from `@tanstack/query-devtools` with `mount/unmount` (check the constructor parameters).
+- MUST pass `shadowDOMTarget` (a container with a shadow root) — isolates the styles of different devtools versions.
+- Registration happens **when the QueryClient is created**, not when the route mounts (otherwise data loaded before mounting, e.g. by a future preload, is invisible).
 
-### 11.2. Хост: реестр и тулбар
+### 11.2. Host: registry and toolbar
 
-- `createDevtoolsRegistry()`: `Map<name, { mount, mountCount, registeredAt }>`, `registerPanel`, `markMounted` (счётчик, не boolean — StrictMode двойные эффекты, ремоут смонтирован в двух местах), `subscribe`, `getSnapshot` (иммутабельный снапшот для `useSyncExternalStore`).
-- `DevtoolsToolbar`: собственная кнопка-тоггл + `<select>` клиентов + выдвижная панель-контейнер с shadow root. Плавающий кружок TanStack не используется — у всех `*Panel`-варианты, включая хост.
-- Автовыбор:
-  - ровно один смонтированный ремоут → он;
-  - иначе (только страницы хоста или несколько виджетов-ремоутов) → `host`;
-  - ручной выбор закрепляется (pin) и отключает автопереключение; pin хранится в `localStorage` с try/catch.
-- Состояния в селекте: «● смонтирован», «○ загружен (кэш жив до gcTime)», «📌 закреплён». Незагруженные ремоуты в списке не показываются (MAY: серым из манифеста, без действия). **Не** загружать ремоут по клику в devtools.
-- При смене выбора: `unmount()` предыдущей панели, `mount(container)` следующей.
-- Хост регистрирует свой клиент под именем `host` один раз в корне.
-- Prod/стенды: тулбар рендерится только в dev **или** за флагом (`?devtools=1` / ключ в `localStorage`); devtools-чанки ремоутов при этом грузятся лениво (production-вариант `@tanstack/react-query-devtools/production`).
-- Standalone: `createStandalonePlatform` поднимает тот же `DevtoolsToolbar` и реестр.
-- Bridge-ремоуты: работает без изменений (регистрация через пропсы, своя версия devtools).
-- Тот же приём (функция монтирования вместо объекта) MAY использоваться для будущих dev-панелей (роутер, флаги, логи).
+- `createDevtoolsRegistry()`: `Map<name, { mount, mountCount, registeredAt }>`, `registerPanel`, `markMounted` (a counter, not a boolean — StrictMode double effects, a remote mounted in two places), `subscribe`, `getSnapshot` (an immutable snapshot for `useSyncExternalStore`).
+- `DevtoolsToolbar`: its own toggle button + a `<select>` of clients + a slide-out panel container with a shadow root. The floating TanStack button is not used — everyone uses the `*Panel` variants, the host included.
+- Auto-selection:
+  - exactly one mounted remote → that one;
+  - otherwise (host pages only, or several remote widgets) → `host`;
+  - a manual choice is pinned and disables auto-switching; the pin is stored in `localStorage` with try/catch.
+- States in the select: "● mounted", "○ loaded (cache alive until gcTime)", "📌 pinned". Remotes that are not loaded are not listed (MAY: greyed out from the manifest, no action). Do **not** load a remote on a click in devtools.
+- On a selection change: `unmount()` the previous panel, `mount(container)` the next one.
+- The host registers its own client under the name `host` once, at the root.
+- Prod/stands: the toolbar renders only in dev **or** behind a flag (`?devtools=1` / a key in `localStorage`); the remotes' devtools chunks are loaded lazily then (the production variant `@tanstack/react-query-devtools/production`).
+- Standalone: `createStandalonePlatform` sets up the same `DevtoolsToolbar` and registry.
+- Bridge remotes: works unchanged (registration through props, own devtools version).
+- The same technique (a mount function instead of an object) MAY be used for future dev panels (router, flags, logs).
 
 ---
 
-## 12. Realtime и межприложенческая инвалидация
+## 12. Realtime and cross-app invalidation
 
-### 12.1. Решение
+### 12.1. Decision
 
-- **Источник правды о «данные изменились» — бэкенд.** Покрывает другие вкладки, другие устройства, изменения от фоновых процессов (Temporal), чего хаки с общим QueryClient не умеют.
-- **У каждого приложения своё соединение к своему BFF** (требование бэкенда — изоляция bounded context). Хост MUST NOT получать события, относящиеся к внутренним данным ремоутов.
-- Бэкенд приложения **переводит** доменные события из Kafka в события **о данных своего клиента**. Правило: приложение получает события только о данных, которые само показывает.
+- **The source of truth for "the data changed" is the backend.** It covers other tabs, other devices and changes from background processes (Temporal), which hacks with a shared QueryClient cannot do.
+- **Every application has its own connection to its own BFF** (a backend requirement — bounded context isolation). The host MUST NOT receive events about the remotes' internal data.
+- An application's backend **translates** domain events from Kafka into events **about its own client's data**. Rule: an application receives events only about the data it shows itself.
 
-### 12.2. Сценарий букмарков (эталонный)
+### 12.2. The bookmarks scenario (the reference one)
 
-1. Ремоут A (tasks) добавляет букмарк через **tasks-bff** (`POST /bookmarks`, с `X-Correlation-Id`).
-2. tasks-bff сохраняет и публикует в брокер (Kafka; в демо — `mock-backend/broker`) доменное событие `bookmark.added { userId, resource, correlationId, eventId }`.
-3. tasks-bff сам шлёт в соединение ремоута A событие `tasks.bookmarks.changed` (если ремоут показывает свои букмарки).
-4. **host-bff** подписан на `bookmark.*` в брокере, переводит в событие о своих данных `bookmarks.changed { userId, eventId, correlationId }` и шлёт **только сессиям этого пользователя** в соединение хоста.
-5. Хост в виджете букмарков на главной: `useInvalidateOnEvent('bookmarks.changed', bookmarksQueryOptions().queryKey)` → инвалидация → рефетч (данные хоста приходят из host-bff, который агрегирует букмарки из BFF).
-6. Ремоут A для своего UI обновляет свой кэш сразу (`setQueryData`), не дожидаясь события.
+1. Remote A (tasks) adds a bookmark through **tasks-bff** (`POST /bookmarks`, with `X-Correlation-Id`).
+2. tasks-bff stores it and publishes the domain event `bookmark.added { userId, resource, correlationId, eventId }` to the broker (Kafka; in the demo — `mock-backend/broker`).
+3. tasks-bff itself sends the event `tasks.bookmarks.changed` on remote A's connection (if the remote shows its own bookmarks).
+4. **host-bff** is subscribed to `bookmark.*` in the broker, translates it into an event about its own data, `bookmarks.changed { userId, eventId, correlationId }`, and sends it **only to this user's sessions** on the host's connection.
+5. The host, in the bookmarks widget on the home page: `useInvalidateOnEvent('bookmarks.changed', bookmarksQueryOptions().queryKey)` → invalidation → refetch (the host's data comes from host-bff, which aggregates bookmarks from the BFFs).
+6. Remote A updates its own cache for its UI immediately (`setQueryData`), without waiting for the event.
 
-### 12.3. Формат событий
+### 12.3. Event format
 
 ```ts
 type RealtimeEnvelope = {
   topic: string;            // 'bookmarks.changed'
-  eventId: string;          // уникальный, для дедупликации
+  eventId: string;          // unique, for deduplication
   occurredAt: string;       // ISO
   scope?: { userId?: string; entityId?: string };
-  correlationId?: string;   // из X-Correlation-Id мутации-источника
-  version?: number;         // MAY: версия ресурса
+  correlationId?: string;   // from the X-Correlation-Id of the source mutation
+  version?: number;         // MAY: resource version
 };
 ```
-- MUST: **тонкие** события — без данных и **без query keys** (бэкенд не знает ключей фронта). Каждое приложение само сопоставляет топик своим ключам.
-- MUST (FSD 2.1): подписки живут в сегменте `api` страницы (или слайса), которая показывает данные — `useInvalidateOnEvent` вызывается там, где данные отображаются. Отдельный центральный файл «топик → ключ» не нужен.
+- MUST: **thin** events — no data and **no query keys** (the backend does not know the front end's keys). Each application maps a topic to its own keys.
+- MUST (FSD 2.1): subscriptions live in the `api` segment of the page (or slice) that shows the data — `useInvalidateOnEvent` is called where the data is displayed. A separate central "topic → key" file is not needed.
 
-### 12.4. Клиент `createRealtimeClient`
+### 12.4. The `createRealtimeClient` client
 
-- Транспорт: по умолчанию **SSE на `fetch`** (нативный `EventSource` не умеет заголовки → нужен `Authorization` через fetch-стрим). MAY: WebSocket-транспорт за тем же интерфейсом. Токен MUST NOT в URL; для WS — первым сообщением/субпротоколом.
-- Жизненный цикл: соединение открывается при монтировании `RealtimeProvider` (= монтировании `RemoteRoot`) или при первой подписке; закрывается при размонтировании с **grace-задержкой** (например 5–10 с), чтобы быстрые переходы туда-обратно не дёргали переподключение. Ref-count подписок.
-- Переподключение: экспоненциальный backoff с jitter. **При подключении и переподключении** — инвалидировать все топики, на которые есть подписки (события, пришедшие пока соединения не было, потеряны; доставку никто не гарантирует).
-- Токен: соединение живёт дольше access-токена → переподключение со свежим токеном до истечения (по `exp`) или по закрытию сервером. Сервер в демо закрывает поток при истечении токена.
-- Дедупликация по `eventId` (LRU последних N).
-- `useRealtimeStatus()` — `connecting | open | reconnecting | closed` (для отладки/индикатора в devtools-тулбаре).
-- Страховка: `refetchOnWindowFocus` в дефолтах QueryClient.
+- Transport: **SSE over `fetch`** by default (the native `EventSource` cannot send headers → `Authorization` needs a fetch stream). MAY: a WebSocket transport behind the same interface. The token MUST NOT be in the URL; for WS — in the first message/subprotocol.
+- Lifecycle: the connection opens when `RealtimeProvider` mounts (= `RemoteRoot` mounts) or on the first subscription; it closes on unmount with a **grace delay** (e.g. 5–10 s), so quick back-and-forth navigation does not cause reconnects. Subscriptions are ref-counted.
+- Reconnection: exponential backoff with jitter. **On connect and reconnect** — invalidate every topic that has subscriptions (events that arrived while there was no connection are lost; nobody guarantees delivery).
+- Token: the connection outlives the access token → reconnect with a fresh token before expiry (by `exp`) or when the server closes it. The demo server closes the stream when the token expires.
+- Deduplication by `eventId` (an LRU of the last N).
+- `useRealtimeStatus()` — `connecting | open | reconnecting | closed` (for debugging / an indicator in the devtools toolbar).
+- Safety net: `refetchOnWindowFocus` in the QueryClient defaults.
 
-### 12.5. Опциональный быстрый путь и дедупликация
+### 12.5. Optional fast path and deduplication
 
-- MAY: для мгновенной реакции на той же странице ремоут после успешной мутации эмитит в локальную шину `platform.events.emit('bookmarks.changed', { source: 'tasks', correlationId })`; хост инвалидирует сразу.
-- MUST (если быстрый путь включён): хост запоминает обработанные `correlationId`, а серверное событие с тем же `correlationId` пропускает → нет двойного рефетча.
-- По умолчанию в демо: быстрый путь **выключен** флагом; задержка «серверного» пути (обычно < 1 с) достаточна для букмарков.
+- MAY: for an instant reaction on the same page, after a successful mutation the remote emits on the local bus `platform.events.emit('bookmarks.changed', { source: 'tasks', correlationId })`; the host invalidates immediately.
+- MUST (if the fast path is enabled): the host remembers the `correlationId`s it has handled and skips a server event with the same `correlationId` → no double refetch.
+- Default in the demo: the fast path is **off** behind a flag; the delay of the "server" path (usually < 1 s) is enough for bookmarks.
 
-### 12.6. Инфраструктурные риски (задокументировать, проверить)
+### 12.6. Infrastructure risks (document, verify)
 
-- **Лимит соединений:** если все BFF за прокси на одном origin, SSE по HTTP/1.1 занимает слоты из лимита 6 соединений на origin и может блокировать обычные запросы. Нужен HTTP/2 через прокси или WebSocket. В демо: dev-прокси Vite + отдельные порты BFF; в `docs` — чек-лист для банковского прокси (WS upgrade, долгие соединения, буферизация SSE).
-- Буферизующий прокси ломает SSE → заголовки `Cache-Control: no-cache`, `X-Accel-Buffering: no` (или аналог), heartbeat-комментарии каждые ~15 с.
-
----
-
-## 13. Preload (не делаем сейчас, но архитектура готова)
-
-- MUST сейчас: `query-client.ts` и фабрики `queryOptions` — **отдельные модули**, не внутри компонентов; QueryClient создаётся лениво через `getRemoteQueryClient(platform)`.
-- MUST сейчас: expose `./preload` зарезервирован (заглушка `export const preload = async (_platform, _params) => {}` с `TODO`), имя — в константах exposes и проверяется `verify`.
-- Будущее устройство:
-  - `preload` сам загружает ремоут: `import('tasks/preload')` подтянет `remoteEntry` и маленький чанк; дальше `preload` вызывает `getRemoteQueryClient(platform).prefetchQuery(...)`.
-  - `./preload` — маленький expose: только `query-client`, фабрики `queryOptions`, http-клиент; без UI/DS/роутов.
-  - MUST: `query-client.ts` — **один экземпляр модуля** на оба expose (`./preload` и `./RemoteRoot`), иначе префетч наполнит один клиент, а UI прочитает из другого. Проверить на сборке Vite-плагина MF (общий чанк).
-  - Триггеры: hover/focus ссылки; `loader` роута в data router (статический `loader` + `lazy` для компонента выполняются параллельно); прогрев `remoteEntry` в idle (MF runtime `preloadRemote` — проверить поддержку плагином).
-  - Devtools: ремоут появится в селекте как «загружен» с момента префетча (регистрация при создании клиента).
-- В демо MAY: включаемый флагом пример preload по hover, чтобы проверить, что архитектура действительно готова.
+- **Connection limit:** if all BFFs are behind a proxy on one origin, SSE over HTTP/1.1 takes slots from the limit of 6 connections per origin and can block regular requests. HTTP/2 through the proxy or WebSocket is needed. In the demo: the Vite dev proxy + separate BFF ports; in `docs` — a checklist for the bank's proxy (WS upgrade, long-lived connections, SSE buffering).
+- A buffering proxy breaks SSE → `Cache-Control: no-cache`, `X-Accel-Buffering: no` (or similar) headers, heartbeat comments every ~15 s.
 
 ---
 
-## 14. Transitions, мутации, навигация, ViewTransition
+## 13. Preload (not now, but the architecture is ready)
 
-### 14.1. Suspense-запросы и смена ключей
+- MUST now: `query-client.ts` and the `queryOptions` factories are **separate modules**, not inside components; the QueryClient is created lazily through `getRemoteQueryClient(platform)`.
+- MUST now: the `./preload` expose is reserved (a stub `export const preload = async (_platform, _params) => {}` with a `TODO`); the name is in the exposes constants and checked by `verify`.
+- The future design:
+  - `preload` loads the remote itself: `import('tasks/preload')` pulls `remoteEntry` and a small chunk; then `preload` calls `getRemoteQueryClient(platform).prefetchQuery(...)`.
+  - `./preload` is a small expose: only `query-client`, the `queryOptions` factories, the http client; no UI/DS/routes.
+  - MUST: `query-client.ts` is **one module instance** for both exposes (`./preload` and `./RemoteRoot`), otherwise the prefetch fills one client and the UI reads from another. Verify with the MF Vite plugin build (a shared chunk).
+  - Triggers: hover/focus on a link; a route `loader` in the data router (a static `loader` + `lazy` for the component run in parallel); warming `remoteEntry` when idle (MF runtime `preloadRemote` — check plugin support).
+  - Devtools: the remote shows up in the select as "loaded" from the moment of the prefetch (registration when the client is created).
+- In the demo MAY: a flag-enabled example of preload on hover, to check that the architecture is really ready.
 
-- `useSuspenseQuery` не имеет `placeholderData`. Чтобы при смене ключа (фильтр, страница, выбранная сущность) не показывался фоллбэк, обновление ключа MUST идти в `startTransition` (или через `useDeferredValue`).
-- Фоллбэк Suspense появляется только при первой загрузке региона.
-- Пример в демо: фильтр списка задач в `startTransition`, индикация через `isPending` → `PendingRegion`.
+---
 
-### 14.2. Мутации — правило по умолчанию
+## 14. Transitions, mutations, navigation, ViewTransition
 
-- Источник pending для кнопки — `mutation.isPending`.
-- Если нужно дождаться обновления данных на этой же странице — **вернуть промис** из `onSuccess`: `onSuccess: () => queryClient.invalidateQueries(...)` (мутация остаётся pending до конца рефетча).
-- Transition вокруг мутации нужен **только** если после мутации идёт **саспендящее** обновление: смена ключа/выбор новой сущности/навигация на саспендящий экран, либо нужны `useOptimistic`/`useFormStatus`.
-  - Ловушка: апдейты после `await` в async transition MUST быть снова обёрнуты в `startTransition`.
-  - Ошибка, брошенная внутри transition (`mutateAsync` бросает), уходит в ближайший Error Boundary → ловить внутри action и показывать через `mutation.error`/состояние формы.
+### 14.1. Suspense queries and key changes
 
-### 14.3. Мутация → редирект на список (реальный кейс проекта)
+- `useSuspenseQuery` has no `placeholderData`. So that a key change (filter, page, selected entity) does not show the fallback, the key update MUST go through `startTransition` (or `useDeferredValue`).
+- The Suspense fallback appears only on the first load of a region.
+- Example in the demo: the task list filter in `startTransition`, indication through `isPending` → `PendingRegion`.
 
-Сценарий: создание задачи → 200 → редирект на страницу списка, который в этот момент рефетчится.
+### 14.2. Mutations — the default rule
 
-- MUST: класть ответ в кэш списка до навигации, инвалидацию не ждать:
+- The pending source for a button is `mutation.isPending`.
+- To wait for the data on the same page to update — **return a promise** from `onSuccess`: `onSuccess: () => queryClient.invalidateQueries(...)` (the mutation stays pending until the refetch finishes).
+- A transition around a mutation is needed **only** if a **suspending** update follows it: a key change / selecting a new entity / navigating to a suspending screen, or `useOptimistic`/`useFormStatus` are needed.
+  - Pitfall: updates after an `await` in an async transition MUST be wrapped in `startTransition` again.
+  - An error thrown inside a transition (`mutateAsync` throws) goes to the nearest Error Boundary → catch it inside the action and show it through `mutation.error`/form state.
+
+### 14.3. Mutation → redirect to the list (a real case from the project)
+
+Scenario: create a task → 200 → redirect to the list page, which is refetching at that moment.
+
+- MUST: put the response into the list's cache before navigating; do not wait for the invalidation:
   ```ts
   const addTaskToList = (list: Task[] | undefined, task: Task): Task[] | undefined => {
     if (!list) {
-      return list; // кэша нет → список честно саспендит с отложенным фоллбэком
+      return list; // no cache → the list honestly suspends with the delayed fallback
     }
     return [task, ...list];
   };
@@ -646,17 +646,17 @@ type RealtimeEnvelope = {
   void queryClient.invalidateQueries({ queryKey: tasksKeys.lists() });
   navigate(tasksRoutes.list());
   ```
-- Если у списка фильтры/сортировка/пагинация — вставлять только туда, где запись точно должна быть (первая страница при дефолтной сортировке), остальное — инвалидация.
-- MUST: стадии кнопки привязаны к **общему** флагу: `const isBusy = mutation.isPending || navigation.state !== 'idle'` (`useNavigation()` data router). Иначе в холодном случае кнопка «гаснет» на 200, а страница ещё не сменилась → повторный клик.
+- If the list has filters/sorting/pagination — insert only where the record is certain to belong (the first page with the default sort); everything else — invalidation.
+- MUST: the button stages are tied to a **shared** flag: `const isBusy = mutation.isPending || navigation.state !== 'idle'` (`useNavigation()` of the data router). Otherwise, in the cold case, the button "goes out" on the 200 while the page has not changed yet → a second click.
 
 ### 14.4. ViewTransition (React 19.3)
 
-- Анимацию запускают только апдейты в `startTransition`, раскрытие `<Suspense>` и обновления `useDeferredValue`. Обычный `setState` не анимируется.
-- MUST: **хост владеет** view transitions уровня роутов (навигация хоста идёт в transition, `addTransitionType('nav-forward' | 'nav-back')`, классы через `enter`/`exit`). Ремоуты используют `<ViewTransition>` только для локальных изменений внутри себя.
-- MUST NOT смешивать с собственным флагом `viewTransition` роутера и MUST NOT вызывать `document.startViewTransition` вручную — React сам назначает `view-transition-name` и вызывает API.
-- Suspense-раскрытие: обернуть границу в `<ViewTransition>` → кросс-фейд фоллбэк → контент.
-- Фоновые ревалидации: `default="none"`.
-- **Данные из TanStack Query:** подписка через `useSyncExternalStore` → апдейты синхронные, не transition → сами не анимируются. Для анимации списка:
+- Animations are started only by updates in `startTransition`, `<Suspense>` reveals and `useDeferredValue` updates. A plain `setState` does not animate.
+- MUST: **the host owns** route-level view transitions (the host's navigation runs in a transition, `addTransitionType('nav-forward' | 'nav-back')`, classes through `enter`/`exit`). Remotes use `<ViewTransition>` only for local changes inside themselves.
+- MUST NOT be mixed with the router's own `viewTransition` flag, and MUST NOT call `document.startViewTransition` manually — React assigns `view-transition-name` and calls the API itself.
+- Suspense reveal: wrap the boundary in `<ViewTransition>` → a cross-fade fallback → content.
+- Background revalidations: `default="none"`.
+- **Data from TanStack Query:** the subscription goes through `useSyncExternalStore` → updates are synchronous, not transitions → they do not animate by themselves. To animate a list:
   ```tsx
   const TaskList = () => {
     const { data } = useSuspenseQuery(tasksListOptions(http, filters));
@@ -672,244 +672,244 @@ type RealtimeEnvelope = {
     );
   };
   ```
-- Именованные (shared element) VT MUST иметь префикс ремоута (`name="tasks-task-42"`) — имена уникальны на весь документ.
-- Смена `key` у `ViewTransition`, оборачивающего `<Suspense>`, перемонтирует границу и рефетчит — избегать.
-- Длительности 150–250 мс (во время перехода старое состояние — статичный снимок, спиннер в уходящем фоллбэке «замирает»).
-- MUST: под `prefers-reduced-motion` отключать анимации групп.
-- Браузеры без View Transitions API — анимация пропускается, апдейт проходит.
+- Named (shared element) VTs MUST have the remote's prefix (`name="tasks-task-42"`) — names are unique across the whole document.
+- Changing the `key` of a `ViewTransition` that wraps `<Suspense>` remounts the boundary and refetches — avoid it.
+- Durations of 150–250 ms (during the transition the old state is a static snapshot; a spinner in the outgoing fallback "freezes").
+- MUST: disable group animations under `prefers-reduced-motion`.
+- Browsers without the View Transitions API skip the animation; the update goes through.
 
-### 14.5. Прочее из React 19.2+
+### 14.5. Other things from React 19.2+
 
-- `<Activity>` SHOULD для табов/панелей задач: скрытое поддерево сохраняет состояние, suspense-запросы внутри hidden Activity прогреваются заранее.
-- Performance Tracks в Chrome DevTools — для проверки, что смены ключей идут как transition, а не blocking. Упомянуть в docs.
-- Без водопадов: `useSuspenseQueries` для параллельных запросов; по одной Suspense-границе на независимый регион.
-
----
-
-## 15. API-контракты (симуляция shared-репо бэкенда)
-
-### 15.1. Решение
-
-- Бэкенд держит **shared-репо со всеми OpenAPI-спеками**. Генерация в нём производит Java-классы и TS-типы + zod-схемы. Фронтовая часть публикуется npm-пакетами в Nexus.
-- Генерация типов/схем — **ответственность ремоута в смысле выбора**: ремоут тянет пакет своего BFF и сам контролирует версию; либо пишет типы руками.
-- В монорепо: `api-contracts/` симулирует этот репо.
-
-### 15.2. Требования к пакетам
-
-- MUST: **по пакету на BFF** (`@portal-api/host-bff`, `@portal-api/tasks-bff`), независимое версионирование.
-- MUST: в пакете **только типы + zod-схемы** (+ MAY метаданные операций: метод, путь, operationId). MUST NOT генерировать http-клиент/SDK, привязанный к транспорту.
-- MUST: `zod` — **peerDependency** с диапазоном под мажор, под который сделана генерация.
-- MUST: семвер выставляется машиной — `oasdiff` сравнивает новую спеку со старой (удаление поля / optional→required = major; добавление поля = minor).
-- MUST: линт спек (Spectral или аналог) — правила на `required` и уникальные имена схем. Реальная спека сейчас: все поля optional, дублирующиеся имена схем → без линта zod-схемы пропускают всё, типы с `| undefined` везде. Демо-спеки сделать «правильными» и добавить правила, которые ловят эти проблемы.
-- MUST: пререлизы для параллельной разработки фронта и бэка: PR со спекой публикует `x.y.z-next.N` под dist-tag `next`; после мержа — стабильная версия. В монорепо — скрипт, имитирующий это (MAY: changesets).
-- Скрипты: `pnpm api:lint`, `pnpm api:diff`, `pnpm api:generate`.
-
-### 15.3. Потребление в приложении
-
-- MUST: пакет подключается **только в `shared/api`** приложения; остальной код импортирует схемы и типы оттуда. Тогда переход «пакет ↔ ручные типы» или мажорный апдейт затрагивает одну точку.
-- MUST: если команда пишет типы руками — ответы всё равно валидируются zod-схемами в `shared/api` (граница доверия).
-- CLI спрашивает: «подключить `@portal-api/<bff>` или писать типы вручную».
+- `<Activity>` SHOULD be used for tabs/task panels: a hidden subtree keeps its state, and suspense queries inside a hidden Activity are warmed up in advance.
+- Performance Tracks in Chrome DevTools — to check that key changes run as transitions, not blocking updates. Mention it in the docs.
+- No waterfalls: `useSuspenseQueries` for parallel queries; one Suspense boundary per independent region.
 
 ---
 
-## 16. Ремоут: структура (FSD 2.1) и CLI
+## 15. API contracts (simulation of the backend's shared repo)
+
+### 15.1. Decision
+
+- The backend keeps a **shared repo with all OpenAPI specs**. Generation in it produces Java classes and TS types + zod schemas. The front-end part is published as npm packages to Nexus.
+- Generating types/schemas is **the remote's choice**: a remote pulls its BFF's package and controls the version itself, or writes the types by hand.
+- In the monorepo: `api-contracts/` simulates that repo.
+
+### 15.2. Package requirements
+
+- MUST: **one package per BFF** (`@portal-api/host-bff`, `@portal-api/tasks-bff`), versioned independently.
+- MUST: a package contains **only types + zod schemas** (+ MAY operation metadata: method, path, operationId). MUST NOT generate an http client/SDK tied to a transport.
+- MUST: `zod` is a **peerDependency** with a range for the major the generation targets.
+- MUST: semver is set by a machine — `oasdiff` compares the new spec with the old one (removing a field / optional→required = major; adding a field = minor).
+- MUST: spec lint (Spectral or similar) — rules for `required` and unique schema names. The real spec today: every field is optional, schema names are duplicated → without lint the zod schemas accept anything, and types have `| undefined` everywhere. Make the demo specs "correct" and add rules that catch these problems.
+- MUST: prereleases for parallel front-end and back-end work: a PR with a spec publishes `x.y.z-next.N` under the `next` dist-tag; after the merge — a stable version. In the monorepo — a script that imitates this (MAY: changesets).
+- Scripts: `pnpm api:lint`, `pnpm api:diff`, `pnpm api:generate`.
+
+### 15.3. Consumption in an application
+
+- MUST: the package is used **only in the application's `shared/api`**; the rest of the code imports schemas and types from there. Then switching "package ↔ hand-written types" or a major update touches one place.
+- MUST: if a team writes types by hand, responses are still validated with zod schemas in `shared/api` (the trust boundary).
+- The CLI asks: "use `@portal-api/<bff>` or write the types by hand".
+
+---
+
+## 16. Remote: structure (FSD 2.1) and CLI
 
 ### 16.1. FSD 2.1
 
-- Модель **pages first**: код живёт в странице, пока не начал переиспользоваться; `entities`/`features`/`widgets` выносятся только при переиспользовании. Слои `app`, `pages`, `shared` — всегда.
-- Steiger (официальный линтер FSD) в CI; правило `insignificant-slice` предлагает влить слайс, используемый на одной странице, обратно в страницу.
-- `@x`-нотация кросс-импортов — **только** на слое `entities`, минимально.
-- Self-contained слайсы: фича владеет своим состоянием, мутациями и диалогами; виджеты/конфиги только композируют фичи, не импортируя их внутренности.
-- MUST NOT: CLI не создаёт пустые `entities/`, `features/`, `widgets/`.
+- The **pages first** model: code lives in the page until it starts being reused; `entities`/`features`/`widgets` are extracted only on reuse. The `app`, `pages`, `shared` layers always exist.
+- Steiger (the official FSD linter) in CI; the `insignificant-slice` rule suggests merging a slice used by a single page back into that page.
+- The `@x` cross-import notation — **only** on the `entities` layer, minimally.
+- Self-contained slices: a feature owns its state, mutations and dialogs; widgets/configs only compose features without importing their internals.
+- MUST NOT: the CLI does not create empty `entities/`, `features/`, `widgets/`.
 
-### 16.2. Структура ремоута
+### 16.2. Remote structure
 
 ```
 tasks-remote/
 ├─ src/
 │  ├─ app/
 │  │  ├─ exposes/
-│  │  │  ├─ RemoteRoot.tsx       # провайдеры, devtools markMounted, сброс кэша
+│  │  │  ├─ RemoteRoot.tsx       # providers, devtools markMounted, cache reset
 │  │  │  ├─ RemoteBridge.tsx     # createBridgeComponent({ rootComponent: RemoteRoot })
 │  │  │  ├─ runtime.ts           # remoteCreateElement, contractVersion
-│  │  │  └─ preload.ts           # заглушка (раздел 13)
+│  │  │  └─ preload.ts           # stub (section 13)
 │  │  ├─ standalone/
-│  │  │  ├─ main.tsx             # createStandalonePlatform + свой router + DevtoolsToolbar
-│  │  │  └─ config.json          # runtime-конфиг окружений (BFF url, auth mode, scopes)
+│  │  │  ├─ main.tsx             # createStandalonePlatform + own router + DevtoolsToolbar
+│  │  │  └─ config.json          # runtime config of the environments (BFF url, auth mode, scopes)
 │  │  ├─ providers/              # Platform, QueryClient, Realtime
-│  │  └─ routes/                 # дерево роутов ремоута (одно для всех режимов)
+│  │  └─ routes/                 # the remote's route tree (one for every mode)
 │  ├─ pages/
 │  │  ├─ task-list/              # ui/ api/ model/ index.ts
 │  │  ├─ task-create/
 │  │  └─ task-details/
 │  └─ shared/
 │     ├─ api/
-│     │  ├─ contracts.ts         # реэкспорт из @portal-api/tasks-bff (единственная точка)
+│     │  ├─ contracts.ts         # re-export from @portal-api/tasks-bff (the single point)
 │     │  ├─ http-client.ts       # createHttpClient(auth, bffBaseUrl, scopes)
-│     │  ├─ query-client.ts      # getRemoteQueryClient(platform) + регистрация devtools
-│     │  ├─ query-keys.ts        # неймспейс 'tasks'
-│     │  └─ realtime.ts          # getRemoteRealtimeClient(platform) — своё соединение к tasks-bff
-│     ├─ config/                 # env, runtime-конфиг (одна сборка → любой стенд)
-│     ├─ routes/                 # константы путей
+│     │  ├─ query-client.ts      # getRemoteQueryClient(platform) + devtools registration
+│     │  ├─ query-keys.ts        # the 'tasks' namespace
+│     │  └─ realtime.ts          # getRemoteRealtimeClient(platform) — own connection to tasks-bff
+│     ├─ config/                 # env, runtime config (one build → any stand)
+│     ├─ routes/                 # path constants
 │     ├─ lib/
-│     └─ ui/                     # только то, чего нет в DS
-├─ vite.config.ts                # MF: name, exposes, shared (контракт интеграции)
-├─ tsconfig.json                 # внутреннее, можно менять
-├─ .oxlintrc.json                # внутреннее (вкл. запрет useMemo/useCallback/memo)
-├─ steiger.config.ts             # внутреннее
-├─ vitest.config.ts              # внутреннее
-├─ azure-pipelines.yml           # build → test → steiger → portal-cli verify → publish в Nexus
-├─ mocks/auth.ts                 # mock-авторизация для локальной разработки
-├─ docs/                         # правила работы с React и данными
-└─ .claude/skills/               # скиллы команды для Claude Code
+│     └─ ui/                     # only what the DS does not have
+├─ vite.config.ts                # MF: name, exposes, shared (the integration contract)
+├─ tsconfig.json                 # internal, may be changed
+├─ .oxlintrc.json                # internal (incl. the useMemo/useCallback/memo ban)
+├─ steiger.config.ts             # internal
+├─ vitest.config.ts              # internal
+├─ azure-pipelines.yml           # build → test → steiger → portal-cli verify → publish to Nexus
+├─ mocks/auth.ts                 # mock auth for local development
+├─ docs/                         # rules for working with React and data
+└─ .claude/skills/               # the team's skills for Claude Code
 ```
 
-- Runtime-конфиг: **собрали один раз — разворачиваем на любой стенд**. Сборка из Nexus MUST NOT вшивать окружение. Standalone читает `config.json`; встроенный режим получает `env` из контракта и адрес своего BFF из своего runtime-конфига (или конвенции относительно `hostOrigin`).
+- Runtime config: **build once — deploy to any stand**. A build from Nexus MUST NOT bake in the environment. Standalone reads `config.json`; embedded mode gets `env` from the contract and its BFF address from its own runtime config (or a convention relative to `hostOrigin`).
 
 ### 16.3. `portal-cli`
 
-Команды:
-- `portal-cli create remote <name>` — генерирует ремоут по структуре 16.2. Вопросы:
-  - подключить пакет API `@portal-api/<bff>` или писать типы вручную;
-  - вписать внутренние конфиги в проект или наследовать из `@portal/presets` (по желанию);
-  - включить bridge-entry (по умолчанию да).
-- `portal-cli add page|widget|feature|entity <name>` — слайс с сегментами и `index.ts`.
-- `portal-cli verify` — проверка **контракта интеграции** (раздел 17.1). Запускается в CI ремоута.
-- MAY: `portal-cli doctor` — расширенные проверки конвенций; подсказка «вынести из страницы» при переиспользовании.
+Commands:
+- `portal-cli create remote <name>` — generates a remote with the structure from 16.2. Questions:
+  - use the `@portal-api/<bff>` API package or write types by hand;
+  - inline the internal configs into the project or inherit them from `@portal/presets` (optional);
+  - include the bridge entry (yes by default).
+- `portal-cli add page|widget|feature|entity <name>` — a slice with segments and `index.ts`.
+- `portal-cli verify` — checks the **integration contract** (section 17.1). Runs in the remote's CI.
+- MAY: `portal-cli doctor` — extended convention checks; a "move it out of the page" hint on reuse.
 
-Принципы:
-- Сгенерированный код — собственность команды, шаблон после генерации никто не синхронизирует.
-- Внутренние конфиги (TS, линт, тесты, Vite кроме MF-секции, пайплайн) — меняются как угодно.
-- **`verify` — единственный постоянный механизм согласованности**, вкладываться в него, а не в обновление шаблонов.
-
----
-
-## 17. Совместимость и проверки
-
-### 17.1. `portal-cli verify` (CI ремоута)
-
-Читает собранный `mf-manifest.json` (и `package.json`) и проверяет:
-- MUST: имя ремоута соответствует конвенции.
-- MUST: exposes `./RemoteRoot`, `./RemoteBridge`, `./runtime`, `./preload` присутствуют.
-- MUST: синглтоны объявлены как `singleton: true` с диапазонами, пересекающимися с поддерживаемыми хостом (список и диапазоны — в `@portal/mf-shared` или в конфиге verify).
-- MUST: `@tanstack/react-query` **не** объявлен синглтоном.
-- MUST: версия `@portal/platform-contract` в поддерживаемом диапазоне.
-- SHOULD: сборка не содержит токенов/секретов, `config.json` не содержит окружение-специфичных значений сверх шаблона.
-- Выход: человекочитаемый отчёт + ненулевой код при нарушениях.
-
-### 17.2. Проверка в хосте при загрузке
-
-- Идентичность React (`./runtime`) → интегрированный или bridge-режим.
-- `contractVersion` → поддерживается или понятная ошибка в `AsyncBoundary`.
-- Ошибка загрузки ремоута (сеть, 404 remoteEntry) → `AsyncBoundary` с retry, без падения хоста.
+Principles:
+- Generated code is the team's property; nobody syncs the template after generation.
+- Internal configs (TS, lint, tests, Vite except the MF section, the pipeline) can be changed freely.
+- **`verify` is the only permanent consistency mechanism** — invest in it, not in template updates.
 
 ---
 
-## 18. Хост-приложение
+## 17. Compatibility and checks
 
-- `apps/host`: React 19.3, data router, `@portal/ds`, свой QueryClient (`createPortalQueryClient`), один PCA (или mock-auth по конфигу), `createRemoteAuth` на каждый ремоут со своим allowlist scopes.
-- Сборка контракта: `buildPlatformForRemote(remoteName)` → `{ contractVersion, auth: createRemoteAuth(...), env, events, telemetry, locale, devtools: registry (dev/флаг), bridge? }`.
-- Роуты: `/` — главная с **виджетом букмарков** (данные из host-bff, `useInvalidateOnEvent('bookmarks.changed', ...)`); `/tasks/*` — ремоут tasks через `<RemoteApp name="tasks" />` (lazy, `AsyncBoundary`, `Spinner`-фоллбэк); MAY `/legacy/*` — bridge-ремоут.
-- Навигация хоста — в transition, `addTransitionType` для направления, `<ViewTransition>` на уровне layout.
-- Realtime хоста — своё соединение к host-bff.
-- `useClearCacheOnAccountChange` для QueryClient хоста.
-- `DevtoolsToolbar` (dev или флаг); хост регистрирует свой клиент как `host`.
-- Демо-панель (dev): переключить аккаунт / logout (mock-auth), включить быстрый путь событий, переключить искусственную задержку BFF (для проверки 300 мс / 2 с стадий), включить preload-демо.
-- CSP-конфиг (meta или заголовки dev-сервера) с allowlist источников ремоутов.
+### 17.1. `portal-cli verify` (the remote's CI)
 
----
+Reads the built `mf-manifest.json` (and `package.json`) and checks:
+- MUST: the remote's name follows the convention.
+- MUST: the `./RemoteRoot`, `./RemoteBridge`, `./runtime`, `./preload` exposes are present.
+- MUST: the singletons are declared `singleton: true` with ranges that intersect the ones the host supports (the list and the ranges — in `@portal/mf-shared` or in the verify config).
+- MUST: `@tanstack/react-query` is **not** declared a singleton.
+- MUST: the `@portal/platform-contract` version is within the supported range.
+- SHOULD: the build contains no tokens/secrets, and `config.json` contains no environment-specific values beyond the template.
+- Output: a human-readable report + a non-zero exit code on violations.
 
-## 19. Демо-сценарии = приёмочные критерии
+### 17.2. The host's check at load time
 
-Каждый сценарий MUST быть воспроизводим вручную (описание в `docs/demo.md`) и SHOULD покрыт тестом (unit/integration на Vitest; e2e Playwright — MAY).
-
-1. **Стадии загрузки кнопки.** Создание задачи с задержкой BFF 100 мс → спиннера нет; 800 мс → спиннер на кнопке после 300 мс; 3 с → оверлей региона после 2 с. Кнопка `disabled` с первого мгновения.
-2. **Отложенный Suspense-фоллбэк.** Первый заход на `/tasks` с задержкой 150 мс → спиннер не появляется; 1 с → спиннер появляется плавно. Фоллбэки хоста (загрузка ремоута) и ремоута (данные) выглядят одинаково.
-3. **Смена фильтра без фоллбэка.** Фильтр списка → старый список остаётся, `PendingRegion` показывает pending по порогам.
-4. **Создание → редирект.** Список в кэше: после 200 список сразу содержит новую задачу, без спиннера и без «впрыгивания». Кэша нет (прямой заход на форму): список саспендит с отложенным фоллбэком; кнопка остаётся busy, пока навигация не завершилась.
-5. **Анимация списка.** Новая задача, пришедшая фоновым рефетчем, плавно появляется (`useDeferredValue` + `ViewTransition`), под `prefers-reduced-motion` — без анимации.
-6. **Букмарки через бэкенд.** В ремоуте tasks добавить букмарк → виджет букмарков хоста обновляется через realtime host-bff (< 1–2 с). Хост не получает событий `tasks.*`. Во второй вкладке виджет тоже обновляется.
-7. **Быстрый путь + дедупликация.** С включённым флагом: виджет хоста обновляется мгновенно, серверное событие с тем же `correlationId` не вызывает второго рефетча.
-8. **Переподключение.** Остановить host-bff, добавить букмарк через tasks-bff, поднять host-bff → после переподключения виджет инвалидируется и показывает актуальные данные.
-9. **Истечение токена.** Mock-токен с коротким TTL → realtime переподключается со свежим токеном без потери подписок.
-10. **Смена аккаунта.** Logout/смена аккаунта в демо-панели → кэши хоста и ремоута очищены, данные перезагружены под новым аккаунтом.
-11. **Scope allowlist.** Попытка ремоута запросить токен под чужой scope → ошибка с понятным сообщением в телеметрии.
-12. **Devtools.** На главной — devtools хоста; на `/tasks` — автоматически devtools ремоута; вернуться на главную — ремоут в списке как «○ загружен»; pin ремоута отключает автопереключение и переживает перезагрузку; незагруженные ремоуты не показаны.
-13. **Standalone.** `pnpm --filter tasks-remote dev:standalone` поднимает тот же `RemoteRoot` со своим PCA/mock-auth, своим роутером и тем же тулбаром devtools.
-14. **Режимы интеграции.** Ремоут с тем же React → интегрированный режим (transitions хоста ждут данных ремоута). (Опц.) `legacy-remote` на другой версии React → bridge-режим автоматически; задокументированные ограничения видны (свой фоллбэк, нет общих transitions).
-15. **Несовместимый контракт.** Ремоут с `contractVersion` вне диапазона → понятная ошибка в `AsyncBoundary`, хост работает.
-16. **verify.** Удалить expose `./preload` или сделать `@tanstack/react-query` синглтоном → `portal-cli verify` падает с понятным отчётом.
-17. **API-контракты.** Изменить спеку (удалить поле) → `pnpm api:diff` определяет major; линт спек ловит optional-везде и дубли имён.
-18. **(Опц.) Preload-готовность.** С флагом: hover по ссылке на `/tasks` грузит `./preload`, данные в кэше до перехода, `useSuspenseQuery` не саспендит; ремоут виден в devtools как «загружен» до монтирования.
+- React identity (`./runtime`) → integrated or bridge mode.
+- `contractVersion` → supported, or a clear error in `AsyncBoundary`.
+- A remote loading error (network, 404 remoteEntry) → `AsyncBoundary` with retry, without bringing the host down.
 
 ---
 
-## 20. Фазы реализации
+## 18. The host application
 
-0. **Скелет.** pnpm workspaces, Volta, `.npmrc`, базовые пресеты, `docs/` (architecture, adr, open-questions).
-1. **Контракт и рантайм.** `platform-contract` (типы), `platform-runtime`: provider, auth-адаптеры (mock + MSAL), `createRemoteAuth`, http-клиент, `createPortalQueryClient`, event bus, telemetry, compat. Unit-тесты.
-2. **DS.** Joy-тема, `Spinner`, `PendingRegion`, `AsyncButton`, `AsyncBoundary`, `useLoadingStage`, токены задержек, reduced motion. Тесты (fake timers + проверка атрибутов/классов).
-3. **API-контракты.** Спеки host-bff и tasks-bff, генерация types+zod, lint, diff, пакеты с peer zod.
-4. **Mock-бэкенды.** broker, host-bff (букмарки-агрегат, SSE-канал хоста, перевод событий), tasks-bff (задачи, букмарки, SSE-канал ремоута), управляемая задержка, проверка токена, закрытие потока по exp.
-5. **Ремоут tasks** (FSD 2.1): `RemoteRoot`, exposes, standalone, страницы list/create/details, сценарии 1–5.
-6. **Хост**: роутинг, `<RemoteApp>` с dual entry, контракт, виджет букмарков, ViewTransition уровня роутов, демо-панель.
-7. **Realtime**: `createRealtimeClient`, `useInvalidateOnEvent`, сценарии 6–9.
-8. **Devtools**: реестр, тулбар, mount-функции, сценарий 12.
-9. **CLI**: `create remote` (шаблон = tasks-remote), `add`, `verify`; сценарии 16. Проверить, что свежесгенерированный ремоут проходит `verify` и запускается.
-10. **(Опц.) Bridge-демо** (`legacy-remote`), preload-демо (флаг).
-11. **Документация**: `docs/demo.md`, ADR, чек-лист для банковского прокси, отличия reference от реального проекта.
+- `apps/host`: React 19.3, data router, `@portal/ds`, its own QueryClient (`createPortalQueryClient`), one PCA (or mock auth per config), `createRemoteAuth` for each remote with its own scope allowlist.
+- Building the contract: `buildPlatformForRemote(remoteName)` → `{ contractVersion, auth: createRemoteAuth(...), env, events, telemetry, locale, devtools: registry (dev/flag), bridge? }`.
+- Routes: `/` — the home page with the **bookmarks widget** (data from host-bff, `useInvalidateOnEvent('bookmarks.changed', ...)`); `/tasks/*` — the tasks remote through `<RemoteApp name="tasks" />` (lazy, `AsyncBoundary`, `Spinner` fallback); MAY `/legacy/*` — the bridge remote.
+- The host's navigation runs in a transition, `addTransitionType` for the direction, `<ViewTransition>` at the layout level.
+- The host's realtime — its own connection to host-bff.
+- `useClearCacheOnAccountChange` for the host's QueryClient.
+- `DevtoolsToolbar` (dev or flag); the host registers its own client as `host`.
+- Demo panel (dev): switch account / logout (mock auth), enable the events fast path, toggle an artificial BFF delay (to check the 300 ms / 2 s stages), enable the preload demo.
+- A CSP config (meta or dev-server headers) with an allowlist of remote sources.
 
 ---
 
-## 21. Проверки после каждой фазы
+## 19. Demo scenarios = acceptance criteria
 
-- `pnpm -r typecheck`, `pnpm -r lint` (oxlint + Steiger для приложений), `pnpm -r test`, `pnpm -r build`.
-- Нет `any`, нет `useMemo`/`useCallback`/`memo`, все `if` со скобками, только стрелочные функции.
-- Приложения не импортируют друг друга напрямую (только пакеты).
-- Для фаз 5+: ручной прогон соответствующих сценариев из раздела 19.
-- `portal-cli verify` проходит для `tasks-remote`.
+Every scenario MUST be reproducible by hand (described in `docs/demo.md`) and SHOULD be covered by a test (unit/integration with Vitest; e2e with Playwright — MAY).
 
----
-
-## 22. ADR, которые нужно записать в `docs/adr/`
-
-1. Синглтоны MF: минимальный список и почему (идентичность контекстов).
-2. Интегрированный режим по умолчанию, bridge — исключение уровня роута; dual entry + проверка идентичности React.
-3. Контракт платформы передаётся пропсами; ремоут сам поднимает провайдеры.
-4. Свой QueryClient у каждого приложения; фабрика в рантайм-пакете.
-5. Auth: один PCA, интерактив только в хосте, allowlist scopes, токены не в URL; принятый security-риск + CSP.
-6. Паттерн загрузки: CSS-задержки, стадии 300 мс / 2 с, троттлинг Suspense в React 19.
-7. Transitions и мутации: когда `mutation.isPending`, когда transition; `setQueryData` перед редиректом; общий busy-флаг с навигацией.
-8. ViewTransition: хост владеет роутами, `useDeferredValue` для данных TanStack, префиксы имён.
-9. Devtools: mount-функции вместо передачи клиента.
-10. Realtime: соединение на приложение, перевод событий на бэкенде, тонкие события, инвалидация при переподключении, транспорт и прокси.
-11. Preload: модульная готовность без реализации.
-12. API-контракты: пакет на BFF, types+zod без клиента, peer zod, oasdiff, Spectral, пререлизы.
-13. FSD 2.1 pages first, Steiger, CLI без пустых слоёв.
-14. CLI: шаблон — собственность команды; `verify` — единственный постоянный механизм согласованности.
+1. **Button loading stages.** Creating a task with a 100 ms BFF delay → no spinner; 800 ms → a spinner on the button after 300 ms; 3 s → a region overlay after 2 s. The button is `disabled` from the first instant.
+2. **Delayed Suspense fallback.** The first visit to `/tasks` with a 150 ms delay → the spinner does not appear; 1 s → the spinner appears smoothly. The fallbacks of the host (loading the remote) and of the remote (data) look the same.
+3. **Filter change without a fallback.** A list filter → the old list stays, `PendingRegion` shows pending according to the thresholds.
+4. **Create → redirect.** List in the cache: after the 200 the list immediately contains the new task, with no spinner and no "jumping in". No cache (direct visit to the form): the list suspends with the delayed fallback; the button stays busy until the navigation completes.
+5. **List animation.** A new task that arrives through a background refetch appears smoothly (`useDeferredValue` + `ViewTransition`); under `prefers-reduced-motion` — without animation.
+6. **Bookmarks through the backend.** Add a bookmark in the tasks remote → the host's bookmarks widget updates through host-bff realtime (< 1–2 s). The host receives no `tasks.*` events. In a second tab the widget updates too.
+7. **Fast path + deduplication.** With the flag on: the host's widget updates instantly, and the server event with the same `correlationId` does not cause a second refetch.
+8. **Reconnection.** Stop host-bff, add a bookmark through tasks-bff, start host-bff → after reconnecting, the widget is invalidated and shows the current data.
+9. **Token expiry.** A mock token with a short TTL → realtime reconnects with a fresh token without losing subscriptions.
+10. **Account switch.** Logout / account switch in the demo panel → the host's and the remote's caches are cleared, data is reloaded for the new account.
+11. **Scope allowlist.** A remote trying to request a token for someone else's scope → an error with a clear message in telemetry.
+12. **Devtools.** On the home page — the host's devtools; on `/tasks` — the remote's devtools automatically; back on the home page — the remote is listed as "○ loaded"; pinning the remote disables auto-switching and survives a reload; remotes that are not loaded are not shown.
+13. **Standalone.** `pnpm --filter tasks-remote dev:standalone` starts the same `RemoteRoot` with its own PCA/mock auth, its own router and the same devtools toolbar.
+14. **Integration modes.** A remote on the same React → integrated mode (the host's transitions wait for the remote's data). (Opt.) `legacy-remote` on another React version → bridge mode automatically; the documented limitations are visible (its own fallback, no shared transitions).
+15. **Incompatible contract.** A remote with a `contractVersion` outside the range → a clear error in `AsyncBoundary`, the host keeps working.
+16. **verify.** Remove the `./preload` expose or make `@tanstack/react-query` a singleton → `portal-cli verify` fails with a clear report.
+17. **API contracts.** Change a spec (remove a field) → `pnpm api:diff` detects a major; the spec lint catches optional-everywhere and duplicate names.
+18. **(Opt.) Preload readiness.** With the flag: hovering a link to `/tasks` loads `./preload`, the data is in the cache before the navigation, `useSuspenseQuery` does not suspend; the remote is visible in devtools as "loaded" before it mounts.
 
 ---
 
-## 23. Открытые вопросы (перенести в `docs/open-questions.md`)
+## 20. Implementation phases
 
-- Политика версий React/DS: кто апгрейдится первым (хост), срок для ремоутов, что с отстающими (автоматически bridge или блок).
-- Критерии допуска bridge и кто их утверждает.
-- DS-синглтон vs свобода стека: переход темы на CSS-переменные?
-- Версионирование контракта: только аддитивные изменения или явная поддержка нескольких `contractVersion` хостом.
-- Транспорт realtime через банковский прокси: HTTP/2? WS upgrade? буферизация SSE?
-- Где живёт realtime-шлюз каждого BFF (в самом BFF или отдельный сервис на кластер) — решение бэкенда.
-- Где жить сгенерированному API-коду окончательно (пакет из репо спек — предпочтительно).
-- Нужен ли `portal-cli doctor` / codemods при изменениях контракта.
-- Поведение `singleton`/`strictVersion` в выбранном Vite-плагине MF и общий чанк для `query-client.ts` между exposes.
-- Статус `@tanstack/react-devtools` (была alpha) — используем ли единую оболочку или только свой тулбар (текущее решение: свой тулбар, без зависимости от alpha).
+0. **Skeleton.** pnpm workspaces, Volta, `.npmrc`, base presets, `docs/` (architecture, adr, open-questions).
+1. **Contract and runtime.** `platform-contract` (types), `platform-runtime`: provider, auth adapters (mock + MSAL), `createRemoteAuth`, http client, `createPortalQueryClient`, event bus, telemetry, compat. Unit tests.
+2. **DS.** Joy theme, `Spinner`, `PendingRegion`, `AsyncButton`, `AsyncBoundary`, `useLoadingStage`, delay tokens, reduced motion. Tests (fake timers + checking attributes/classes).
+3. **API contracts.** host-bff and tasks-bff specs, types+zod generation, lint, diff, packages with a zod peer.
+4. **Mock backends.** broker, host-bff (bookmarks aggregate, the host's SSE channel, event translation), tasks-bff (tasks, bookmarks, the remote's SSE channel), a controllable delay, token checks, closing the stream on exp.
+5. **The tasks remote** (FSD 2.1): `RemoteRoot`, exposes, standalone, list/create/details pages, scenarios 1–5.
+6. **Host**: routing, `<RemoteApp>` with dual entry, the contract, the bookmarks widget, route-level ViewTransition, the demo panel.
+7. **Realtime**: `createRealtimeClient`, `useInvalidateOnEvent`, scenarios 6–9.
+8. **Devtools**: registry, toolbar, mount functions, scenario 12.
+9. **CLI**: `create remote` (template = tasks-remote), `add`, `verify`; scenario 16. Check that a freshly generated remote passes `verify` and runs.
+10. **(Opt.) Bridge demo** (`legacy-remote`), preload demo (flag).
+11. **Documentation**: `docs/demo.md`, ADRs, a checklist for the bank's proxy, differences between the reference and the real project.
 
 ---
 
-## 24. Отличия reference-монорепо от реального проекта (зафиксировать в docs)
+## 21. Checks after every phase
 
-- Монорепо вместо polyrepo — только для удобства; границы пакетов и приложений соблюдены как в polyrepo.
-- `strict: true` в TS (в реальном проекте выключен).
-- Mock-auth по умолчанию вместо реального Entra ID.
-- Mock-брокер вместо Kafka, Node mock-BFF вместо Java BFF.
-- Пакеты API публикуются через `workspace:*`, а не из Nexus.
-- Реальный проект: общий QueryClient хоста и хаки с ним для букмарков — **удаляются** при миграции на эту схему.
+- `pnpm -r typecheck`, `pnpm -r lint` (oxlint + Steiger for applications), `pnpm -r test`, `pnpm -r build`.
+- No `any`, no `useMemo`/`useCallback`/`memo`, every `if` with braces, arrow functions only.
+- Applications do not import each other directly (packages only).
+- For phases 5+: a manual run of the corresponding scenarios from section 19.
+- `portal-cli verify` passes for `tasks-remote`.
+
+---
+
+## 22. ADRs to write in `docs/adr/`
+
+1. MF singletons: the minimal list and why (context identity).
+2. Integrated mode by default, bridge as a route-level exception; dual entry + React identity check.
+3. The platform contract is passed as props; the remote sets up its providers itself.
+4. Every application has its own QueryClient; a factory in the runtime package.
+5. Auth: one PCA, interaction only in the host, scope allowlist, no tokens in URLs; the accepted security risk + CSP.
+6. Loading pattern: CSS delays, 300 ms / 2 s stages, Suspense throttling in React 19.
+7. Transitions and mutations: when `mutation.isPending`, when a transition; `setQueryData` before a redirect; a shared busy flag with navigation.
+8. ViewTransition: the host owns routes, `useDeferredValue` for TanStack data, name prefixes.
+9. Devtools: mount functions instead of passing the client.
+10. Realtime: a connection per application, event translation on the backend, thin events, invalidation on reconnect, transport and proxy.
+11. Preload: modular readiness without an implementation.
+12. API contracts: a package per BFF, types+zod without a client, zod as a peer, oasdiff, Spectral, prereleases.
+13. FSD 2.1 pages first, Steiger, a CLI without empty layers.
+14. CLI: the template is the team's property; `verify` is the only permanent consistency mechanism.
+
+---
+
+## 23. Open questions (move to `docs/open-questions.md`)
+
+- React/DS version policy: who upgrades first (the host), the deadline for remotes, what happens to laggards (automatic bridge or a block).
+- Criteria for admitting bridge, and who approves them.
+- DS singleton vs stack freedom: move the theme to CSS variables?
+- Contract versioning: additive changes only, or explicit support of several `contractVersion`s by the host.
+- Realtime transport through the bank's proxy: HTTP/2? WS upgrade? SSE buffering?
+- Where each BFF's realtime gateway lives (in the BFF itself or a separate service per cluster) — a backend decision.
+- Where the generated API code finally lives (a package from the specs repo — preferred).
+- Whether `portal-cli doctor` / codemods are needed when the contract changes.
+- The behavior of `singleton`/`strictVersion` in the chosen MF Vite plugin, and a shared chunk for `query-client.ts` between exposes.
+- The status of `@tanstack/react-devtools` (it was alpha) — do we use the single shell or only our own toolbar (current decision: our own toolbar, no dependency on the alpha).
+
+---
+
+## 24. Differences between the reference monorepo and the real project (record them in the docs)
+
+- A monorepo instead of a polyrepo — for convenience only; package and application boundaries are kept as in a polyrepo.
+- `strict: true` in TS (off in the real project).
+- Mock auth by default instead of the real Entra ID.
+- A mock broker instead of Kafka, Node mock BFFs instead of Java BFFs.
+- The API packages are consumed through `workspace:*`, not from Nexus.
+- Real project: the host's shared QueryClient and the bookmarks hacks around it are **removed** when migrating to this scheme.
