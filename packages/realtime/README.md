@@ -2,8 +2,8 @@
 
 **Optional.** One app's WebSocket to ITS OWN BFF, authorized with the host's login. Built for "the backend tells the
 page to refetch": a Temporal workflow finished → the BFF sends a thin event on a topic → the page invalidates its
-queries and reloads through REST. Replaces the host-owned global pubsub on `window`: the host knows nothing about
-remotes' sockets. Teams may use another client, as long as the token comes from `platform.auth`.
+queries and reloads through REST. Replaces the single host-owned socket whose events reach every remote through `window`: the host
+knows nothing about remotes' sockets. Teams may use another client, as long as the token comes from `platform.auth`.
 
 ```sh
 pnpm add @portal-poc/realtime   # peer: react >= 18.3 (works in React 18 bridge apps)

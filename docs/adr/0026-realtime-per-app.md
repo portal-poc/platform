@@ -4,8 +4,8 @@ Supersedes [ADR 0010](./0010-realtime.md) (realtime out of scope).
 
 ## Context
 
-The real project's pub/sub lives in the host and reaches remotes through `window`; subscriptions are global. The
-backend is moving to granular subscriptions per BFF: a remote opens and closes subscriptions to its own events on its
+In the real project there is one WebSocket, in the host: every BFF's events come through it, there are no per-BFF
+subscriptions, and remotes get the events through `window`. The backend plans granular subscriptions per BFF: a remote opens and closes subscriptions to its own events on its
 own BFF. A host-owned channel would keep remotes coupled to host internals and to every other app's events, and the
 host would have to know every BFF.
 
