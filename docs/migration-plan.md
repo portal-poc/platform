@@ -31,39 +31,38 @@ packages, never copies.
 
 ## Phases
 
-Estimates: one experienced engineer, assuming the PoC code is reused (CLI commands, host loader, compat plugin,
-pipeline templates). "Per remote" = work each remote team does once, mostly a pipeline/template switch.
+**Approximate.** Written from the PoC and from how the real project was described, without access to its codebase:
+the phases, their order and their dependencies are the proposal; no time estimates. They come after the real code has
+been looked at together with the teams.
 
-| # | Phase | What changes | Platform / host effort | Per remote | Unlocks |
-|---|---|---|---|---|---|
-| 1 | **Host reads its stand config at runtime** | `/config.json` fetched before render; remotes registered with `registerRemotes` from it; a tiny "deploy config" job per stand copies the stand file next to the host | 2–4 days | — | Config changes without host rebuild. **Prerequisite for everything else.** |
-| 2 | **Immutable versioned publishing** | The manual deploy pipeline keeps its "stand + branch" inputs; release stands get `portal-releases/<name>/<version>/` (never overwritten), dev3 keeps overwriting in `portal-snapshots/dev3/<name>/` (ADR 0020); the stand config points at the manifest URLs | 1–2 days (central pipeline template + `portal-cli publish`) | ~0.5 day | Rollback by pointer, no broken open tabs, correct caching, "what runs where" |
-| 3 | **Registry + deploy rules** | `registry/<stand>/<remote>.json` in its own repository + `stands.json` (what each stand accepts); the deploy pipeline (`portal-cli deploy`) refuses wrong stand/branch pairs and commits the entry with a pipeline identity (a GitHub App / service account; the PoC uses a deploy key); hand edits via PR + CODEOWNERS; a change triggers the config deploy | 3–5 days (incl. the service account) | ~0.5 day | Audited releases without the host team; rollback = deploy the previous tag |
-| 4 | **Compatibility gates** | Host build emits `compat.json`; `release` checks the stand's host; host deploy runs `registry check`; host checks manifests at runtime | 2–3 days | — (comes with the template) | Incompatible releases blocked before users see them |
-| 5 | **Remotes own their config** (problem #12) | `config.json` inside the remote's version folder, validated by zod; stand name from the platform contract (`platform.env`); a transition helper falls back to `window.env` with a deprecation warning; then `window.env` is removed | 1 day (helper) | 0.5–1 day | Host no longer knows remote settings. *Depends on the remote receiving the platform contract as a prop (architecture track) — until then the helper can read the stand name from `window.env`.* |
-| 6 | **Local development** | Standalone mode for every remote; host dev server builds `/config.json` from `PORTAL_STAND` + `PORTAL_REMOTE_*` (`.env.development.local`); Fast Refresh of local remotes inside the host (recording DevTools hook, refresh runtime + Vite client attach) | 1–2 days | — (template) | Work on one remote against what is really deployed, without running every app |
-| 6a | **Build preset (tooling as a build-time singleton)** | `@portal-poc/vite-config` owns the MF section and pins Vite + MF plugin; manifests carry `pluginVersion`; `verify`/`release`/host runtime reject unsupported tooling | 1–2 days | ~0.5 day (switch `vite.config.ts` to the preset) | A remote can no longer break federation in the host with another bundler/plugin version |
-| 7 | **Observability** | Telemetry tagged `name@version`, remote status in the toolbar, `registry status` dashboard (or a page generated from the registry) | 1–2 days | — | Fast triage: which version, which mode, which stand |
-| 8 | **Bridge builds** (when the first singleton major upgrade is planned) | Second build target without shared deps per remote; registry carries `bridgeManifest` | 0.5 day | ~0.5 day | Host can upgrade React/router/DS majors without stopping laggards |
-| 9 | **Versioned host** | The host follows the same stand rules: `portal-releases/host/<version>/`, `<stand>/_host.json`, installed by the config deploy, promoted with the remotes (ADR 0025) | 2–3 days | — | Host rollback without rebuild; "which host runs on tst" answered |
-| 10 | **Housekeeping** | Snapshot/host folders cleaned by the deploy after a day; tabs on a cleaned build reload once (ADR 0021); every build records its commit | 1 day | — (template) | No Nexus growth, no broken long-lived tabs, reproducible bug investigations |
+| # | Phase | What changes | Unlocks |
+|---|---|---|---|
+| 1 | **Host reads its stand config at runtime** | `/config.json` fetched before render; remotes registered with `registerRemotes` from it; a tiny "deploy config" job per stand copies the stand file next to the host | Config changes without host rebuild. **Prerequisite for everything else.** |
+| 2 | **Immutable versioned publishing** | The manual deploy pipeline keeps its "stand + branch" inputs; release stands get `portal-releases/<name>/<version>/` (never overwritten), dev3 keeps overwriting in `portal-snapshots/dev3/<name>/` (ADR 0020); the stand config points at the manifest URLs | Rollback by pointer, no broken open tabs, correct caching, "what runs where" |
+| 3 | **Registry + deploy rules** | `registry/<stand>/<remote>.json` in its own repository + `stands.json` (what each stand accepts); the deploy pipeline (`portal-cli deploy`) refuses wrong stand/branch pairs and commits the entry with a pipeline identity (a GitHub App / service account; the PoC uses a deploy key); hand edits via PR + CODEOWNERS; a change triggers the config deploy | Audited releases without the host team; rollback = deploy the previous tag |
+| 4 | **Compatibility gates** | Host build emits `compat.json`; `release` checks the stand's host; host deploy runs `registry check`; host checks manifests at runtime | Incompatible releases blocked before users see them |
+| 5 | **Remotes own their config** (problem #12) | `config.json` inside the remote's version folder, validated by zod; stand name from the platform contract (`platform.env`); a transition helper falls back to `window.env` with a deprecation warning; then `window.env` is removed | Host no longer knows remote settings. *Depends on the remote receiving the platform contract as a prop (architecture track) — until then the helper can read the stand name from `window.env`.* |
+| 6 | **Local development** | Standalone mode for every remote; host dev server builds `/config.json` from `PORTAL_STAND` + `PORTAL_REMOTE_*` (`.env.development.local`); Fast Refresh of local remotes inside the host (recording DevTools hook, refresh runtime + Vite client attach) | Work on one remote against what is really deployed, without running every app |
+| 6a | **Build preset (tooling as a build-time singleton)** | `@portal-poc/vite-config` owns the MF section and pins Vite + MF plugin; manifests carry `pluginVersion`; `verify`/`release`/host runtime reject unsupported tooling | A remote can no longer break federation in the host with another bundler/plugin version |
+| 7 | **Observability** | Telemetry tagged `name@version`, remote status in the toolbar, `registry status` dashboard (or a page generated from the registry) | Fast triage: which version, which mode, which stand |
+| 8 | **Bridge builds** (when the first singleton major upgrade is planned) | Second build target without shared deps per remote; registry carries `bridgeManifest` | Host can upgrade React/router/DS majors without stopping laggards |
+| 9 | **Versioned host** | The host follows the same stand rules: `portal-releases/host/<version>/`, `<stand>/_host.json`, installed by the config deploy, promoted with the remotes (ADR 0025) | Host rollback without rebuild; "which host runs on tst" answered |
+| 10 | **Housekeeping** | Snapshot/host folders cleaned by the deploy after a day; tabs on a cleaned build reload once (ADR 0021); every build records its commit | No Nexus growth, no broken long-lived tabs, reproducible bug investigations |
 
-**Total (delivery):** roughly **4–6 weeks of platform/host work** (phases 1–7 incl. 6a, 9, 10; partly
-parallelisable) plus **1–2 days per remote team**, spread over their normal releases. Phase 8 is scheduled with the
-first singleton major upgrade.
+Phase 8 is scheduled with the first singleton major upgrade.
 
 ## Architecture track: shared code as packages, not copies
 
-| # | Phase | What changes | Platform / host effort | Per remote | Removes (problem #) |
-|---|---|---|---|---|---|
-| A1 | **Packages + templates** | Platform code moves into versioned packages in an internal npm scope on Nexus (contract, runtime, http, events, ds, mf-shared, vite-config, presets, cli); one CI template; `portal-cli create remote` for new apps | 1–2 weeks (mostly moving existing code) | 1–2 days: replace copies by dependencies | 1, 2, 3 |
-| A2 | **Contract via props + own QueryClient** | The host passes `platform` to `RemoteRoot`; each app creates its QueryClient (prefixes become irrelevant), registers its devtools panel | 3–5 days | 1–2 days | 4, part of 10 |
-| A3 | **HTTP through `@portal-poc/http`** | Each app's axios bound to the host's login; BFF addresses and scopes from the remote's `config.json`; `window.env` reads removed (fallback helper during the transition) | 2–3 days | 0.5–1 day | 5, 12, part of 9 |
-| A4 | **Realtime per app** | The host's pubsub leaves `window`: each remote opens ITS socket to ITS BFF with `@portal-poc/realtime` (token from the host's login, topics subscribed by pages, reconnect); the host's channel stays for apps not migrated yet (ADR 0026) | 2–3 days + the BFFs' socket endpoints | 0.5–1 day | 6 |
-| A5 | **Cross-app UX** | Event catalog (ADR 0023), leave guards and page titles (ADR 0024), preload on hover (ADR 0011) | 3–4 days | per feature | ad-hoc `window` hooks between apps |
-| A6 | **Legacy through the bridge** | Legacy apps keep their stack (own React/router in an MF bridge); they get the host's token for their BFF audience, and the legacy BFF exchanges it (on-behalf-of) for the legacy auth's token — no second login in the host | 2–3 days + the legacy BFF's exchange | per legacy app: bridge entry + BFF exchange | 11 |
+| # | Phase | What changes | Removes (problem #) |
+|---|---|---|---|
+| A1 | **Packages + templates** | Platform code moves into versioned packages in an internal npm scope on Nexus (contract, runtime, http, events, ds, mf-shared, vite-config, presets, cli); one CI template; `portal-cli create remote` for new apps | 1, 2, 3 |
+| A2 | **Contract via props + own QueryClient** | The host passes `platform` to `RemoteRoot`; each app creates its QueryClient (prefixes become irrelevant), registers its devtools panel | 4, part of 10 |
+| A3 | **HTTP through `@portal-poc/http`** | Each app's axios bound to the host's login; BFF addresses and scopes from the remote's `config.json`; `window.env` reads removed (fallback helper during the transition) | 5, 12, part of 9 |
+| A4 | **Realtime per app** | The host's pubsub leaves `window`: each remote opens ITS socket to ITS BFF with `@portal-poc/realtime` (token from the host's login, topics subscribed by pages, reconnect); the host's channel stays for apps not migrated yet (ADR 0026) | 6 |
+| A5 | **Cross-app UX** | Event catalog (ADR 0023), leave guards and page titles (ADR 0024), preload on hover (ADR 0011) | ad-hoc `window` hooks between apps |
+| A6 | **Legacy through the bridge** | Legacy apps keep their stack (own React/router in an MF bridge); they get the host's token for their BFF audience, and the legacy BFF exchanges it (on-behalf-of) for the legacy auth's token — no second login in the host | 11 |
 
-**Total (architecture):** roughly **4–6 weeks of platform work** plus **3–5 days per remote team**. A1 first (it
+Order: A1 first (it
 makes every later change a dependency bump instead of a copy), then A2 (the cache incidents), A3, A4 with the
 backend's subscription work; A6 when the next legacy app comes.
 
@@ -103,7 +102,7 @@ a rollback still needs.
 - Automated BFF deployments (otherwise there is nothing reliable to check against); versions dashboard shows the
   frontend/BFF pair per stand.
 
-Effort: the "now" part is hours per BFF; the gate needs automated BFF deploys first, then ~2–3 days of platform work.
+Order: the "now" part can start with any BFF; the gate needs automated BFF deploys first.
 
 ## Rollout without a big bang
 
